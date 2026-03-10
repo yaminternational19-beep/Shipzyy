@@ -1,0 +1,174 @@
+/* Main Button Styles */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 38px;
+    padding: 0 16px;
+    border-radius: var(--border-radius-md);
+    font-weight: var(--font-weight-medium);
+    font-size: var(--font-size-sm);
+    line-height: 1;
+    transition: all var(--transition-fast);
+    white-space: nowrap;
+    cursor: pointer;
+    border: 1px solid transparent;
+    min-width: fit-content;
+}
+
+.btn:active {
+    transform: scale(0.98);
+}
+
+.btn-primary {
+    background-color: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-hover);
+    border-color: var(--primary-hover);
+    box-shadow: var(--shadow-md);
+}
+
+.btn-secondary {
+    background-color: white;
+    color: var(--text-secondary);
+    border-color: var(--border-color);
+}
+
+.btn-secondary:hover {
+    background-color: var(--secondary-light);
+    color: var(--text-primary);
+    border-color: #cbd5e1;
+}
+
+.btn-danger {
+    background-color: var(--danger-bg);
+    color: var(--danger);
+    border-color: #fecaca;
+}
+
+.btn-danger:hover {
+    background-color: #fee2e2;
+}
+
+/* Specific Export Buttons */
+.btn-excel {
+    background-color: #e6f7ee;
+    color: #1f9254;
+    border: 1px solid #b7e4c7;
+}
+
+.btn-excel:hover {
+    background-color: #d1fae5;
+    color: #047857;
+}
+
+.btn-pdf {
+    background-color: #fdecea;
+    color: #c0392b;
+    border: 1px solid #f5b7b1;
+}
+
+.btn-pdf:hover {
+    background-color: #fce7e7;
+    color: #922b21;
+}
+
+/* Icon Button */
+.btn-icon {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: var(--border-radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    color: var(--text-secondary);
+    transition: all var(--transition-fast);
+}
+
+.btn-icon:hover {
+    background: var(--bg-body);
+    color: var(--primary);
+}
+
+.btn-icon-primary {
+    background-color: var(--primary-light);
+    color: var(--primary);
+}
+
+.btn-icon-primary:hover {
+    background-color: var(--primary);
+    color: white;
+}
+
+.btn-icon-danger {
+    background-color: var(--danger-bg);
+    color: var(--danger);
+}
+
+.btn-icon-danger:hover {
+    background-color: #fee2e2;
+}
+
+/* Button Group */
+.btn-group {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+/* View/Edit/Delete Actions specific */
+.action-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+}
+
+.action-btn {
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    min-height: 34px !important;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    color: #64748b;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    flex-shrink: 0 !important;
+}
+
+.action-btn:hover {
+    background: #f3f6fb;
+    color: var(--primary);
+    border-color: #d1d5db;
+}
+
+.action-view:hover {
+    color: var(--info);
+    border-color: var(--info-bg);
+    background: #ecf9ff;
+}
+
+.action-edit:hover {
+    color: var(--primary);
+    border-color: var(--primary-light);
+    background: #eef2ff;
+}
+
+.action-delete:hover {
+    color: var(--danger);
+    border-color: var(--danger-bg);
+    background: #fef2f2;
+}

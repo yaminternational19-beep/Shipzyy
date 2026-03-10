@@ -1,0 +1,145 @@
+/* ──── VENDOR DASHBOARD SPECIFIC ──── */
+
+.vendor-dashboard {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    animation: fadeIn 0.4s ease-out;
+}
+
+.vendor-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.vendor-content-grid {
+    display: grid;
+    gap: 24px;
+}
+
+.vendor-grid-2-1 {
+    grid-template-columns: 2fr 1fr;
+}
+
+.vendor-grid-1-1 {
+    grid-template-columns: 1fr 1fr;
+}
+
+/* ──── CHART STYLING ──── */
+.vendor-chart-container {
+    height: 250px;
+    position: relative;
+    margin-top: 20px;
+}
+
+.vendor-chart-placeholder {
+    height: 100%;
+    background: linear-gradient(180deg, rgba(99, 102, 241, 0.03) 0%, rgba(255, 255, 255, 0) 100%);
+    border-radius: 20px;
+    border: 2px dashed #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+/* ──── RATINGS ──── */
+.vendor-rating-box {
+    display: flex;
+    gap: 32px;
+    align-items: center;
+    padding: 10px 0;
+}
+
+.rating-big-value {
+    font-size: 3.5rem;
+    font-weight: 800;
+    color: var(--dash-text-main);
+    line-height: 1;
+}
+
+.rating-stars-group {
+    display: flex;
+    color: #f59e0b;
+    margin: 8px 0;
+}
+
+.rating-bar-stack {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.rating-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.rating-num {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #94a3b8;
+    width: 12px;
+}
+
+.rating-progress-bg {
+    flex: 1;
+    height: 6px;
+    background: #f1f5f9;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.rating-progress-fill {
+    height: 100%;
+    border-radius: 3px;
+}
+
+/* ──── PRODUCT LIST ──── */
+.vendor-prod-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.vendor-prod-thumb {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: #f8fafc;
+    border: 1px solid #f1f5f9;
+}
+
+.stock-alert {
+    color: #ef4444;
+    font-weight: 700;
+    background: #fef2f2;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+@media (max-width: 1400px) {
+    .vendor-stats-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 1024px) {
+    .vendor-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .vendor-grid-2-1,
+    .vendor-grid-1-1 {
+        grid-template-columns: 1fr;
+    }
+}

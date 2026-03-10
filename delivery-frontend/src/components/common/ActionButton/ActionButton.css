@@ -1,0 +1,72 @@
+.action-button-wrapper {
+    display: inline-block;
+}
+
+.modern-action-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    background: white;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    outline: none;
+}
+
+.modern-action-btn:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
+}
+
+.modern-action-btn:active {
+    transform: translateY(0) scale(0.95);
+}
+
+/* Variants */
+.modern-action-btn.edit:hover {
+    background: #f0f7ff;
+    color: #006aff;
+    border-color: #006aff;
+}
+
+.modern-action-btn.perm:hover {
+    background: #f5f3ff;
+    color: #6366f1;
+    border-color: #6366f1;
+}
+
+.modern-action-btn.status:hover {
+    background: #fffbeb;
+    color: #d97706;
+    border-color: #d97706;
+}
+
+.modern-action-btn.delete:hover {
+    background: #fef2f2;
+    color: #dc2626;
+    border-color: #dc2626;
+}
+
+/* Animations */
+@keyframes pulse-subtle {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+.modern-action-btn:focus-visible {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
