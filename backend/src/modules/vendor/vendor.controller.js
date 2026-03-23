@@ -27,18 +27,6 @@ export const getAllVendors = async (req, res) => {
     }
 };
 
-/* ===============================
-   GET VENDOR BY ID
-================================= */
-
-export const getVendorById = async (req, res) => {
-    try {
-        const vendor = await service.getVendorById(req.params.id);
-        return ApiResponse.success(res, "Vendor fetched successfully", vendor);
-    } catch (error) {
-        return ApiResponse.error(res, error.message || "Failed to fetch vendor");
-    }
-};
 
 /* ===============================
    UPDATE VENDOR
@@ -82,7 +70,6 @@ export const updateKycStatus = async (req, res) => {
 export default {
     createVendor,
     getAllVendors,
-    getVendorById,
     updateVendor,
     updateStatus,
     updateKycStatus

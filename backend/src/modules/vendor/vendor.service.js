@@ -280,33 +280,6 @@ const getAllVendors = async (queryParams) => {
 };
 
 
-/* ===============================
-   GET VENDOR BY ID
-================================= */
-
-const getVendorById = async (id) => {
-    const [vendorRows] = await db.query(`
-        SELECT 
-            v.*, t.tier_name 
-        FROM vendors v 
-        LEFT JOIN tiers t ON v.tier_id = t.id 
-        WHERE v.id = ?
-    `, [id]);
-
-    if (vendorRows.length === 0) {
-        throw new Error("Vendor not found");
-    }
-
-    const [fileRows] = await db.query(
-        "SELECT id, file_type, file_url FROM vendor_files WHERE vendor_id = ?",
-        [id]
-    );
-
-    const vendor = vendorRows[0];
-    vendor.files = fileRows;
-
-    return vendor;
-};
 
 /* ===============================
    UPDATE VENDOR
@@ -509,7 +482,6 @@ const updateKycStatus = async (id, data, userId) => {
 export default {
     createVendor,
     getAllVendors,
-    getVendorById,
     updateVendor,
     updateStatus,
     updateKycStatus

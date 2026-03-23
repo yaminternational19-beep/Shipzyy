@@ -27,7 +27,6 @@ const vendorUpload = upload.fields([
 
 router.post("/", vendorUpload, validate(createVendorSchema), controller.createVendor);
 router.get("/", controller.getAllVendors);
-router.get("/:id", controller.getVendorById);
 router.put("/:id", vendorUpload, validate(updateVendorSchema), controller.updateVendor);
 router.patch("/:id/status", validate(updateStatusSchema), controller.updateStatus);
 router.patch("/:id/kyc", authMiddleware, validate(updateKycStatusSchema), controller.updateKycStatus);
