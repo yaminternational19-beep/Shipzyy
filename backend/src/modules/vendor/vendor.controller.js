@@ -1,5 +1,6 @@
 import service from './vendor.service.js';
 import ApiResponse from '../../utils/apiResponse.js';
+import { isEmailExists } from '../../services/global.service.js';
 
 /* ===============================
    CREATE VENDOR
@@ -7,6 +8,13 @@ import ApiResponse from '../../utils/apiResponse.js';
 
 export const createVendor = async (req, res) => {
     try {
+        if (req.body.email) {
+            const emailExists = await isEmailExists(req.body.email);
+            if (emailExists) {
+                return ApiResponse.error(res, "Email already exists in system", 400);
+            }
+        }
+
         const vendor = await service.createVendor(req.body, req.files);
 
         return ApiResponse.success(res, "Vendor created successfully", vendor);
@@ -35,6 +43,13 @@ export const getAllVendors = async (req, res) => {
 
 export const updateVendor = async (req, res) => {
     try {
+        if (req.body.email) {
+            const emailExists = await isEmailExists(req.body.email, req.params.id, "vendors");
+            if (emailExists) {
+                return ApiResponse.error(res, "Email already exists in system", 400);
+            }
+        }
+
         const result = await service.updateVendor(req.params.id, req.body, req.files);
 
         return ApiResponse.success(res, "Vendor updated successfully", result);

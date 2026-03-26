@@ -21,3 +21,4 @@ export const deleteVendorStaffApi = (id) =>
 
 export const updateVendorStaffPermissionsApi = (id, permissions) =>
     api.patch(`/vendor-staff/${id}/permissions`, { permissions });
+

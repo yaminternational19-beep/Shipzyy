@@ -9,7 +9,8 @@ const TABLES = [
                 name VARCHAR(100),
                 email VARCHAR(150) UNIQUE NOT NULL,
                 password VARCHAR(255) NOT NULL,
-                status ENUM('active','inactive') DEFAULT 'active',
+                status ENUM('Active','Inactive') DEFAULT 'Active',
+                system_role VARCHAR(50) DEFAULT 'SUPER_ADMIN',
                 INDEX idx_email (email),
                 INDEX idx_status (status)
             );
@@ -77,6 +78,7 @@ const TABLES = [
                 permissions JSON NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                system_role VARCHAR(50) DEFAULT 'SUB_ADMIN',
                 INDEX idx_email (email),
                 INDEX idx_status (status),
                 INDEX idx_role (role),
@@ -229,6 +231,7 @@ const TABLES = [
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 FOREIGN KEY (tier_id) REFERENCES tiers(id),
+                system_role VARCHAR(50) DEFAULT 'VENDOR_OWNER',
                 INDEX idx_email (email),
                 INDEX idx_mobile (mobile),
                 INDEX idx_vendor_code (vendor_code),
@@ -251,6 +254,47 @@ const TABLES = [
                 INDEX idx_file_type (file_type)
             );
         `   
+    },
+    {
+        name:"vendor_staff",
+        query: `
+            CREATE TABLE IF NOT EXISTS vendor_staff (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                vendor_id BIGINT NOT NULL,   -- Link to vendors table
+
+                name VARCHAR(150) NOT NULL,
+                email VARCHAR(150) UNIQUE NOT NULL,
+                password VARCHAR(255) NOT NULL,
+                country_code VARCHAR(10) DEFAULT '+91',
+                mobile VARCHAR(20) NOT NULL,
+                address TEXT,
+                state VARCHAR(100),
+                country VARCHAR(100) DEFAULT 'India',
+                pincode VARCHAR(10),
+                emergency_country_code VARCHAR(10) DEFAULT '+91',
+                emergency_mobile VARCHAR(20),
+                role VARCHAR(100) NOT NULL,
+                status ENUM('Active','Inactive') DEFAULT 'Active',
+                profile_photo_key VARCHAR(255) NULL,
+                profile_photo VARCHAR(255),
+                permissions JSON NULL,
+                system_role VARCHAR(50) DEFAULT 'VENDOR_STAFF',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                -- Indexes
+                INDEX idx_vendor_id (vendor_id),
+                INDEX idx_email (email),
+                INDEX idx_status (status),
+                INDEX idx_role (role),
+                INDEX idx_created_at (created_at),
+
+                -- Foreign Key
+                CONSTRAINT fk_vendor_staff_vendor
+                FOREIGN KEY (vendor_id) REFERENCES vendors(id)
+                ON DELETE CASCADE
+            );
+        `           
     }
 ];
 

@@ -9,37 +9,39 @@ import db from '../../config/db.js';
 const getUserByEmail = async (email) => {
   // 1. Super Admin
   const [admin] = await db.query(
-    "SELECT id, name, email, password, status, 'SUPER_ADMIN' as role FROM super_admins WHERE email = ?",
+    `SELECT id, name, email, password, status, system_role as role, NULL as vendor_id
+     FROM super_admins 
+     WHERE email = ? LIMIT 1`,
     [email]
   );
   if (admin.length) return admin[0];
 
   // 2. Sub Admin
   const [subadmin] = await db.query(
-    "SELECT id, name, email, password, status, 'SUB_ADMIN' as role FROM sub_admins WHERE email = ?",
+    `SELECT id, name, email, password, status, system_role as role, NULL as vendor_id
+     FROM sub_admins 
+     WHERE email = ? LIMIT 1`,
     [email]
   );
   if (subadmin.length) return subadmin[0];
 
   // 3. Vendor Owner
   const [vendor] = await db.query(
-    "SELECT id, owner_name as name, email, password, status, 'VENDOR_OWNER' as role FROM vendors WHERE email = ?",
+    `SELECT id, owner_name as name, email, password, status, system_role as role, id as vendor_id
+     FROM vendors 
+     WHERE email = ? LIMIT 1`,
     [email]
   );
   if (vendor.length) return vendor[0];
 
   // 4. Vendor Staff
-  try {
-    const [staff] = await db.query(
-      "SELECT id, name, email, password, status, 'VENDOR_STAFF' as role FROM vendor_staff WHERE email = ?",
-      [email]
-    );
-    if (staff.length) return staff[0];
-  } catch (err) {
-    if (err.code !== 'ER_NO_SUCH_TABLE') {
-      console.error("vendor_staff table check failed:", err);
-    }
-  }
+  const [staff] = await db.query(
+    `SELECT id, vendor_id, name, email, password, status, system_role as role
+     FROM vendor_staff 
+     WHERE email = ? LIMIT 1`,
+    [email]
+  );
+  if (staff.length) return staff[0];
 
   return null;
 };
@@ -140,8 +142,13 @@ const generateResetToken = (user) => {
 
 const generateAccessToken = (user) => {
 
+  const payload = { id: user.id, role: user.role };
+  if (user.vendor_id) {
+    payload.vendor_id = user.vendor_id;
+  }
+
   return jwt.sign(
-    { id: user.id, role: user.role },
+    payload,
     process.env.JWT_SECRET,
     { expiresIn: "15m" }
   );
@@ -275,10 +282,12 @@ const refreshAccessToken = async (token) => {
       return null;
     }
 
-    return generateAccessToken({
-      id: decoded.id,
-      role: decoded.role
-    });
+    const payload = { id: decoded.id, role: decoded.role };
+    if (decoded.vendor_id) {
+      payload.vendor_id = decoded.vendor_id;
+    }
+
+    return generateAccessToken(payload);
 
   } catch (err) {
     console.error("Refresh token error:", err.message);

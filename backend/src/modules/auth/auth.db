@@ -7,7 +7,7 @@ CREATE TABLE super_admins (
   name VARCHAR(100),
   email VARCHAR(150) UNIQUE NOT NULL,
   password VARCHAR(255) NOT NULL,
-  status ENUM('active','inactive') DEFAULT 'active'
+  status ENUM('Active','Inactive') DEFAULT 'Active'
 );
 
 INSERT INTO super_admins (name,email,password)

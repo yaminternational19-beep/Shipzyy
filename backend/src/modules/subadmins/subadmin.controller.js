@@ -4,7 +4,7 @@ import { uploadFile, deleteFile } from '../../services/s3Service.js';
 
 import bcrypt from 'bcryptjs';
 import asyncHandler from '../../utils/asyncHandler.js';
-
+import { isEmailExists } from '../../services/global.service.js';
 
 export const getSubAdmins = async (req, res) => {
   try {
@@ -22,6 +22,13 @@ export const createSubAdmin = async (req, res) => {
 
   try {
 
+    if (req.body.email) {
+      const emailExists = await isEmailExists(req.body.email);
+      if (emailExists) {
+        return ApiResponse.error(res, "Email already exists in system", 400);
+      }
+    }
+
     let profilePhoto = null;
     let profilePhotoKey = null;
 
@@ -36,15 +43,16 @@ export const createSubAdmin = async (req, res) => {
       profilePhotoKey = uploadResult.key;
     }
 
-    /* hash password */
-    const hashedPassword = await bcrypt.hash(req.body.password, 10);
-
     const payload = {
       ...req.body,
-      password: hashedPassword,
       profilePhoto,
       profilePhotoKey
     };
+
+    if (req.body.password) {
+      const hashedPassword = await bcrypt.hash(req.body.password, 10);
+      payload.password = hashedPassword;
+    }
 
     const result = await service.createSubAdmin(payload);
 
@@ -67,6 +75,13 @@ export const updateSubAdmin = async (req, res) => {
       return ApiResponse.error(res, "Sub admin not found", 404);
     }
 
+    if (req.body.email) {
+      const emailExists = await isEmailExists(req.body.email, id, "sub_admins");
+      if (emailExists) {
+        return ApiResponse.error(res, "Email already exists in system", 400);
+      }
+    }
+
     let profilePhoto = existing.profile_photo;
     let profilePhotoKey = existing.profile_photo_key;
 
@@ -79,7 +94,7 @@ export const updateSubAdmin = async (req, res) => {
         return ApiResponse.error(res, "Only JPG, JPEG, PNG images allowed", 400);
       }
 
-      const uploadResult = await uploadFile(req.file, "sub-admins/profiles");
+      const uploadResult = await uploadFile(req.file, "sub-admins");
 
       profilePhoto = uploadResult.url;
       profilePhotoKey = uploadResult.key;
@@ -106,8 +121,10 @@ export const updateSubAdmin = async (req, res) => {
     };
 
     /* password update */
-    if (req.body.password) {
+    if (req.body.password && req.body.password.trim() !== "") {
       payload.password = await bcrypt.hash(req.body.password, 10);
+    } else {
+      delete payload.password;
     }
 
     /* update DB */

@@ -4,49 +4,52 @@ import db from '../../config/db.js';
 
 
 /* ===============================
-   GET SUB ADMINS
+   GET VENDOR STAFF
 ================================= */
 
-const getSubAdmins = async (queryParams) => {
+const getVendorStaff = async (queryParams) => {
 
-  
   const { page, limit, skip } = getPagination(queryParams);
 
-  const filters = buildFilters(queryParams, ["name", "email", "mobile"]);
+  const filters = buildFilters(queryParams, ['name', 'email', 'mobile']);
 
   let where = [];
   let values = [];
 
+  // VENDOR_ID FILTER
+  if (queryParams.vendor_id) {
+    where.push('vendor_id = ?');
+    values.push(queryParams.vendor_id);
+  }
+
   // ROLE FILTER
   if (filters.role) {
-    where.push("role = ?");
+    where.push('role = ?');
     values.push(filters.role);
   }
 
   // STATUS FILTER
   if (filters.status) {
-    where.push("status = ?");
+    where.push('status = ?');
     values.push(filters.status);
   }
 
   // SEARCH FILTER
   if (filters.$or) {
-
     const searchConditions = filters.$or.map(condition => {
       const key = Object.keys(condition)[0];
       const value = condition[key].$regex;
       values.push(`%${value}%`);
       return `${key} LIKE ?`;
     });
-
-    where.push(`(${searchConditions.join(" OR ")})`);
+    where.push(`(${searchConditions.join(' OR ')})`);
   }
 
-  const whereClause = where.length ? `WHERE ${where.join(" AND ")}` : "";
+  const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
   // GET RECORDS
   const [records] = await db.query(
-    `SELECT * FROM sub_admins
+    `SELECT * FROM vendor_staff
      ${whereClause}
      ORDER BY created_at DESC
      LIMIT ? OFFSET ?`,
@@ -55,45 +58,43 @@ const getSubAdmins = async (queryParams) => {
 
   // TOTAL COUNT
   const [countResult] = await db.query(
-    `SELECT COUNT(*) as total FROM sub_admins ${whereClause}`,
+    `SELECT COUNT(*) as total FROM vendor_staff ${whereClause}`,
     values
   );
 
   const totalRecords = countResult[0].total;
-
   const pagination = getPaginationMeta(page, limit, totalRecords);
 
-  const formattedRecords = records.map(admin => ({
-    // console.log("permissions raw:", admin.permissions, typeof admin.permissions);
-    id: admin.id,
-    name: admin.name,
-    email: admin.email,
-    password: admin.password, // Included for edit form as requested
-    countryCode: admin.country_code,
-    mobile: admin.mobile,
-    contactNo: `${admin.country_code} ${admin.mobile}`,
-    emergencyCountryCode: admin.emergency_country_code,
-    emergencyMobile: admin.emergency_mobile,
-    emergencyNo: admin.emergency_no || (admin.emergency_country_code ? `${admin.emergency_country_code} ${admin.emergency_mobile}` : null),
-    role: admin.role,
-    address: admin.address,
-    state: admin.state,
-    country: admin.country,
-    pincode: admin.pincode,
-    fullAddress: `${admin.address}, ${admin.state}, ${admin.country}`,
-    status: admin.status,
-    profilePhoto: admin.profile_photo,
-    profilePhotoKey: admin.profile_photo_key,
-    permissions: Array.isArray(admin.permissions)
-  ? admin.permissions
-  : admin.permissions
-    ? JSON.parse(admin.permissions)
-    : [],
-    // permissions: admin.permissions ? JSON.parse(admin.permissions) : [],
-
-    createdAt: admin.created_at
+  const formattedRecords = records.map(staff => ({
+    id: staff.id,
+    vendorId: staff.vendor_id,
+    name: staff.name,
+    email: staff.email,
+    password: staff.password,
+    countryCode: staff.country_code,
+    mobile: staff.mobile,
+    contactNo: `${staff.country_code} ${staff.mobile}`,
+    emergencyCountryCode: staff.emergency_country_code,
+    emergencyMobile: staff.emergency_mobile,
+    emergencyNo: staff.emergency_country_code
+      ? `${staff.emergency_country_code} ${staff.emergency_mobile}`
+      : null,
+    role: staff.role,
+    address: staff.address,
+    state: staff.state,
+    country: staff.country,
+    pincode: staff.pincode,
+    fullAddress: staff.address ? `${staff.address}, ${staff.state}, ${staff.country}` : null,
+    status: staff.status,
+    profilePhoto: staff.profile_photo,
+    profilePhotoKey: staff.profile_photo_key,
+    permissions: Array.isArray(staff.permissions)
+      ? staff.permissions
+      : staff.permissions
+        ? JSON.parse(staff.permissions)
+        : [],
+    createdAt: staff.created_at
   }));
-  
 
   // STATS
   const [stats] = await db.query(`
@@ -102,7 +103,7 @@ const getSubAdmins = async (queryParams) => {
         SUM(status='Active') as active,
         SUM(status='Inactive') as inactive,
         COUNT(DISTINCT role) as rolesDefined
-      FROM sub_admins
+      FROM vendor_staff
   `);
 
   return {
@@ -113,36 +114,39 @@ const getSubAdmins = async (queryParams) => {
 };
 
 
+/* ===============================
+   GET BY ID
+================================= */
+
+const getVendorStaffById = async (id) => {
+  const [rows] = await db.execute('SELECT * FROM vendor_staff WHERE id = ?', [id]);
+  return rows[0] || null;
+};
 
 
 /* ===============================
-   CREATE SUB ADMIN
+   CREATE VENDOR STAFF
 ================================= */
 
-const createSubAdmin = async (data) => {
+const createVendorStaff = async (data) => {
 
   /* check duplicate email */
   const [emailExists] = await db.execute(
-    "SELECT id FROM sub_admins WHERE email = ?",
+    'SELECT id FROM vendor_staff WHERE email = ?',
     [data.email]
   );
-
-  if (emailExists.length) {
-    throw new Error("Email already exists");
-  }
+  if (emailExists.length) throw new Error('Email already exists');
 
   /* check duplicate mobile */
   const [mobileExists] = await db.execute(
-    "SELECT id FROM sub_admins WHERE mobile = ?",
+    'SELECT id FROM vendor_staff WHERE mobile = ?',
     [data.mobile]
   );
-
-  if (mobileExists.length) {
-    throw new Error("Mobile number already exists");
-  }
+  if (mobileExists.length) throw new Error('Mobile number already exists');
 
   const query = `
-    INSERT INTO sub_admins (
+    INSERT INTO vendor_staff (
+      vendor_id,
       name,
       email,
       password,
@@ -159,18 +163,19 @@ const createSubAdmin = async (data) => {
       profile_photo,
       profile_photo_key
     )
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `;
 
   const values = [
+    data.vendor_id,
     data.name,
     data.email,
     data.password,
     data.countryCode,
     data.mobile,
-    data.address,
-    data.state,
-    data.country,
+    data.address || null,
+    data.state || null,
+    data.country || 'India',
     data.pincode || null,
     data.emergencyCountryCode || null,
     data.emergencyMobile || null,
@@ -184,6 +189,7 @@ const createSubAdmin = async (data) => {
 
   return {
     id: result.insertId,
+    vendorId: data.vendor_id,
     name: data.name,
     email: data.email,
     mobile: data.mobile,
@@ -196,25 +202,17 @@ const createSubAdmin = async (data) => {
 
 
 /* ===============================
-   UPDATE SUB ADMIN
+   UPDATE VENDOR STAFF
 ================================= */
 
-const getSubAdminById = async (id) => {
+const updateVendorStaff = async (id, data) => {
 
-  const query = `SELECT * FROM sub_admins WHERE id = ?`;
-
-  const [rows] = await db.execute(query, [id]);
-
-  return rows[0] || null;
-
-};
-
-const updateSubAdmin = async (id, data) => {
-
-  let query = `
-UPDATE sub_admins SET
+  const query = `
+UPDATE vendor_staff
+SET
   name = ?,
   email = ?,
+  password = COALESCE(?, password),
   country_code = ?,
   mobile = ?,
   address = ?,
@@ -227,11 +225,13 @@ UPDATE sub_admins SET
   status = ?,
   profile_photo = ?,
   profile_photo_key = ?
+WHERE id = ?
 `;
 
   const values = [
     data.name,
     data.email,
+    data.password || null,
     data.countryCode,
     data.mobile,
     data.address,
@@ -243,20 +243,11 @@ UPDATE sub_admins SET
     data.role,
     data.status,
     data.profilePhoto || null,
-    data.profilePhotoKey || null
+    data.profilePhotoKey || null,
+    id
   ];
 
-  if (data.password) {
-    query += `, password = ?`;
-    values.push(data.password);
-  }
-
-  query += ` WHERE id = ?`;
-  values.push(id);
-
-  const [result] = await db.execute(query, values);
-
-  console.log("UPDATE RESULT:", result);
+  await db.execute(query, values);
 
   return {
     id,
@@ -270,78 +261,62 @@ UPDATE sub_admins SET
   };
 };
 
+
 /* ===============================
    TOGGLE STATUS
 ================================= */
 
 const toggleStatus = async (id) => {
 
-  // check existing admin
   const [rows] = await db.query(
-    "SELECT id, status FROM sub_admins WHERE id = ?",
+    'SELECT id, status FROM vendor_staff WHERE id = ?',
     [id]
   );
 
   if (!rows.length) return null;
 
-  const admin = rows[0];
+  const newStatus = rows[0].status === 'Active' ? 'Inactive' : 'Active';
 
-  const newStatus =
-    admin.status === "Active"
-      ? "Inactive"
-      : "Active";
-
-  // update status
   await db.query(
-    "UPDATE sub_admins SET status = ? WHERE id = ?",
+    'UPDATE vendor_staff SET status = ? WHERE id = ?',
     [newStatus, id]
   );
 
-  // return updated record
   const [updated] = await db.query(
-    "SELECT * FROM sub_admins WHERE id = ?",
+    'SELECT * FROM vendor_staff WHERE id = ?',
     [id]
   );
 
   return updated[0];
 };
 
+
 /* ===============================
-   DELETE SUB ADMIN
+   DELETE VENDOR STAFF
 ================================= */
 
-const deleteSubAdmin = async (id) => {
+const deleteVendorStaff = async (id) => {
 
-  // check if admin exists
   const [rows] = await db.query(
-    "SELECT id, status FROM sub_admins WHERE id = ?",
+    'SELECT id, status FROM vendor_staff WHERE id = ?',
     [id]
   );
 
-  if (!rows.length) {
-    return { error: "Sub admin not found" };
+  if (!rows.length) return { error: 'Vendor staff not found' };
+
+  if (rows[0].status === 'Active') {
+    return { error: 'Staff member is active. Please deactivate first.' };
   }
 
-  const admin = rows[0];
-
-  // prevent delete if active
-  if (admin.status === "Active") {
-    return { error: "Admin is active. Please deactivate first." };
-  }
-
-  // delete admin
   const [result] = await db.query(
-    "DELETE FROM sub_admins WHERE id = ?",
+    'DELETE FROM vendor_staff WHERE id = ?',
     [id]
   );
 
-  if (!result.affectedRows) {
-    return { error: "Failed to delete sub admin" };
-  }
+  if (!result.affectedRows) return { error: 'Failed to delete vendor staff' };
 
   return { success: true };
 };
-
 
 
 /* ===============================
@@ -353,16 +328,14 @@ const updatePermissions = async (id, permissions) => {
   const uniquePermissions = [...new Set(permissions)];
 
   const [rows] = await db.query(
-    "SELECT id FROM sub_admins WHERE id = ?",
+    'SELECT id FROM vendor_staff WHERE id = ?',
     [id]
   );
 
-  if (!rows.length) {
-    return null;
-  }
+  if (!rows.length) return null;
 
   await db.query(
-    "UPDATE sub_admins SET permissions = ? WHERE id = ?",
+    'UPDATE vendor_staff SET permissions = ? WHERE id = ?',
     [JSON.stringify(uniquePermissions), id]
   );
 
@@ -373,17 +346,16 @@ const updatePermissions = async (id, permissions) => {
 };
 
 
-
 /* ===============================
    EXPORTS
 ================================= */
 
 export default {
-  getSubAdmins,
-  createSubAdmin,
-  getSubAdminById,
-  updateSubAdmin,
-  deleteSubAdmin,
+  getVendorStaff,
+  getVendorStaffById,
+  createVendorStaff,
+  updateVendorStaff,
+  deleteVendorStaff,
   toggleStatus,
-  updatePermissions,
+  updatePermissions
 };

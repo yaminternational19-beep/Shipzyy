@@ -82,4 +82,9 @@ import vendorRoutes from '../../modules/vendor/vendor.routes.js';
 router.use("/vendors", vendorRoutes);
 
 
+import vendorStaffRoutes from '../../modules/vendor-staff/vendor-staff.routes.js';
+
+router.use("/vendor-staff", vendorStaffRoutes);
+
+
 export default router;

@@ -360,9 +360,10 @@ const VendorStaffForm = ({ user, onClose, onSave }) => {
                                         required
                                     >
                                         <option value="">Select Role</option>
-                                        <option value="Vendor Staff">Vendor Staff</option>
+                                        <option value="Manager">Manager</option>
                                         <option value="Finance">Finance</option>
                                         <option value="Support">Support</option>
+                                        <option value="Employee">Employee</option>
                                     </select>
                                 </div>
                                 {errors.role && <span className="error-text">{errors.role}</span>}
