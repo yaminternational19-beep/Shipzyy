@@ -42,7 +42,8 @@ export const menuItems = [
     { name: "Refunds", key: "REFUNDS", icon: Undo2, path: "/refunds", group: "SUPPORT", description: "Manage customer refunds" },
     { name: "Payouts", key: "PAYOUTS", icon: CreditCard, path: "/payouts", group: "FINANCE", description: "Manage vendor payouts" },
     { name: "Invoices", key: "INVOICES", icon: Receipt, path: "/invoices", group: "FINANCE", description: "Manage system invoices" },
-    { name: "Staff", key: "STAFF", icon: Users2, path: "/staff", group: "VENDOR", description: "Manage vendor staff" },
+    { name: "Vendor Staff", key: "STAFF", icon: Users2, path: "/staff", group: "VENDOR", description: "Manage vendor staff members" },
+
     { name: "Reports", key: "REPORTS", icon: BarChart3, path: "/reports", group: "VENDOR", description: "View system reports" },
     { name: "Manage Content", key: "SETTINGS", icon: FileText, path: "/settings/manage-content", group: "SETTINGS" },
     { name: "Announcements", key: "SETTINGS", icon: BellRing, path: "/settings/announcements", group: "SETTINGS" },

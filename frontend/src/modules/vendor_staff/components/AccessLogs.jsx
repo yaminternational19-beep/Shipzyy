@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Search, ArrowRight, Loader2, Calendar, LogIn, LogOut, ShieldAlert } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, ArrowRight, Loader2, Calendar, LogIn, ShieldAlert } from 'lucide-react';
 import ExportActions from '../../../components/common/ExportActions';
 
 // DUMMY ACCESS LOG DATA
 const DUMMY_ACCESS_LOGS = [
-    { id: 1, user_id: 101, user: 'Rahul Sharma', email: 'rahul@example.com', user_type: 'SUB_ADMIN', login_status: 'SUCCESS', description: 'Successful login', ip_address: '192.168.1.101', user_agent: 'Chrome / Windows', created_at: new Date(Date.now() - 1000 * 60 * 10).toISOString() },
-    { id: 2, user_id: 102, user: 'Priya Patel',  email: 'priya@example.com', user_type: 'SUB_ADMIN', login_status: 'SUCCESS', description: 'Successful login', ip_address: '192.168.1.102', user_agent: 'Safari / MacOS', created_at: new Date(Date.now() - 1000 * 60 * 55).toISOString() },
-    { id: 3, user_id: 103, user: 'Amit Verma',   email: 'amit@example.com', user_type: 'SUB_ADMIN', login_status: 'FAILED',  description: 'Invalid password', ip_address: '192.168.1.103', user_agent: 'Firefox / Ubuntu', created_at: new Date(Date.now() - 1000 * 60 * 130).toISOString() },
-    { id: 4, user_id: 104, user: 'Sneha Roy',    email: 'sneha@example.com', user_type: 'SUB_ADMIN', login_status: 'FAILED',  description: 'Account inactive', ip_address: '192.168.1.104', user_agent: 'Edge / Windows', created_at: new Date(Date.now() - 1000 * 60 * 210).toISOString() },
-    { id: 5, user_id: 101, user: 'Rahul Sharma', email: 'rahul@example.com', user_type: 'SUB_ADMIN', login_status: 'SUCCESS', description: 'Successful login', ip_address: '192.168.1.101', user_agent: 'Chrome / Windows', created_at: new Date(Date.now() - 1000 * 60 * 360).toISOString() },
+    { id: 1, user_id: 201, user: 'Vendor Staff A', email: 'staffa@vendor.com', user_type: 'VENDOR_STAFF', login_status: 'SUCCESS', description: 'Successful login', ip_address: '10.10.0.11', user_agent: 'Chrome / Android', created_at: new Date(Date.now() - 1000 * 60 * 8).toISOString() },
+    { id: 2, user_id: 202, user: 'Vendor Staff B', email: 'staffb@vendor.com', user_type: 'VENDOR_STAFF', login_status: 'SUCCESS', description: 'Successful login', ip_address: '10.10.0.12', user_agent: 'Safari / iPhone', created_at: new Date(Date.now() - 1000 * 60 * 45).toISOString() },
+    { id: 3, user_id: 203, user: 'Vendor Staff C', email: 'staffc@vendor.com', user_type: 'VENDOR_STAFF', login_status: 'FAILED',  description: 'Invalid password',  ip_address: '10.10.0.13', user_agent: 'Firefox / Windows', created_at: new Date(Date.now() - 1000 * 60 * 120).toISOString() },
+    { id: 4, user_id: 204, user: 'Vendor Staff D', email: 'staffd@vendor.com', user_type: 'VENDOR_STAFF', login_status: 'FAILED',  description: 'Account inactive', ip_address: '10.10.0.14', user_agent: 'Chrome / MacOS', created_at: new Date(Date.now() - 1000 * 60 * 260).toISOString() },
+    { id: 5, user_id: 201, user: 'Vendor Staff A', email: 'staffa@vendor.com', user_type: 'VENDOR_STAFF', login_status: 'SUCCESS', description: 'Successful login', ip_address: '10.10.0.11', user_agent: 'Chrome / Android', created_at: new Date(Date.now() - 1000 * 60 * 420).toISOString() },
 ];
 
 const AccessLogs = ({ onShowToast }) => {

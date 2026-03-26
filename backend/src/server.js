@@ -3,6 +3,7 @@ dotenv.config();
 
 import app from "./app.js";
 import pool from './config/db.js';
+import { connectRedis } from "./config/redis.js";
 
 
 
@@ -15,6 +16,10 @@ async function startServer() {
     const connection = await pool.getConnection();
     console.log("MySQL connected successfully");
     connection.release();
+
+    // Connect Redis
+    await connectRedis();
+    console.log("Redis connected successfully");
 
     // Start server
     app.listen(PORT, () => {

@@ -148,7 +148,7 @@ const TABLES = [
         `
     },
     {
-        name: "Tiers",
+        name: "tiers",
         query:`
             CREATE TABLE IF NOT EXISTS tiers (
                 id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -180,7 +180,6 @@ const TABLES = [
             CREATE TABLE IF NOT EXISTS vendors (
                 id BIGINT AUTO_INCREMENT PRIMARY KEY,
                 vendor_code VARCHAR(20) UNIQUE,
-
                 -- Basic Info
                 business_name VARCHAR(150) NOT NULL,
                 owner_name VARCHAR(150),
@@ -190,15 +189,12 @@ const TABLES = [
                 mobile VARCHAR(20),
                 emergency_country_code VARCHAR(10),
                 emergency_mobile VARCHAR(20),
-
                 -- Categories (store category IDs)
                 business_categories JSON,
-
                 -- Tier
                 tier_id BIGINT,
                 commission_percent DECIMAL(5,2),
                 total_turnover DECIMAL(12,2) DEFAULT 0,
-
                 -- Address
                 address TEXT,
                 country VARCHAR(100),
@@ -209,37 +205,30 @@ const TABLES = [
                 pincode VARCHAR(10),
                 latitude VARCHAR(50),
                 longitude VARCHAR(50),
-
                 -- Personal & Business IDs
                 aadhar_number VARCHAR(20),
                 pan_number VARCHAR(20),
                 license_number VARCHAR(50),
                 fassi_code VARCHAR(50),
                 gst_number VARCHAR(50),
-
                 -- Bank
                 bank_name VARCHAR(150),
                 account_name VARCHAR(150),
                 account_number VARCHAR(50),
                 ifsc VARCHAR(20),
-
                 -- System Fields
                 profile_photo VARCHAR(255),
                 is_verified BOOLEAN DEFAULT FALSE,
                 status ENUM('Active','Inactive') DEFAULT 'Active',
                 created_by BIGINT,
                 last_login DATETIME,
-
                 kyc_status ENUM('Pending','Approved','Rejected') DEFAULT 'Pending',
                 kyc_reject_reason TEXT,
                 kyc_verified_by BIGINT,
                 kyc_verified_at DATETIME,
-
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
                 FOREIGN KEY (tier_id) REFERENCES tiers(id),
-
                 INDEX idx_email (email),
                 INDEX idx_mobile (mobile),
                 INDEX idx_vendor_code (vendor_code),
@@ -256,9 +245,7 @@ const TABLES = [
                 vendor_id BIGINT,
                 file_type VARCHAR(50),
                 file_url VARCHAR(255),
-
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
                 FOREIGN KEY (vendor_id) REFERENCES vendors(id) ON DELETE CASCADE,
                 INDEX idx_vendor_id (vendor_id),
                 INDEX idx_file_type (file_type)

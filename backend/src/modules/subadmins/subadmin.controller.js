@@ -3,6 +3,7 @@ import service from './subadmin.service.js';
 import { uploadFile, deleteFile } from '../../services/s3Service.js';
 
 import bcrypt from 'bcryptjs';
+import asyncHandler from '../../utils/asyncHandler.js';
 
 
 export const getSubAdmins = async (req, res) => {
@@ -14,26 +15,7 @@ export const getSubAdmins = async (req, res) => {
   }
 };
 
-export const getAccessLogs = async (req, res) => {
-  try {
 
-    const result = await service.getAccessLogs(req.query);
-
-    return ApiResponse.success(
-      res,
-      "Access logs fetched successfully",
-      result
-    );
-
-  } catch (error) {
-
-    return ApiResponse.error(
-      res,
-      error.message || "Failed to fetch access logs"
-    );
-
-  }
-};
 
 
 export const createSubAdmin = async (req, res) => {
@@ -66,12 +48,7 @@ export const createSubAdmin = async (req, res) => {
 
     const result = await service.createSubAdmin(payload);
 
-    return ApiResponse.success(
-      res,
-      "Sub admin created successfully",
-      result,
-      201
-    );
+    return ApiResponse.success(res, "Sub admin created successfully", result, 201);
 
   } catch (err) {
     return ApiResponse.error(res, err.message);
@@ -215,4 +192,4 @@ export const updatePermissions = async (req, res) => {
 };
 
 
-export default { getSubAdmins, getAccessLogs, createSubAdmin, updateSubAdmin, toggleStatus, deleteSubAdmin, updatePermissions };
+export default { getSubAdmins, createSubAdmin, updateSubAdmin, toggleStatus, deleteSubAdmin, updatePermissions };

@@ -8,6 +8,7 @@ import service from './brand.service.js';
 export const createBrand = async (req, res) => {
   try {
     const brand = await service.createBrand(req.body, req.file);
+
     return ApiResponse.success(
       res,
       "Brand created successfully",
@@ -54,6 +55,7 @@ export const updateBrand = async (req, res) => {
       req.body,
       req.file
     );
+
     return ApiResponse.success(
       res,
       "Brand updated successfully",
@@ -76,6 +78,7 @@ export const updateBrand = async (req, res) => {
 export const deleteBrand = async (req, res) => {
   try {
     const deleted = await service.deleteBrand(req.params.id);
+
     return ApiResponse.success(
       res,
       "Brand deleted successfully",
@@ -100,6 +103,7 @@ export const toggleStatus = async (req, res) => {
       req.params.id,
       req.body.status
     );
+
     return ApiResponse.success(
       res,
       "Brand status updated",

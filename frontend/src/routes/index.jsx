@@ -4,6 +4,8 @@ import { Layout } from '../components/layout';
 import { LoginPage } from '../modules/login';
 import { DashboardPage } from '../modules/dashboard';
 import SubAdminManagement from '../modules/subadmin/SubAdminsPage';
+import { VendorStaffManagement } from '../modules/vendor_staff';
+
 import { VendorManagement } from '../modules/vendors';
 import { CustomerManagement } from '../modules/customers';
 import VendorOwnerDashboard from '../modules/dashboard/dashboards/VendorOwnerDashboard';
@@ -162,6 +164,14 @@ const GlobalRoutes = () => {
                 element={
                     <ProtectedRoute allowedRoles={["SUPER_ADMIN", "ADMIN", "SUB_ADMIN"]}>
                         <CustomerManagement />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/staff"
+                element={
+                    <ProtectedRoute allowedRoles={["SUPER_ADMIN", "ADMIN", "SUB_ADMIN", "VENDOR_OWNER"]}>
+                        <VendorStaffManagement />
                     </ProtectedRoute>
                 }
             />

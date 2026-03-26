@@ -7,47 +7,39 @@ import db from '../../config/db.js';
 ================================= */
 
 const getUserByEmail = async (email) => {
-
+  // 1. Super Admin
   const [admin] = await db.query(
-    "SELECT id,name,email,password,status,'SUPER_ADMIN' role FROM super_admins WHERE email=?",
+    "SELECT id, name, email, password, status, 'SUPER_ADMIN' as role FROM super_admins WHERE email = ?",
     [email]
   );
-
   if (admin.length) return admin[0];
 
+  // 2. Sub Admin
   const [subadmin] = await db.query(
-    "SELECT id,name,email,password,'SUB_ADMIN' role FROM sub_admins WHERE email=?",
+    "SELECT id, name, email, password, status, 'SUB_ADMIN' as role FROM sub_admins WHERE email = ?",
     [email]
   );
   if (subadmin.length) return subadmin[0];
 
-  let vendor = [];
-  try {
-    const [vRows] = await db.query(
-      "SELECT id,name,email,password,'VENDOR_OWNER' role FROM vendors WHERE email=?",
-      [email]
-    );
-    vendor = vRows;
-  } catch (err) {
-    if (err.code !== 'ER_NO_SUCH_TABLE') throw err;
-    // vendors table missing: ignore and continue
-  }
-
+  // 3. Vendor Owner
+  const [vendor] = await db.query(
+    "SELECT id, owner_name as name, email, password, status, 'VENDOR_OWNER' as role FROM vendors WHERE email = ?",
+    [email]
+  );
   if (vendor.length) return vendor[0];
 
-  let staff = [];
+  // 4. Vendor Staff
   try {
-    const [sRows] = await db.query(
-      "SELECT id,name,email,password,'VENDOR_STAFF' role FROM vendor_staff WHERE email=?",
+    const [staff] = await db.query(
+      "SELECT id, name, email, password, status, 'VENDOR_STAFF' as role FROM vendor_staff WHERE email = ?",
       [email]
     );
-    staff = sRows;
+    if (staff.length) return staff[0];
   } catch (err) {
-    if (err.code !== 'ER_NO_SUCH_TABLE') throw err;
-    // vendor_staff table missing: ignore and continue
+    if (err.code !== 'ER_NO_SUCH_TABLE') {
+      console.error("vendor_staff table check failed:", err);
+    }
   }
-
-  if (staff.length) return staff[0];
 
   return null;
 };
@@ -252,11 +244,10 @@ const storeRefreshToken = async (userId, role, token) => {
 ================================= */
 
 const refreshAccessToken = async (token) => {
-
   try {
-
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
+    // Refresh Token Rotation / Check
     const [rows] = await db.query(
       "SELECT * FROM refresh_tokens WHERE refresh_token=? AND is_revoked=FALSE",
       [token]
@@ -264,15 +255,35 @@ const refreshAccessToken = async (token) => {
 
     if (!rows.length) return null;
 
+    // Security Fix: Check if user exists and is ACTIVE
+    const user = await getUserByEmail(decoded.email || ""); // We might need email in refresh token or search by ID
+    // If we don't have email in refresh token, search by userId and role
+    const activeUser = await getUserById(decoded.id, decoded.role);
+    
+    // Check status standardized
+    const [userRow] = await db.query(
+      `SELECT status FROM ${
+        decoded.role === 'SUPER_ADMIN' ? 'super_admins' :
+        decoded.role === 'SUB_ADMIN' ? 'sub_admins' :
+        decoded.role === 'VENDOR_OWNER' ? 'vendors' :
+        decoded.role === 'VENDOR_STAFF' ? 'vendor_staff' : 'users'
+      } WHERE id = ?`,
+      [decoded.id]
+    );
+
+    if (!userRow.length || userRow[0].status.toUpperCase() !== 'ACTIVE') {
+      return null;
+    }
+
     return generateAccessToken({
       id: decoded.id,
-      role: rows[0].user_type
+      role: decoded.role
     });
 
-  } catch {
+  } catch (err) {
+    console.error("Refresh token error:", err.message);
     return null;
   }
-
 };
 
 /* ===============================

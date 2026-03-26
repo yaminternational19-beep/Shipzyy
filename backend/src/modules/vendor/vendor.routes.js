@@ -8,7 +8,7 @@ import {
     updateKycStatusSchema 
 } from './vendor.validator.js';
 import upload from '../../middlewares/upload.middleware.js';
-import authMiddleware from '../../middlewares/auth.middleware.js';
+import authenticate from '../../middlewares/auth.middleware.js';
 
 const router = express.Router();
 
@@ -25,10 +25,10 @@ const vendorUpload = upload.fields([
    VENDORS
 ================================= */
 
-router.post("/", vendorUpload, validate(createVendorSchema), controller.createVendor);
-router.get("/", controller.getAllVendors);
-router.put("/:id", vendorUpload, validate(updateVendorSchema), controller.updateVendor);
-router.patch("/:id/status", validate(updateStatusSchema), controller.updateStatus);
-router.patch("/:id/kyc", authMiddleware, validate(updateKycStatusSchema), controller.updateKycStatus);
+router.post("/", authenticate, vendorUpload, validate(createVendorSchema), controller.createVendor);
+router.get("/", authenticate, controller.getAllVendors);
+router.put("/:id", authenticate, vendorUpload, validate(updateVendorSchema), controller.updateVendor);
+router.patch("/:id/status", authenticate, validate(updateStatusSchema), controller.updateStatus);
+router.patch("/:id/kyc", authenticate, validate(updateKycStatusSchema), controller.updateKycStatus);
 
 export default router;

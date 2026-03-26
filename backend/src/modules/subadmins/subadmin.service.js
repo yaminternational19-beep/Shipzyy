@@ -113,59 +113,7 @@ const getSubAdmins = async (queryParams) => {
 };
 
 
-/* ===============================
-    GET ACCESS LOGS
-================================= */
 
-const getAccessLogs = (queryParams) => {
-
-  const { page, limit, skip } = getPagination(queryParams);
-
-  let records = [...accessLogs];
-
-
-  if (queryParams.search) {
-    const search = queryParams.search.toLowerCase();
-
-    records = records.filter(log =>
-      log.user.toLowerCase().includes(search)
-    );
-  }
-
-
-  if (queryParams.action) {
-    records = records.filter(log =>
-      log.action === queryParams.action
-    );
-  }
-
-
-  if (queryParams.fromDate && queryParams.toDate) {
-
-    const from = new Date(queryParams.fromDate);
-    const to = new Date(queryParams.toDate);
-
-    records = records.filter(log => {
-      const date = new Date(log.createdAt);
-      return date >= from && date <= to;
-    });
-
-  }
-
-
-  records.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-  const totalRecords = records.length;
-
-  records = records.slice(skip, skip + limit);
-
-  const pagination = getPaginationMeta(page, limit, totalRecords);
-
-  return {
-    records,
-    pagination
-  };
-};
 
 /* ===============================
    CREATE SUB ADMIN
@@ -429,7 +377,6 @@ const updatePermissions = async (id, permissions) => {
 
 export default {
   getSubAdmins,
-  getAccessLogs,
   createSubAdmin,
   getSubAdminById,
   updateSubAdmin,

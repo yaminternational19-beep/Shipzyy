@@ -8,6 +8,7 @@ import ApiResponse from '../../utils/apiResponse.js';
 export const createVendor = async (req, res) => {
     try {
         const vendor = await service.createVendor(req.body, req.files);
+
         return ApiResponse.success(res, "Vendor created successfully", vendor);
     } catch (error) {
         return ApiResponse.error(res, error.message || "Failed to create vendor");
@@ -35,6 +36,7 @@ export const getAllVendors = async (req, res) => {
 export const updateVendor = async (req, res) => {
     try {
         const result = await service.updateVendor(req.params.id, req.body, req.files);
+
         return ApiResponse.success(res, "Vendor updated successfully", result);
     } catch (error) {
         return ApiResponse.error(res, error.message || "Failed to update vendor");
@@ -48,6 +50,7 @@ export const updateVendor = async (req, res) => {
 export const updateStatus = async (req, res) => {
     try {
         const result = await service.updateStatus(req.params.id, req.body.status);
+
         return ApiResponse.success(res, "Vendor status updated successfully", result);
     } catch (error) {
         return ApiResponse.error(res, error.message || "Failed to update vendor status");
@@ -61,6 +64,7 @@ export const updateStatus = async (req, res) => {
 export const updateKycStatus = async (req, res) => {
     try {
         const result = await service.updateKycStatus(req.params.id, req.body, req.user.id);
+
         return ApiResponse.success(res, "KYC status updated successfully", result);
     } catch (error) {
         return ApiResponse.error(res, error.message || "Failed to update KYC status");

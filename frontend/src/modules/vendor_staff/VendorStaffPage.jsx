@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
 import { Users, Shield, Terminal } from 'lucide-react';
-import SubAdminList from './components/SubAdminList';
-import SubAdminForm from './components/SubAdminForm';
-import SubAdminPermissions from './components/SubAdminPermissions';
-import SubAdminStats from './components/SubAdminStats';
+import VendorStaffList from './components/VendorStaffList';
+import VendorStaffForm from './components/VendorStaffForm';
+import VendorStaffPermissions from './components/VendorStaffPermissions';
+import VendorStaffStats from './components/VendorStaffStats';
 import AccessLogs from './components/AccessLogs';
 import Toast from '../../components/common/Toast/Toast';
-import { createSubAdminApi, updateSubAdminApi, toggleSubAdminStatusApi, deleteSubAdminApi, updateSubAdminPermissionsApi } from '../../api/subadmin.api';
-import './SubAdmins.css';
+import { createVendorStaffApi, updateVendorStaffApi, toggleVendorStaffStatusApi, deleteVendorStaffApi, updateVendorStaffPermissionsApi } from '../../api/vendor_staff.api';
+import './VendorStaff.css';
 
 
-const SubAdminsPage = () => {
+const VendorStaffPage = () => {
     const [activeTab, setActiveTab] = useState('users');
     const [modal, setModal] = useState({ open: false, type: null, user: null });
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
@@ -28,7 +28,7 @@ const SubAdminsPage = () => {
         }
     };
 
-    const handleSaveSubAdmin = async (data) => {
+    const handleSaveVendorStaff = async (data) => {
         try {
             // Check if we have a user in modal (edit mode)
             const editingUserId = modal.user?.id;
@@ -38,17 +38,17 @@ const SubAdminsPage = () => {
                 const sanitizedId = editingUserId.toString().startsWith(':')
                     ? editingUserId.toString().substring(1)
                     : editingUserId;
-                await updateSubAdminApi(sanitizedId, data);
+                await updateVendorStaffApi(sanitizedId, data);
             } else {
-                await createSubAdminApi(data);
+                await createVendorStaffApi(data);
             }
 
-            showToast(editingUserId ? 'Sub admin updated successfully' : 'Sub admin created successfully', 'success');
+            showToast(editingUserId ? 'Vendor staff updated successfully' : 'Vendor staff created successfully', 'success');
             setModal({ open: false, type: null, user: null });
             setRefreshKey(prev => prev + 1);
         } catch (error) {
             console.error('Save error:', error);
-            const errorMessage = error.response?.data?.error?.details || error.response?.data?.message || 'Failed to save sub-admin details';
+            const errorMessage = error.response?.data?.error?.details || error.response?.data?.message || 'Failed to save vendor staff details';
             showToast(errorMessage, 'error');
         }
     };
@@ -60,7 +60,7 @@ const SubAdminsPage = () => {
                 ? modal.user?.id.toString().substring(1)
                 : modal.user?.id;
 
-            await updateSubAdminPermissionsApi(sanitizedId, permissions);
+            await updateVendorStaffPermissionsApi(sanitizedId, permissions);
             showToast(`Access permissions for ${modal.user?.name} updated successfully`, 'success');
             setModal({ open: false, type: null, user: null });
             setRefreshKey(prev => prev + 1);
@@ -75,9 +75,9 @@ const SubAdminsPage = () => {
                 ? user.id.toString().substring(1)
                 : user.id;
 
-            await toggleSubAdminStatusApi(sanitizedId);
+            await toggleVendorStaffStatusApi(sanitizedId);
             const newStatus = user.status === 'Active' ? 'Inactive' : 'Active';
-            showToast(`Sub-Admin ${user.name} is now ${newStatus}`, 'success');
+            showToast(`Vendor Staff ${user.name} is now ${newStatus}`, 'success');
             setRefreshKey(prev => prev + 1);
         } catch (error) {
             showToast(error.response?.data?.message || 'Failed to update status', 'error');
@@ -85,28 +85,28 @@ const SubAdminsPage = () => {
     };
 
     const handleDelete = async (user) => {
-        if (window.confirm(`Are you sure you want to delete this sub-admin?`)) {
+        if (window.confirm(`Are you sure you want to delete this vendor staff member?`)) {
             try {
                 const sanitizedId = user.id.toString().startsWith(':')
                     ? user.id.toString().substring(1)
                     : user.id;
 
-                await deleteSubAdminApi(sanitizedId);
-                showToast('Sub admin deleted successfully', 'success');
+                await deleteVendorStaffApi(sanitizedId);
+                showToast('Vendor staff deleted successfully', 'success');
                 setRefreshKey(prev => prev + 1);
             } catch (error) {
                 const msg = error.response?.data?.message || '';
                 if (msg.toLowerCase().includes('active')) {
                     showToast('Admin is active. Please deactivate first.', 'error');
                 } else {
-                    showToast(msg || 'Failed to delete sub-admin', 'error');
+                    showToast(msg || 'Failed to delete vendor staff', 'error');
                 }
             }
         }
     };
 
     return (
-        <div className="subadmin-module management-module" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div className="vendorstaff-module management-module" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             {/* Toast Notification - Floating at Right Top */}
             {toast.show && (
                 <Toast
@@ -119,8 +119,8 @@ const SubAdminsPage = () => {
             {/* Page Header */}
             <div className="module-intro">
                 <div className="intro-content">
-                    <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>Sub-Admin Management</h1>
-                    <p style={{ fontSize: '0.9rem', color: '#64748b', margin: 0 }}>Manage system administrators and their relative permissions</p>
+                    <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>Vendor Staff Management</h1>
+                    <p style={{ fontSize: '0.9rem', color: '#64748b', margin: 0 }}>Manage vendor staff members and their relative permissions</p>
                 </div>
                 {activeTab === 'users' && (
                     <button
@@ -128,13 +128,13 @@ const SubAdminsPage = () => {
                         onClick={() => setModal({ open: true, type: 'form', user: null })}
                     >
                         <Users size={18} />
-                        Add New Sub-Admin
+                        Add New Vendor Staff
                     </button>
                 )}
             </div>
 
             {/* Stats Section */}
-            <SubAdminStats stats={stats} />
+            <VendorStaffStats stats={stats} />
 
             {/* Tabs */}
             <div className="tab-group-pills">
@@ -143,7 +143,7 @@ const SubAdminsPage = () => {
                     onClick={() => setActiveTab('users')}
                 >
                     <Shield size={14} />
-                    Sub-Admins
+                    Vendor Staff
                 </button>
                 <button
                     className={activeTab === 'access' ? 'active' : ''}
@@ -157,7 +157,7 @@ const SubAdminsPage = () => {
 
             {/* Content Area */}
             {activeTab === 'users' ? (
-                <SubAdminList
+                <VendorStaffList
                     key={refreshKey}
                     onEdit={(user) => setModal({ open: true, type: 'form', user })}
                     onEditPermissions={(user) => setModal({ open: true, type: 'permissions', user })}
@@ -173,15 +173,15 @@ const SubAdminsPage = () => {
 
             {/* Modals */}
             {modal.open && modal.type === 'form' && (
-                <SubAdminForm
+                <VendorStaffForm
                     user={modal.user}
                     onClose={() => setModal({ open: false, type: null, user: null })}
-                    onSave={handleSaveSubAdmin}
+                    onSave={handleSaveVendorStaff}
                 />
             )}
 
             {modal.open && modal.type === 'permissions' && (
-                <SubAdminPermissions
+                <VendorStaffPermissions
                     user={modal.user}
                     onClose={() => setModal({ open: false, type: null, user: null })}
                     onSave={handleSavePermissions}
@@ -191,4 +191,4 @@ const SubAdminsPage = () => {
     );
 };
 
-export default SubAdminsPage;
+export default VendorStaffPage;

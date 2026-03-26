@@ -40,6 +40,8 @@ router.get(
   })
 );
 
+import redisTestRoute from "../../utils/redis-test.js";
+router.use(redisTestRoute);
 
 
 import productRoutes from '../../modules/products/product.routes.js';

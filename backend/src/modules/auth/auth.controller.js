@@ -32,7 +32,8 @@ export const login = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Password is incorrect");
   }
 
-  if (user.status !== "active") {
+  // Requirement 1: Only ACTIVE status can login
+  if (user.status?.toUpperCase() !== "ACTIVE") {
     throw new ApiError(
       403,
       "Your account is inactive. Please contact the Super Admin."
@@ -296,10 +297,12 @@ export const resendOtp = asyncHandler(async (req, res) => {
 
 });
 
-
+/* ===============================
+   LOGOUT
+================================= */
 export const logout = asyncHandler(async (req, res) => {
-
   const { refreshToken } = req.body;
+  const authHeader = req.headers.authorization;
 
   if (!refreshToken) {
     throw new ApiError(400, "Refresh token required");
@@ -312,7 +315,6 @@ export const logout = asyncHandler(async (req, res) => {
   }
 
   return ApiResponse.success(res, "Logged out successfully");
-
 });
 
 export default { login, verifyLoginOtp, refreshToken, forgotPassword, verifyResetOtp, resetPassword, resendOtp, logout };

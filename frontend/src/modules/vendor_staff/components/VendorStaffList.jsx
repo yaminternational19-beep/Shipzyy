@@ -2,18 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { Search, Filter, CheckSquare, Square, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import ExportActions from '../../../components/common/ExportActions';
 import ActionButtons from '../../../components/common/ActionButtons';
-import { getSubAdminsApi } from '../../../api/subadmin.api';
-import { exportSubAdminsToPDF, exportSubAdminsToExcel } from '../services/export.service';
+import { getVendorStaffApi } from '../../../api/vendor_staff.api';
+import { exportVendorStaffToPDF, exportVendorStaffToExcel } from '../services/export.service';
 
 import { menuItems } from '../../../utils/menuConfig';
 
-const SubAdminList = ({ onEdit, onEditPermissions, onDeactivate, onDelete, onShowToast, onFetchSuccess }) => {
-    const [selectedSubAdmins, setSelectedSubAdmins] = useState([]);
+const VendorStaffList = ({ onEdit, onEditPermissions, onDeactivate, onDelete, onShowToast, onFetchSuccess }) => {
+    const [selectedVendorStaff, setSelectedVendorStaff] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedRole, setSelectedRole] = useState('');
     const [fromDate, setFromDate] = useState('');
 
-    const [subAdmins, setSubAdmins] = useState([]);
+    const [vendorStaff, setVendorStaff] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [pagination, setPagination] = useState({
@@ -24,12 +24,12 @@ const SubAdminList = ({ onEdit, onEditPermissions, onDeactivate, onDelete, onSho
     });
 
     const roles = [
-        { label: 'Sub Admin', value: 'Sub Admin' },
+        { label: 'Vendor Staff', value: 'Vendor Staff' },
         { label: 'Finance', value: 'Finance' },
         { label: 'Support', value: 'Support' },
     ];
 
-    const fetchSubAdmins = async () => {
+    const fetchVendorStaff = async () => {
         setIsLoading(true);
         try {
             const params = {
@@ -38,14 +38,14 @@ const SubAdminList = ({ onEdit, onEditPermissions, onDeactivate, onDelete, onSho
                 search: searchQuery,
                 role: selectedRole,
             };
-            const res = await getSubAdminsApi(params);
+            const res = await getVendorStaffApi(params);
             const data = res.data.data;
             const { records, pagination: paginData } = data;
-            setSubAdmins(records || []);
+            setVendorStaff(records || []);
             setPagination(paginData);
             if (onFetchSuccess) onFetchSuccess(data);
         } catch (error) {
-            onShowToast(error.response?.data?.message || 'Failed to fetch sub-admins', 'error');
+            onShowToast(error.response?.data?.message || 'Failed to fetch vendor staff', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -53,21 +53,21 @@ const SubAdminList = ({ onEdit, onEditPermissions, onDeactivate, onDelete, onSho
 
     useEffect(() => {
         const timer = setTimeout(() => {
-            fetchSubAdmins();
+            fetchVendorStaff();
         }, 500);
         return () => clearTimeout(timer);
     }, [searchQuery, selectedRole, currentPage]);
 
     const handleSelectAll = (e) => {
         if (e.target.checked) {
-            setSelectedSubAdmins(subAdmins.map(u => u.id));
+            setSelectedVendorStaff(vendorStaff.map(u => u.id));
         } else {
-            setSelectedSubAdmins([]);
+            setSelectedVendorStaff([]);
         }
     };
 
     const handleSelectOne = (id) => {
-        setSelectedSubAdmins(prev => prev.includes(id) ? prev.filter(uId => uId !== id) : [...prev, id]);
+        setSelectedVendorStaff(prev => prev.includes(id) ? prev.filter(uId => uId !== id) : [...prev, id]);
     };
 
     const handleReset = () => {
@@ -77,8 +77,8 @@ const SubAdminList = ({ onEdit, onEditPermissions, onDeactivate, onDelete, onSho
     };
 
     const handleExportDownload = (type) => {
-        // filter subadmins that are currently selected
-        const selectedData = subAdmins.filter(admin => selectedSubAdmins.includes(admin.id));
+        // filter staff that are currently selected
+        const selectedData = vendorStaff.filter(item => selectedVendorStaff.includes(item.id));
 
         if (selectedData.length === 0) {
             onShowToast('Please select at least one record to export', 'warning');
@@ -87,10 +87,10 @@ const SubAdminList = ({ onEdit, onEditPermissions, onDeactivate, onDelete, onSho
 
         try {
             if (type === 'pdf') {
-                exportSubAdminsToPDF(selectedData);
+                exportVendorStaffToPDF(selectedData);
                 onShowToast(`Exported ${selectedData.length} records as PDF successfully!`, 'success');
             } else if (type === 'excel') {
-                exportSubAdminsToExcel(selectedData);
+                exportVendorStaffToExcel(selectedData);
                 onShowToast(`Exported ${selectedData.length} records as Excel successfully!`, 'success');
             }
         } catch (error) {
@@ -133,7 +133,7 @@ const SubAdminList = ({ onEdit, onEditPermissions, onDeactivate, onDelete, onSho
 
                 <div className="filter-controls">
                     <ExportActions
-                        selectedCount={selectedSubAdmins.length}
+                        selectedCount={selectedVendorStaff.length}
                         onExport={onShowToast}
                         onDownload={handleExportDownload}
                     />
@@ -141,10 +141,10 @@ const SubAdminList = ({ onEdit, onEditPermissions, onDeactivate, onDelete, onSho
             </div>
 
             {/* Bulk Actions Bar */}
-            {selectedSubAdmins.length > 0 && (
+            {selectedVendorStaff.length > 0 && (
                 <div className="c-bulk-bar">
-                    <span>{selectedSubAdmins.length} sub-admins selected</span>
-                    <button onClick={() => setSelectedSubAdmins([])}>Clear Selection</button>
+                    <span>{selectedVendorStaff.length} vendor staff selected</span>
+                    <button onClick={() => setSelectedVendorStaff([])}>Clear Selection</button>
                 </div>
             )}
 
@@ -156,10 +156,10 @@ const SubAdminList = ({ onEdit, onEditPermissions, onDeactivate, onDelete, onSho
                         <tr>
                             <th style={{ width: '48px' }}>
                                 <div
-                                    onClick={() => handleSelectAll({ target: { checked: selectedSubAdmins.length !== subAdmins.length } })}
+                                    onClick={() => handleSelectAll({ target: { checked: selectedVendorStaff.length !== vendorStaff.length } })}
                                     style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                                 >
-                                    {subAdmins.length > 0 && selectedSubAdmins.length === subAdmins.length
+                                    {vendorStaff.length > 0 && selectedVendorStaff.length === vendorStaff.length
                                         ? <CheckSquare size={17} color="var(--primary-color)" />
                                         : <Square size={17} color="#94a3b8" />
                                     }
@@ -186,14 +186,14 @@ const SubAdminList = ({ onEdit, onEditPermissions, onDeactivate, onDelete, onSho
                                     </div>
                                 </td>
                             </tr>
-                        ) : subAdmins.map(user => (
-                            <tr key={user.id} style={{ background: selectedSubAdmins.includes(user.id) ? '#f8fafc' : 'white' }}>
+                        ) : vendorStaff.map(user => (
+                            <tr key={user.id} style={{ background: selectedVendorStaff.includes(user.id) ? '#f8fafc' : 'white' }}>
                                 <td>
                                     <div
                                         onClick={() => handleSelectOne(user.id)}
                                         style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                                     >
-                                        {selectedSubAdmins.includes(user.id)
+                                        {selectedVendorStaff.includes(user.id)
                                             ? <CheckSquare size={17} color="var(--primary-color)" />
                                             : <Square size={17} color="#94a3b8" />
                                         }
@@ -253,10 +253,10 @@ const SubAdminList = ({ onEdit, onEditPermissions, onDeactivate, onDelete, onSho
                                 </td>
                             </tr>
                         ))}
-                        {!isLoading && subAdmins.length === 0 && (
+                        {!isLoading && vendorStaff.length === 0 && (
                             <tr>
                                 <td colSpan="10" className="text-center p-4" style={{ color: '#94a3b8' }}>
-                                    No sub-admins found matching criteria
+                                    No vendor staff found matching criteria
                                 </td>
                             </tr>
                         )}
@@ -266,7 +266,7 @@ const SubAdminList = ({ onEdit, onEditPermissions, onDeactivate, onDelete, onSho
 
             <div className="c-pagination" style={{ borderTop: '1px solid var(--border-color)' }}>
                 <span className="c-pagination-info">
-                    Showing {subAdmins.length} of {pagination.totalRecords} entries
+                    Showing {vendorStaff.length} of {pagination.totalRecords} entries
                 </span>
                 <div className="c-pagination-btns">
                     <button
@@ -289,4 +289,4 @@ const SubAdminList = ({ onEdit, onEditPermissions, onDeactivate, onDelete, onSho
     );
 };
 
-export default SubAdminList;
+export default VendorStaffList;

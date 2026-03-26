@@ -19,8 +19,5 @@ export const toggleSubAdminStatusApi = (id) =>
 export const deleteSubAdminApi = (id) =>
     api.delete(`/subadmin/${id}`);
 
-export const getAccessLogsApi = (params) =>
-    api.get("/subadmin/logs", { params });
-
 export const updateSubAdminPermissionsApi = (id, permissions) =>
-    api.patch(`/subadmin/${id}/permissions`, { permissions });
+    api.patch(`/subadmin/${id}/permissions`, { permissions });
