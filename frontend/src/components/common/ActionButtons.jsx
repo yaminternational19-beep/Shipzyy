@@ -1,7 +1,7 @@
 import React from 'react';
-import { Eye, ShieldCheck, Edit, Trash2, Power } from 'lucide-react';
+import { Eye, ShieldCheck, Edit, Trash2, Power, Zap, ZapOff } from 'lucide-react';
 
-const ActionButtons = ({ onView, onPermissions, onEdit, onDelete, onToggleStatus, isActive, type }) => {
+const ActionButtons = ({ onView, onPermissions, onEdit, onDelete, onToggleStatus, onToggleAutoApprove, isAutoApprove, isActive, type }) => {
     const isCustomer = type === 'customer';
 
     return (
@@ -37,6 +37,18 @@ const ActionButtons = ({ onView, onPermissions, onEdit, onDelete, onToggleStatus
                     style={{ color: isActive ? '#f59e0b' : '#10b981' }}
                 >
                     <Power size={18} strokeWidth={2} />
+                </button>
+            )}
+
+            {onToggleAutoApprove && (
+                <button
+                    className={`action-btn ${isAutoApprove ? 'action-auto-on' : 'action-auto-off'}`}
+                    onClick={onToggleAutoApprove}
+                    type="button"
+                    title={isAutoApprove ? 'Disable Auto Approval' : 'Enable Auto Approval'}
+                    style={{ color: isAutoApprove ? '#8b5cf6' : '#94a3b8' }}
+                >
+                    {isAutoApprove ? <Zap size={18} strokeWidth={2} fill="#8b5cf6" /> : <ZapOff size={18} strokeWidth={2} />}
                 </button>
             )}
 

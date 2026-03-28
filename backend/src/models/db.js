@@ -207,6 +207,7 @@ const TABLES = [
                 pincode VARCHAR(10),
                 latitude VARCHAR(50),
                 longitude VARCHAR(50),
+                auto_approve_products TINYINT(1) DEFAULT 0 COMMENT '1 = auto approve vendor products, 0 = manual approval required',
                 -- Personal & Business IDs
                 aadhar_number VARCHAR(20),
                 pan_number VARCHAR(20),
@@ -297,11 +298,140 @@ const TABLES = [
         `           
     },
     {
-        name: "products",
-        query: `
-            CREATE TABLE IF NOT EXISTS products (
+        name:"products",
+        query:`
+        CREATE TABLE IF NOT EXISTS products (
                 id BIGINT AUTO_INCREMENT PRIMARY KEY,
-                
+
+                vendor_id BIGINT NOT NULL,
+                category_id BIGINT NOT NULL,
+                subcategory_id BIGINT NULL,
+                brand_id BIGINT NULL,
+                custom_brand VARCHAR(255) NULL,
+
+                name VARCHAR(255) NOT NULL,
+                slug VARCHAR(255) UNIQUE,
+                description TEXT,
+                specification JSON,
+
+                country_of_origin VARCHAR(100),
+                manufacture_date DATE,
+                expiry_date DATE,
+
+                return_allowed TINYINT(1) DEFAULT 0,
+                return_days INT DEFAULT 0,
+
+                approval_status ENUM('PENDING','APPROVED','REJECTED') DEFAULT 'PENDING',
+                rejection_reason TEXT,
+                approved_by BIGINT NULL,
+                approved_at TIMESTAMP NULL,
+
+                is_live TINYINT(1) DEFAULT 0,
+                is_active TINYINT(1) DEFAULT 1,
+
+                view_count INT DEFAULT 0,
+                sold_count INT DEFAULT 0,
+
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                FOREIGN KEY (vendor_id) REFERENCES vendors(id),
+                FOREIGN KEY (category_id) REFERENCES categories(id),
+                FOREIGN KEY (subcategory_id) REFERENCES subcategories(id),
+                FOREIGN KEY (brand_id) REFERENCES brands(id),
+
+                INDEX idx_vendor (vendor_id),
+                INDEX idx_category (category_id),
+                INDEX idx_subcategory (subcategory_id),
+                INDEX idx_brand (brand_id),
+                INDEX idx_status (approval_status),
+                INDEX idx_live (is_live),
+                INDEX idx_active (is_active)
+            );
+        `
+    },
+    {
+        name: "product_variants",
+        query: `
+        CREATE TABLE IF NOT EXISTS product_variants (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            product_id BIGINT NOT NULL,
+
+            variant_name VARCHAR(100) NOT NULL,
+            unit VARCHAR(20),
+            color VARCHAR(50),
+
+            sku VARCHAR(100) UNIQUE,
+
+            mrp DECIMAL(10,2),
+            sale_price DECIMAL(10,2),
+            discount_value DECIMAL(10,2),
+            discount_type ENUM('Flat','Percent'),
+
+            stock INT DEFAULT 0,
+            min_order INT DEFAULT 1,
+            low_stock_alert INT DEFAULT 5,
+
+            is_live TINYINT(1) DEFAULT 1,
+
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+            FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+
+            INDEX idx_product (product_id),
+            INDEX idx_sku (sku),
+            INDEX idx_stock (stock),
+            INDEX idx_live (is_live)
+        );
+        `
+    },
+    {
+        name: "product_images",
+        query: `
+            CREATE TABLE IF NOT EXISTS product_images (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                product_id BIGINT NOT NULL,
+
+                image_url VARCHAR(500) NOT NULL,
+                is_primary TINYINT(1) DEFAULT 0,
+                sort_order INT DEFAULT 0,
+
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+                FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+
+                INDEX idx_product (product_id)
+            );
+        `
+    },
+    {
+        name: "product_stock_logs ",
+        query: `
+            CREATE TABLE IF NOT EXISTS product_stock_logs (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+
+                product_id BIGINT NOT NULL,
+                variant_id BIGINT NOT NULL,
+                vendor_id BIGINT NOT NULL,
+
+                change_type ENUM('ADD','REMOVE','ORDER','RETURN') NOT NULL,
+                quantity INT NOT NULL,
+                previous_stock INT,
+                new_stock INT,
+
+                note TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+                FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+                FOREIGN KEY (variant_id) REFERENCES product_variants(id) ON DELETE CASCADE,
+                FOREIGN KEY (vendor_id) REFERENCES vendors(id) ON DELETE CASCADE,
+
+                INDEX idx_product (product_id),
+                INDEX idx_variant (variant_id),
+                INDEX idx_vendor (vendor_id),
+                INDEX idx_type (change_type),
+                INDEX idx_date (created_at)
             );
         `
     }

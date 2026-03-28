@@ -21,3 +21,6 @@ export const updateVendorStatusApi = (id, status) =>
 
 export const updateVendorKycStatusApi = (id, data) =>
     api.patch(`/vendors/${id}/kyc`, data);
+
+export const updateVendorAutoApproveApi = (id, auto_approve_products) =>
+    api.put(`/vendors/${id}/auto-approve`, { auto_approve_products });

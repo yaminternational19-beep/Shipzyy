@@ -35,7 +35,7 @@ export const menuItems = [
     { name: "Orders", key: "ORDERS", icon: ShoppingBag, path: "/orders", group: "MANAGEMENT", description: "Track and manage customer orders" },
     { name: "Vendor Orders", key: "VENDOR_ORDERS", icon: ShoppingBag, path: "/vendor-orders", group: "MANAGEMENT", description: "Manage vendor orders" },
     { name: "Vehicle Types", key: "VEHICLES", icon: Car, path: "/vehicles", group: "MANAGEMENT", description: "Manage vehicle types" },
-    { name: "Quantity", key: "QUANTITY", icon: Scale, path: "/quantity", group: "MANAGEMENT", description: "Manage quantity units" },
+    // { name: "Quantity", key: "QUANTITY", icon: Scale, path: "/quantity", group: "MANAGEMENT", description: "Manage quantity units" },
     { name: "Riders", key: "RIDERS", icon: Bike, path: "/riders", group: "MANAGEMENT", description: "Live tracking and rider management" },
     { name: "Customers", key: "CUSTOMERS", icon: Users, path: "/customers", group: "MANAGEMENT", description: "Client accounts and support tickets" },
     { name: "Tickets", key: "TICKETS", icon: Ticket, path: "/tickets", group: "SUPPORT", description: "Manage support tickets" },

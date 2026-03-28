@@ -163,14 +163,14 @@ const GlobalRoutes = () => {
                 }
             />
 
-            <Route
+            {/* <Route
                 path="/quantity"
                 element={
                     <ProtectedRoute allowedRoles={["SUPER_ADMIN", "ADMIN"]}>
                         <QuantityPage />
                     </ProtectedRoute>
                 }
-            />
+            /> */}
 
             <Route
                 path="/customers"

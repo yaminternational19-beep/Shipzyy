@@ -203,6 +203,7 @@ const getAllVendors = async (queryParams) => {
             v.profile_photo,
             v.is_verified,
             v.status,
+            v.auto_approve_products,
             v.kyc_status,
             v.kyc_reject_reason,
             v.kyc_verified_at,
@@ -479,10 +480,24 @@ const updateKycStatus = async (id, data, userId) => {
     return { id, kyc_status: data.kyc_status };
 };
 
+
+const autoapproval = async (vendorId, status) => {
+    const [result] = await db.query(
+        "UPDATE vendors SET auto_approve_products = ? WHERE id = ?",
+        [status, vendorId]
+    );
+
+    if (result.affectedRows === 0) {
+        throw new Error("Vendor not found");
+    }
+
+    return { id: vendorId, auto_approve_products: status };
+}
 export default {
     createVendor,
     getAllVendors,
     updateVendor,
     updateStatus,
-    updateKycStatus
+    updateKycStatus,
+    autoapproval
 };

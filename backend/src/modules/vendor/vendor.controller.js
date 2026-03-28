@@ -86,10 +86,27 @@ export const updateKycStatus = async (req, res) => {
     }
 };
 
+
+
+/* ===============================
+   UPDATE AUTO APPROVE STATUS
+================================= */
+
+export const updateAutoApproveStatus = async (req, res) => {
+    try {
+        const result = await service.autoapproval(req.params.id, req.body.auto_approve_products);
+
+        return ApiResponse.success(res, "Vendor auto approval status updated successfully", result);
+    } catch (error) {
+        return ApiResponse.error(res, error.message || "Failed to update vendor auto approval status");
+    }
+};
+
 export default {
     createVendor,
     getAllVendors,
     updateVendor,
     updateStatus,
-    updateKycStatus
+    updateKycStatus,
+    updateAutoApproveStatus
 };

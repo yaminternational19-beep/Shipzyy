@@ -5,7 +5,8 @@ import {
     createVendorSchema, 
     updateVendorSchema, 
     updateStatusSchema, 
-    updateKycStatusSchema 
+    updateKycStatusSchema,
+    autoApproveSchema
 } from './vendor.validator.js';
 import upload from '../../middlewares/upload.middleware.js';
 import authenticate from '../../middlewares/auth.middleware.js';
@@ -30,5 +31,6 @@ router.get("/", authenticate, controller.getAllVendors);
 router.put("/:id", authenticate, vendorUpload, validate(updateVendorSchema), controller.updateVendor);
 router.patch("/:id/status", authenticate, validate(updateStatusSchema), controller.updateStatus);
 router.patch("/:id/kyc", authenticate, validate(updateKycStatusSchema), controller.updateKycStatus);
+router.put("/:id/auto-approve", authenticate, validate(autoApproveSchema), controller.updateAutoApproveStatus);
 
 export default router;

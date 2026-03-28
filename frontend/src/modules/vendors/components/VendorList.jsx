@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, ChevronLeft, ChevronRight, CheckSquare, Square, Filter, RefreshCw } from 'lucide-react';
 import ExportActions from '../../../components/common/ExportActions';
 import ActionButtons from '../../../components/common/ActionButtons';
-import { getVendorsApi, updateVendorStatusApi } from '../../../api/vendor.api';
+import { getVendorsApi, updateVendorStatusApi, updateVendorAutoApproveApi } from '../../../api/vendor.api';
 import { exportVendorsToPDF, exportVendorsToExcel } from '../services/export.service';
 
 const VendorList = ({ onEdit, onDelete, showToast, onTabChange, onStatsUpdate }) => {
@@ -54,6 +54,17 @@ const VendorList = ({ onEdit, onDelete, showToast, onTabChange, onStatsUpdate })
             fetchVendors(pagination.currentPage);
         } catch {
             showToast?.('Failed to update status', 'error');
+        }
+    };
+
+    const handleAutoApproveToggle = async (vendor) => {
+        const newStatus = vendor.auto_approve_products === 1 ? 0 : 1;
+        try {
+            await updateVendorAutoApproveApi(vendor.id, newStatus);
+            showToast?.(`Auto approval for ${vendor.business_name} is now ${newStatus === 1 ? 'Enabled' : 'Disabled'}`, 'success');
+            fetchVendors(pagination.currentPage);
+        } catch {
+            showToast?.('Failed to update auto approval status', 'error');
         }
     };
 
@@ -155,9 +166,9 @@ const VendorList = ({ onEdit, onDelete, showToast, onTabChange, onStatsUpdate })
                             <th style={{ textAlign: 'center' }}>Vendor Name</th>
                             <th style={{ textAlign: 'center' }}>Vendor Details</th>
                             <th style={{ textAlign: 'center' }}>Address</th>
-                            <th style={{ textAlign: 'center' }}>Comm / Trnvr</th>
                             <th style={{ textAlign: 'center' }}>Tier</th>
                             <th style={{ textAlign: 'center' }}>KYC</th>
+                            <th style={{ textAlign: 'center' }}>Auto Approve</th>
                             <th style={{ textAlign: 'center' }}>Status</th>
                             <th className="col-actions" style={{ textAlign: 'center' }}>Actions</th>
                         </tr>
@@ -165,13 +176,13 @@ const VendorList = ({ onEdit, onDelete, showToast, onTabChange, onStatsUpdate })
                     <tbody>
                         {loading ? (
                             <tr>
-                                <td colSpan="12" style={{ textAlign: 'center', padding: '48px', color: '#94a3b8' }}>
+                                <td colSpan="11" style={{ textAlign: 'center', padding: '48px', color: '#94a3b8' }}>
                                     Loading vendors...
                                 </td>
                             </tr>
                         ) : vendors.length === 0 ? (
                             <tr>
-                                <td colSpan="12" style={{ textAlign: 'center', padding: '48px', color: '#94a3b8' }}>
+                                <td colSpan="11" style={{ textAlign: 'center', padding: '48px', color: '#94a3b8' }}>
                                     No vendors found
                                 </td>
                             </tr>
@@ -229,7 +240,15 @@ const VendorList = ({ onEdit, onDelete, showToast, onTabChange, onStatsUpdate })
                                             { bg: '#e0f2fe', color: '#0369a1' },
                                         ];
                                         return (
-                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '5px', justifyContent: 'center' }}>
+                                            <div style={{ 
+                                                display: 'flex', 
+                                                flexWrap: 'wrap', 
+                                                gap: '4px', 
+                                                marginTop: '5px', 
+                                                justifyContent: 'center',
+                                                maxWidth: '200px',
+                                                margin: '5px auto 0'
+                                            }}>
                                                 {cats.map((cat, i) => {
                                                     const c = CHIP_COLORS[i % CHIP_COLORS.length];
                                                     return (
@@ -252,9 +271,16 @@ const VendorList = ({ onEdit, onDelete, showToast, onTabChange, onStatsUpdate })
                                     })()}
                                 </td>
 
-                                <td style={{ textAlign: 'center' }}>
+                                <td style={{ textAlign: 'center', maxWidth: '160px' }}>
                                     {/* Owner Name */}
-                                    <span style={{ fontWeight: 700, color: '#111827', fontSize: '13px', display: 'block' }}>
+                                    <span style={{ 
+                                        fontWeight: 700, 
+                                        color: '#111827', 
+                                        fontSize: '13px', 
+                                        display: 'block',
+                                        wordBreak: 'break-word',
+                                        lineHeight: '1.3'
+                                    }}>
                                         {vendor.owner_name}
                                     </span>
                                 </td>
@@ -280,17 +306,6 @@ const VendorList = ({ onEdit, onDelete, showToast, onTabChange, onStatsUpdate })
                                 </td>
 
                                 <td style={{ textAlign: 'center' }}>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', alignItems: 'center' }}>
-                                        <span style={{ fontSize: '12px', fontWeight: 700, color: '#111827' }}>
-                                            {vendor.commission_percent}%
-                                        </span>
-                                        <span style={{ fontSize: '11px', fontWeight: 600, color: '#4f46e5' }}>
-                                            ₹{parseFloat(vendor.total_turnover || 0).toLocaleString()}
-                                        </span>
-                                    </div>
-                                </td>
-
-                                <td style={{ textAlign: 'center' }}>
                                     <span className="status-badge" style={{ background: '#eef2ff', color: '#4f46e5', fontWeight: 700, fontSize: '11px', margin: '0 auto' }}>
                                         {vendor.tier_name || 'N/A'}
                                     </span>
@@ -299,6 +314,20 @@ const VendorList = ({ onEdit, onDelete, showToast, onTabChange, onStatsUpdate })
                                 <td style={{ textAlign: 'center' }}>
                                     <span className={`status-badge ${KYC_BADGE[vendor.kyc_status]?.cls || 'status-pending'}`} style={{ margin: '0 auto' }}>
                                         {KYC_BADGE[vendor.kyc_status]?.label || vendor.kyc_status}
+                                    </span>
+                                </td>
+
+                                <td style={{ textAlign: 'center' }}>
+                                    <span style={{ 
+                                        display: 'inline-flex', 
+                                        padding: '4px 10px', 
+                                        borderRadius: '12px', 
+                                        fontSize: '11px', 
+                                        fontWeight: 700,
+                                        backgroundColor: vendor.auto_approve_products === 1 ? '#dcfce7' : '#f1f5f9',
+                                        color: vendor.auto_approve_products === 1 ? '#15803d' : '#64748b'
+                                    }}>
+                                        {vendor.auto_approve_products === 1 ? 'Auto Approval' : 'Waiting for Approval'}
                                     </span>
                                 </td>
 
@@ -316,6 +345,8 @@ const VendorList = ({ onEdit, onDelete, showToast, onTabChange, onStatsUpdate })
                                             onDelete={() => onDelete?.(vendor)}
                                             onPermissions={() => onTabChange?.('kyc')}
                                             onToggleStatus={() => handleStatusToggle(vendor)}
+                                            onToggleAutoApprove={() => handleAutoApproveToggle(vendor)}
+                                            isAutoApprove={vendor.auto_approve_products === 1}
                                             isActive={vendor.status === 'Active'}
                                         />
                                     </div>

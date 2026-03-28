@@ -93,9 +93,14 @@ const updateKycStatusSchema = Joi.object({
   })
 });
 
+const autoApproveSchema = Joi.object({
+  auto_approve_products: Joi.number().valid(0, 1).required()
+});
+
 export { 
   createVendorSchema, 
   updateVendorSchema, 
   updateStatusSchema, 
-  updateKycStatusSchema 
+  updateKycStatusSchema,
+  autoApproveSchema
 };
