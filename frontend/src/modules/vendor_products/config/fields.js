@@ -1,267 +1,188 @@
 const productFields = {
 
-    /* =========================
-       1️⃣ BASIC INFORMATION
-    ========================== */
-    basicInfo: [
+  /* =========================
+     1️⃣ BASIC INFORMATION (PRODUCT TABLE)
+  ========================== */
+  basicInfo: [
+    {
+      name: "category_id",
+      label: "Category",
+      type: "select",
+      required: true,
+      options: []
+    },
+    {
+      name: "subcategory_id",
+      label: "Sub Category",
+      type: "select",
+      options: []
+    },
+    {
+      name: "name",
+      label: "Product Name",
+      type: "text",
+      required: true,
+      placeholder: "e.g. Wireless Smart Controller"
+    },
+    {
+      name: "brand_id",
+      label: "Brand Name",
+      type: "select",
+      options: []
+    },
+    {
+      name: "custom_brand",
+      label: "Custom Brand Name",
+      type: "text",
+      condition: { field: "brand_id", value: "Other" },
+      placeholder: "Enter new brand name"
+    },
+    {
+      name: "description",
+      label: "Description",
+      type: "textarea",
+      placeholder: "Product description"
+    },
+    {
+      name: "specification",
+      label: "Brief Specification",
+      type: "textarea",
+      required: true,
+      placeholder: "Key highlights (one per line)..."
+    }
+  ],
 
-        {
-            name: "category",
-            label: "Category",
-            type: "select",
-            required: true,
-            options: []
-        },
+  /* =========================
+     2️⃣ PRICING (VARIANT TABLE)
+  ========================== */
+  pricing: [
+    {
+      name: "mrp",
+      label: "MRP (Base Price)",
+      type: "number",
+      required: true,
+      placeholder: "0.00",
+      group: "variant"
+    },
+    {
+      name: "discount_value",
+      label: "Discount Value",
+      type: "number",
+      placeholder: "0",
+      group: "variant"
+    },
+    {
+      name: "sale_price",
+      label: "Selling Price",
+      type: "number",
+      placeholder: "0.00",
+      group: "variant"
+    }
+  ],
 
-        {
-            name: "subCategory",
-            label: "Sub Category",
-            type: "select",
-            options: []
-        },
-        {
-            name: "name",
-            label: "Product Name",
-            type: "text",
-            required: true,
-            placeholder: "e.g. Wireless Smart Controller"
-        },
+  /* =========================
+     4️⃣ VARIANT DETAILS (VARIANT TABLE)
+  ========================== */
+  variantDetails: [
+    {
+      name: "variant_name",
+      label: "Variant Name (Size)",
+      type: "text",
+      placeholder: "e.g. 1kg, XL",
+      group: "variant"
+    },
+    {
+      name: "unit",
+      label: "Unit",
+      type: "select",
+      options: ["kg", "gram", "liter", "ml", "piece", "box", "packet"],
+      group: "variant"
+    },
+    {
+      name: "color",
+      label: "Color",
+      type: "text",
+      placeholder: "e.g. Red, Blue",
+      group: "variant"
+    },
+    {
+      name: "sku",
+      label: "SKU (Internal Code)",
+      type: "text",
+      placeholder: "e.g. SKU-882910",
+      group: "variant"
+    }
+  ],
+  /* =========================
+     3️⃣ INVENTORY (VARIANT TABLE)
+  ========================== */
+  inventory: [
+    {
+      name: "stock",
+      label: "Current Stock",
+      type: "number",
+      required: true,
+      placeholder: "0",
+      group: "variant"
+    },
+    {
+      name: "min_order",
+      label: "Minimum Order Requirement",
+      type: "number",
+      required: true,
+      placeholder: "1",
+      group: "variant"
+    },
+    {
+      name: "low_stock_alert",
+      label: "Low Stock Alert",
+      type: "number",
+      placeholder: "10",
+      group: "variant"
+    }
+  ],
 
+  /* =========================
+     5️⃣ MANUFACTURING DETAILS (PRODUCT TABLE)
+  ========================== */
+  manufacturing: [
+    {
+      name: "manufacture_date",
+      label: "Manufacturing Date",
+      type: "date"
+    },
+    {
+      name: "expiry_date",
+      label: "Expiry Date",
+      type: "date"
+    },
+    {
+      name: "country_of_origin",
+      label: "Made In",
+      type: "text",
+      placeholder: "e.g. India"
+    }
+  ],
 
-
-
-
-
-        {
-            name: "brand",
-            label: "Brand Name",
-            type: "select",
-            options: []
-        },
-
-        {
-            name: "customBrand",
-            label: "Custom Brand Name",
-            type: "text",
-            condition: { field: "brand", value: "Other" },
-            placeholder: "Enter new brand name"
-        },
-
-        {
-            name: "sku",
-            label: "SKU (Internal Code)",
-            type: "text",
-            placeholder: "e.g. SKU-882910"
-        },
-
-        {
-            name: "specification",
-            label: "Brief Specification",
-            type: "textarea",
-            required: true,
-            placeholder: "Key highlights (one per line)..."
-        },
-    ],
-
-    /* =========================
-       2️⃣ PRICING
-    ========================== */
-    pricing: [
-        {
-            name: "price",
-            label: "MRP (Base Price)",
-            type: "number",
-            required: true,
-            placeholder: "0.00"
-        },
-
-
-        // {
-        //     name: "discountType",
-        //     label: "Discount Type",
-        //     type: "select",
-        //     options: ["None", "Percentage", "Flat"]
-        // },
-
-        {
-            name: "discountValue",
-            label: "Discount Value",
-            type: "number",
-            placeholder: "0"
-        },
-
-        {
-            name: "salePrice",
-            label: "Selling Price",
-            type: "number",
-            autoCalculate: true,
-            placeholder: "0.00"
-        },
-
-        // {
-        //   name: "gst",
-        //   label: "GST (%)",
-        //   type: "number",
-        //   placeholder: "e.g. 18"
-        // },
-
-    ],
-
-    /* =========================
-       3️⃣ INVENTORY
-    ========================== */
-    inventory: [
-        {
-            name: "stock",
-            label: "Current Stock",
-            type: "number",
-            required: true,
-            placeholder: "0"
-        },
-
-        {
-            name: "minOrder",
-            label: "Minimum Order Requirement",
-            type: "number",
-            required: true,
-            placeholder: "1"
-        },
-
-        {
-            name: "minStock",
-            label: "Low Stock Alert",
-            type: "number",
-            placeholder: "10"
-        }
-    ],
-
-    /* =========================
-       4️⃣ QUANTITY
-    ========================== */
-    //   quantity: [
-    //     {
-    //       name: "quantityValue",
-    //       label: "Quantity Value",
-    //       type: "number",
-    //       placeholder: "e.g. 500"
-    //     },
-    //     {
-    //       name: "unit",
-    //       label: "Unit",
-    //       type: "select",
-    //       options: ["kg", "gram", "liter", "ml", "piece", "box", "packet"]
-    //     }
-    //   ],
-
-    /* =========================
-       7️⃣ SPECIFICATIONS
-    ========================== */
-    specifications: [
-
-        {
-            name: "unit",
-            label: "Unit",
-            type: "select",
-            options: ["kg", "gram", "liter", "ml", "piece", "box", "packet"]
-        },
-        {
-            name: "size",
-            label: "Available Sizes",
-            type: "text",
-            placeholder: "Small, Medium, XL"
-        },
-
-        {
-            name: "colors",
-            label: "Available Colors",
-            type: "text",
-            placeholder: "Blue, Charcoal, White"
-        },
-
-        {
-            name: "specification",
-            label: "Brief Specification",
-            type: "textarea",
-            placeholder: "Key highlights (one per line)..."
-        },
-
-    ],
-
-    /* =========================
-       5️⃣ MANUFACTURING DETAILS
-    ========================== */
-    manufacturing: [
-        {
-            name: "manufactureDate",
-            label: "Manufacturing Date",
-            type: "date"
-        },
-        {
-            name: "expiryDate",
-            label: "Expiry Date",
-            type: "date"
-        },
-        {
-            name: "countryOfOrigin",
-            label: "Country of Origin",
-            type: "text",
-            placeholder: "e.g. India"
-        }
-    ],
-
-    /* =========================
-       6️⃣ RETURN POLICY
-    ========================== */
-    returnPolicy: [
-        {
-            name: "returnAllowed",
-            label: "Return Applicable",
-            type: "checkbox"
-        },
-        {
-            name: "returnDays",
-            label: "Return Days",
-            type: "number",
-            condition: { field: "returnAllowed", value: true },
-            placeholder: "e.g. 7"
-        }
-    ],
-
-
-
-    /* =========================
-       8️⃣ VISIBILITY & STATUS
-    ========================== */
-    //   visibility: [
-
-
-    //     {
-    //       name: "isFeatured",
-    //       label: "Mark as Featured Product",
-    //       type: "checkbox"
-    //     },
-    //   ],
-
-    /* =========================
-       9️⃣ SEO
-    ========================== */
-    //   seo: [
-    //     {
-    //       name: "metaTitle",
-    //       label: "Meta Title",
-    //       type: "text"
-    //     },
-    //     {
-    //       name: "metaDescription",
-    //       label: "Meta Description",
-    //       type: "textarea"
-    //     },
-    //     {
-    //       name: "slug",
-    //       label: "Product Slug",
-    //       type: "text"
-    //     }
-    //   ]
+  /* =========================
+     6️⃣ RETURN POLICY (PRODUCT TABLE)
+  ========================== */
+  returnPolicy: [
+    {
+      name: "return_allowed",
+      label: "Return Applicable",
+      type: "checkbox"
+    },
+    {
+      name: "return_days",
+      label: "Return Days",
+      type: "number",
+      condition: { field: "return_allowed", value: true },
+      placeholder: "e.g. 7"
+    }
+  ]
 };
 
 export default productFields;
+
+
