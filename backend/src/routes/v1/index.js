@@ -87,4 +87,9 @@ import vendorStaffRoutes from '../../modules/vendor-staff/vendor-staff.routes.js
 router.use("/vendor-staff", vendorStaffRoutes);
 
 
+import adminProductsRoutes from '../../modules/admin_products/admin_products.routes.js';
+
+router.use("/admin-products", adminProductsRoutes);
+
+
 export default router;

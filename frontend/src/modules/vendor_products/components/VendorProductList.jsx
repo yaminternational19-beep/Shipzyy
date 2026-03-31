@@ -242,9 +242,22 @@ const VendorProductList = ({
                                 </td>
 
                                 <td style={{ textAlign: 'center' }}>
-                                    <span className={`status-badge ${approval.class}`}>
-                                        {approval.label}
-                                    </span>
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                                        <span className={`status-badge ${approval.class}`}>
+                                            {approval.label}
+                                        </span>
+                                        {product.rejectionReason && (
+                                            <div style={{ 
+                                                fontSize: '0.65rem', 
+                                                color: '#ef4444', 
+                                                fontWeight: 600, 
+                                                maxWidth: '120px',
+                                                lineHeight: '1.2'
+                                            }}>
+                                                {product.rejectionReason}
+                                            </div>
+                                        )}
+                                    </div>
                                 </td>
 
                                 <td>

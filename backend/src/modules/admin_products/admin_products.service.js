@@ -1,0 +1,303 @@
+import db from "../../config/db.js";
+import s3Service from "../../services/s3Service.js";
+import { getPagination, getPaginationMeta } from "../../utils/pagination.js";
+
+
+const getProducts = async (queryParams) => {
+    const { page, limit, skip } = getPagination(queryParams);
+
+    let where = [];
+    let values = [];
+
+    if (queryParams.vendorId) {
+        where.push("p.vendor_id = ?");
+        values.push(queryParams.vendorId);
+    }
+
+    if (queryParams.categoryId) {
+        where.push("p.category_id = ?");
+        values.push(queryParams.categoryId);
+    }
+
+    if (queryParams.subCategoryId) {
+        where.push("p.subcategory_id = ?");
+        values.push(queryParams.subCategoryId);
+    }
+
+    if (queryParams.brandId) {
+        where.push("p.brand_id = ?");
+        values.push(queryParams.brandId);
+    }
+
+    if (queryParams.status) {
+        where.push("p.approval_status = ?");
+        values.push(queryParams.status);
+    }
+
+    if (queryParams.search) {
+        where.push("(p.name LIKE ? OR v.business_name LIKE ?)");
+        values.push(`%${queryParams.search}%`, `%${queryParams.search}%`);
+    }
+
+    const whereClause = where.length ? `WHERE ${where.join(" AND ")}` : "";
+
+    const [countResult] = await db.query(
+        `SELECT COUNT(*) as total FROM products p ${whereClause}`,
+        values
+    );
+
+    const totalRecords = countResult[0].total;
+
+    const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        const day = date.getDate();
+        const month = date.getMonth() + 1;
+        const year = date.getFullYear();
+        return `${day}-${month}-${year}`;
+    };
+
+    const [rows] = await db.query(
+`SELECT 
+    p.id,
+    p.name,
+    p.slug,
+    p.custom_brand,
+    p.created_at,
+    p.approved_at,
+    p.approval_status,
+    p.rejection_reason,
+    p.rejected_at,
+
+    c.name AS categoryName,
+    sc.name AS subCategoryName,
+    b.name AS brandName,
+    
+
+    v.business_name AS BusinessName,
+    v.owner_name AS vendorName,
+    v.email AS vendorEmail,
+    v.country_code AS vendorCountryCode,
+    v.mobile AS vendorMobile,
+
+    pv.mrp,
+    pv.sale_price,
+    pv.stock,
+
+    pi.image_url AS primaryImage
+
+FROM products p
+
+LEFT JOIN categories c ON p.category_id = c.id
+LEFT JOIN subcategories sc ON p.subcategory_id = sc.id
+LEFT JOIN brands b ON p.brand_id = b.id
+LEFT JOIN vendors v ON p.vendor_id = v.id
+
+LEFT JOIN (
+    SELECT product_id,
+           MAX(mrp) as mrp,
+           MAX(sale_price) as sale_price,
+           SUM(stock) as stock
+    FROM product_variants
+    GROUP BY product_id
+) pv ON pv.product_id = p.id
+
+LEFT JOIN product_images pi 
+    ON pi.product_id = p.id AND pi.is_primary = 1
+
+${whereClause}
+ORDER BY p.created_at DESC
+LIMIT ? OFFSET ?`,
+[...values, limit, skip]
+);
+
+    const records = rows.map(product => ({
+    ...product,
+    created_at: formatDate(product.created_at),
+    approved_at: product.approved_at ? formatDate(product.approved_at) : "-",
+    rejected_at: product.rejected_at ? formatDate(product.rejected_at) : "-"    
+}));
+
+    const pagination = getPaginationMeta(page, limit, totalRecords);
+
+    const [stats] = await db.query(
+        `SELECT
+            COUNT(*) as totalCount,
+            SUM(CASE WHEN approval_status = 'PENDING' THEN 1 ELSE 0 END) as pendingCount,
+            SUM(CASE WHEN approval_status = 'APPROVED' THEN 1 ELSE 0 END) as approvedCount,
+            SUM(CASE WHEN approval_status = 'REJECTED' THEN 1 ELSE 0 END) as rejectedCount
+        FROM products p
+        ${whereClause}`,
+        values
+    );
+
+    const statsData = {
+        totalCount: stats[0].totalCount,
+        pendingCount: stats[0].pendingCount,
+        approvedCount: stats[0].approvedCount,
+        rejectedCount: stats[0].rejectedCount
+    }
+
+    return { 
+        stats: statsData,
+        records,
+        pagination,
+    };
+};
+
+
+const getProductById = async (productId) => {
+
+    const formatDate = (dateString) => {
+        if (!dateString) return "-";
+        const date = new Date(dateString);
+        const day = date.getDate();
+        const month = date.getMonth() + 1;
+        const year = date.getFullYear();
+        return `${day}-${month}-${year}`;
+    };
+
+    const [rows] = await db.query(`
+        SELECT 
+            p.id, p.vendor_id, p.category_id, p.subcategory_id, p.brand_id, p.custom_brand, 
+            p.name, p.slug, p.description, p.specification, p.country_of_origin,
+            DATE_FORMAT(p.manufacture_date, '%Y-%m-%d') as manufacture_date,
+            DATE_FORMAT(p.expiry_date, '%Y-%m-%d') as expiry_date,
+            p.return_allowed, p.return_days, p.approval_status, p.rejection_reason, p.approved_by, p.approved_at,
+            p.is_live, p.is_active, p.view_count, p.sold_count,
+            p.created_at, p.updated_at,
+
+            v.business_name as vendor_name,
+            v.owner_name as vendor_owner_name,
+            v.email as vendor_email,
+            v.country_code as vendor_country_code,
+            v.mobile as vendor_mobile,
+
+            c.name as category_name,
+            sc.name as subcategory_name,
+            COALESCE(b.name, p.custom_brand) as brand_name
+
+        FROM products p
+        LEFT JOIN vendors v ON p.vendor_id = v.id
+        LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN subcategories sc ON p.subcategory_id = sc.id
+        LEFT JOIN brands b ON p.brand_id = b.id
+        WHERE p.id = ?
+    `, [productId]);
+
+    if (rows.length === 0) {
+        throw new Error("Product not found");
+    }
+
+    const product = rows[0];
+
+    // All images
+    const [images] = await db.query(`
+        SELECT id, image_url, is_primary
+        FROM product_images
+        WHERE product_id = ?
+        ORDER BY sort_order ASC
+    `, [productId]);
+
+    // Variant summary
+    const [variantSummary] = await db.query(`
+        SELECT 
+            SUM(stock) as total_stock, 
+            MIN(sale_price) as min_price, 
+            MIN(mrp) as min_mrp,
+            MAX(discount_value) as max_discount,
+            MAX(discount_type) as discount_type,
+            MAX(low_stock_alert) as low_stock_alert
+        FROM product_variants 
+        WHERE product_id = ?
+    `, [productId]);
+
+    // All variants
+    const [variants] = await db.query(`
+        SELECT id, sku, variant_name, mrp, sale_price, stock, unit, color
+        FROM product_variants
+        WHERE product_id = ?
+    `, [productId]);
+
+    return {
+        ...product,
+        created_at: formatDate(product.created_at),
+        approved_at: formatDate(product.approved_at),
+        updated_at: formatDate(product.updated_at),
+        images,
+        primary_image: images.length ? images[0].image_url : null,
+        inventory_summary: variantSummary[0],
+        variants
+    };
+};
+
+
+const updateProductStatus = async (productId, status, reason, adminId) => {
+    if (status === 'REJECTED' && !reason) {
+        throw new Error("Rejection reason is required when status is REJECTED");
+    }
+
+    const connection = await db.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        const [existing] = await connection.query(
+            `SELECT id FROM products WHERE id = ?`,
+            [productId]
+        );
+
+        if (existing.length === 0) {
+            throw new Error("Product not found");
+        }
+
+        const now = new Date();
+        const isApproved = status === 'APPROVED';
+        const isRejected = status === 'REJECTED';
+
+        const updateQuery = `
+            UPDATE products 
+            SET 
+                approval_status = ?,
+                rejection_reason = ?,
+                approved_by = ?,
+                approved_at = ?,
+                rejected_by = ?,
+                rejected_at = ?,
+                is_live = ?,
+                is_active = ?
+            WHERE id = ?
+        `;
+
+        const updateValues = [
+            status,
+            isRejected ? reason : null,
+            isApproved ? adminId : null,
+            isApproved ? now : null,
+            isRejected ? adminId : null,
+            isRejected ? now : null,
+            isApproved ? 1 : 0,
+            isApproved ? 1 : 0,
+            productId
+        ];
+
+        await connection.query(updateQuery, updateValues);
+
+        await connection.commit();
+
+        return { 
+            id: productId, 
+            status: status 
+        };
+
+    } catch (error) {
+        await connection.rollback();
+        throw error;
+    } finally {
+        connection.release();
+    }
+};
+
+export default {
+    getProducts,
+    getProductById,
+    updateProductStatus
+}

@@ -2,7 +2,7 @@ import React from 'react';
 import { Search, X, Filter } from 'lucide-react';
 import ExportActions from '../../../components/common/ExportActions';
 
-const VendorProductFilters = ({ filters, setFilters, categories, brands, onClear, selectedCount, onExport }) => {
+const VendorProductFilters = ({ filters, setFilters, categories, brands, onClear, selectedCount, onExport, onDownload }) => {
 
     const handleChange = (key, value) => {
         setFilters(prev => ({ ...prev, [key]: value }));
@@ -87,7 +87,7 @@ const VendorProductFilters = ({ filters, setFilters, categories, brands, onClear
             </div>
 
             <div className="filter-actions" style={{ marginLeft: 'auto' }}>
-                <ExportActions selectedCount={selectedCount} onExport={onExport} />
+                <ExportActions selectedCount={selectedCount} onExport={onExport} onDownload={onDownload} />
             </div>
         </div>
     );

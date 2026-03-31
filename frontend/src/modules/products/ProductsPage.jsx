@@ -1,45 +1,23 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import ProductStats from './components/ProductStats';
 import ProductFilters from './components/ProductFilters';
 import ProductList from './components/ProductList';
+import ProductView from './components/ProductView';
 import Toast from '../../components/common/Toast/Toast';
+import { getProductsApi, updateProductStatusApi } from '../../api/admin_products.api';
+import { exportProductsToPDF, exportProductsToExcel } from './services/export.service';
 import './Products.css';
-
-// Mock Data Generation with better demo images
-const MOCK_PRODUCTS = Array.from({ length: 50 }, (_, i) => ({
-    id: `PROD-${1000 + i}`,
-    itemId: `ITEM-${1000 + i}`,
-    name: i % 3 === 0 ? `Premium Wireless Headphones ${i}` : i % 3 === 1 ? `Organic Green Tea ${i}` : `Smart Fitness Watch ${i}`,
-    productFullName: i % 3 === 0 ? `Premium Wireless Noise Cancelling Headphones v${i}` : i % 3 === 1 ? `100% Organic Himalayan Green Tea ${i}` : `Smart Fitness Track Pro Series ${i}`,
-    brand: i % 4 === 0 ? 'Sony' : i % 4 === 1 ? 'Organic India' : i % 4 === 2 ? 'Noise' : 'Samsung',
-    vendor: `VEN-${100 + (i % 5)}`,
-    vendorName: i % 5 === 0 ? 'John Doe' : 'Jane Smith',
-    vendorCompanyName: i % 5 === 0 ? 'TechSolution Ltd' : i % 5 === 1 ? 'GroceryMart' : 'FashionHub Inc',
-    vendorPhone: i % 5 === 0 ? '+91 98765 43210' : '+91 87654 32109',
-    vendorEmail: i % 5 === 0 ? 'john.doe@techsolution.com' : 'jane.smith@grocerymart.in',
-    category: i % 3 === 0 ? 'Electronics' : i % 3 === 1 ? 'Groceries' : 'Fashion',
-    subCategory: i % 3 === 0 ? (i % 2 === 0 ? 'Mobile' : 'Laptop') : (i % 3 === 1 ? 'Drinks' : 'Shoes'),
-    MRP: (i + 1) * 150 + 99,
-    // Using a more reliable image source for demo
-    image: `https://images.unsplash.com/photo-${[
-        '1505740420928-5e560c06d30e', // Headphones
-        '1592318763191-3485607062ec', // Tea
-        '1523275335684-37898b6baf30', // Watch
-        '1542291026-7eec264c27ff', // Shoes
-        '1526170375885-4d8ec6477614', // Camera
-        '1503602642637-0cf0299b66ba'  // Product
-    ][i % 6]}?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80`,
-    isApproved: i % 10 < 7, // 70% approved
-    rejectionReason: i % 10 === 8 ? 'Incorrect image format provided' : i % 10 === 9 ? 'Price exceeds range' : null,
-    raisedDate: new Date(Date.now() - 86400000 * (i + 5)).toISOString().split('T')[0],
-    actionDate: (i % 10 < 8 || i % 10 >= 8) ? new Date(Date.now() - 86400000 * i).toISOString().split('T')[0] : null,
-    createdAt: new Date(Date.now() - Math.floor(Math.random() * 10000000000)).toISOString()
-}));
 
 const ProductsPage = () => {
     // State
     const [products, setProducts] = useState([]);
+    const [stats, setStats] = useState({
+        total: 0,
+        active: 0,
+        pending: 0,
+        rejected: 0
+    });
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({
         search: '',
@@ -57,56 +35,94 @@ const ProductsPage = () => {
     });
     const [selectedRows, setSelectedRows] = useState([]);
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+    const [viewingProductId, setViewingProductId] = useState(null);
+    const [debouncedSearch, setDebouncedSearch] = useState('');
 
-    // Simulate Fetching Data
+    // Debounce search effect
     useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(filters.search);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [filters.search]);
+
+    // Fetch Data from API
+    const fetchProducts = useCallback(async () => {
         setLoading(true);
-        setTimeout(() => {
-            setProducts(MOCK_PRODUCTS);
+        try {
+            const statusMap = {
+                'true': 'APPROVED',
+                'false': 'PENDING',
+                'rejected': 'REJECTED'
+            };
+
+            const params = {
+                page: pagination.page,
+                limit: pagination.limit,
+                search: debouncedSearch,
+                vendor: filters.vendor,
+                brand: filters.brand,
+                category: filters.category,
+                subCategory: filters.subCategory,
+                status: statusMap[filters.isApproved] || filters.isApproved
+            };
+
+            const response = await getProductsApi(params);
+            if (response.data.success) {
+                const { records, stats: apiStats, pagination: apiPagination } = response.data.data;
+                
+                // Map API records to component format
+                const mappedProducts = records.map(item => ({
+                    id: item.id,
+                    itemId: item.slug,
+                    name: item.name,
+                    brand: item.brandName || item.custom_brand || 'N/A',
+                    vendorCompanyName: item.BusinessName,
+                    vendorName: item.vendorName,
+                    vendorPhone: `${item.vendorCountryCode} ${item.vendorMobile}`,
+                    vendorEmail: item.vendorEmail,
+                    category: item.categoryName,
+                    subCategory: item.subCategoryName,
+                    MRP: parseFloat(item.mrp),
+                    Sale: parseFloat(item.sale_price),
+                    stockQuantity: parseInt(item.stock),
+                    image: item.primaryImage,
+                    isApproved: item.approval_status === 'APPROVED',
+                    rejectionReason: item.rejection_reason,
+                    rejectedAt: item.rejected_at,
+                    raisedDate: item.created_at,
+                    actionDate: (item.approved_at && item.approved_at !== '-') ? item.approved_at : (item.rejected_at && item.rejected_at !== '-') ? item.rejected_at : null
+                }));
+
+                setProducts(mappedProducts);
+                setStats({
+                    total: apiStats.totalCount,
+                    active: parseInt(apiStats.approvedCount),
+                    pending: parseInt(apiStats.pendingCount),
+                    rejected: parseInt(apiStats.rejectedCount)
+                });
+                setPagination(prev => ({
+                    ...prev,
+                    total: apiPagination.totalRecords,
+                    totalPages: apiPagination.totalPages
+                }));
+            }
+        } catch (error) {
+            console.error('Error fetching products:', error);
+            showToast('Failed to fetch products', 'error');
+        } finally {
             setLoading(false);
-        }, 800);
-    }, []);
-
-    // Filtering Logic
-    const filteredProducts = useMemo(() => {
-        return products.filter(product => {
-            const searchMatch = !filters.search ||
-                product.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-                product.brand.toLowerCase().includes(filters.search.toLowerCase()) ||
-                product.vendorCompanyName.toLowerCase().includes(filters.search.toLowerCase());
-
-            const vendorMatch = !filters.vendor || product.vendorCompanyName.includes(filters.vendor);
-            const brandMatch = !filters.brand || product.brand === filters.brand;
-            const categoryMatch = !filters.category || product.category === filters.category;
-            const subCategoryMatch = !filters.subCategory || product.subCategory === filters.subCategory;
-
-            const statusMatch = filters.isApproved === '' ||
-                (filters.isApproved === 'true' && product.isApproved) ||
-                (filters.isApproved === 'false' && !product.isApproved && !product.rejectionReason) ||
-                (filters.isApproved === 'rejected' && product.rejectionReason);
-
-            return searchMatch && vendorMatch && brandMatch && categoryMatch && subCategoryMatch && statusMatch;
-        });
-    }, [products, filters]);
-
-    // Pagination Logic
-    const paginatedData = useMemo(() => {
-        const start = (pagination.page - 1) * pagination.limit;
-        const end = start + pagination.limit;
-        return filteredProducts.slice(start, end);
-    }, [filteredProducts, pagination.page, pagination.limit]);
-
-    // Update Pagination Stats
-    useEffect(() => {
-        setPagination(prev => ({
-            ...prev,
-            total: filteredProducts.length,
-            totalPages: Math.ceil(filteredProducts.length / prev.limit)
-        }));
-        if (pagination.page > Math.ceil(filteredProducts.length / pagination.limit) && filteredProducts.length > 0) {
-            setPagination(prev => ({ ...prev, page: 1 }));
         }
-    }, [filteredProducts.length, pagination.limit]);
+    }, [pagination.page, pagination.limit, debouncedSearch, filters.vendor, filters.brand, filters.category, filters.subCategory, filters.isApproved]);
+
+    useEffect(() => {
+        fetchProducts();
+    }, [fetchProducts]);
+
+    const handleFilterUpdate = (updateFn) => {
+        setFilters(updateFn);
+        setPagination(prev => ({ ...prev, page: 1 }));
+    };
 
 
     // Handlers
@@ -115,21 +131,33 @@ const ProductsPage = () => {
         setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
     };
 
-    const handleAction = (action, product) => {
+    const handleAction = async (action, product) => {
+        if (action === 'view' || action === 'view-details') {
+            setViewingProductId(product.id);
+            return;
+        }
+
         if (action === 'approve') {
-            const updatedProducts = products.map(p =>
-                p.id === product.id ? { ...p, isApproved: true, rejectionReason: null, actionDate: new Date().toISOString().split('T')[0] } : p
-            );
-            setProducts(updatedProducts);
-            showToast(`Product "${product.name}" approved successfully!`);
+            try {
+                await updateProductStatusApi(product.id, { status: 'APPROVED' });
+                showToast(`Product "${product.name}" approved successfully!`);
+                fetchProducts();
+            } catch (err) {
+                showToast(err.response?.data?.message || 'Failed to approve product', 'error');
+            }
         } else if (action === 'reject') {
             const reason = prompt(`Please enter a rejection reason for "${product.name}":`);
             if (reason) {
-                const updatedProducts = products.map(p =>
-                    p.id === product.id ? { ...p, isApproved: false, rejectionReason: reason, actionDate: new Date().toISOString().split('T')[0] } : p
-                );
-                setProducts(updatedProducts);
-                showToast(`Product "${product.name}" rejected.`, 'error');
+                try {
+                    await updateProductStatusApi(product.id, { 
+                        status: 'REJECTED', 
+                        rejection_reason: reason 
+                    });
+                    showToast(`Product "${product.name}" rejected successfully.`, 'error');
+                    fetchProducts();
+                } catch (err) {
+                    showToast(err.response?.data?.message || 'Failed to reject product', 'error');
+                }
             }
         }
     };
@@ -144,26 +172,18 @@ const ProductsPage = () => {
 
     const handleSelectAll = (checked) => {
         if (checked) {
-            setSelectedRows(paginatedData.map(p => p.id));
+            setSelectedRows(products.map(p => p.id));
         } else {
             setSelectedRows([]);
         }
     };
 
     const handleExport = (format) => {
-        const dataToExport = selectedRows.length > 0
-            ? products.filter(p => selectedRows.includes(p.id))
-            : filteredProducts;
-
-        showToast(`Exporting ${dataToExport.length} items to ${format.toUpperCase()}...`);
-    };
-
-    // Calculate Stats
-    const stats = {
-        total: products.length,
-        active: products.filter(p => p.isApproved).length,
-        pending: products.filter(p => !p.isApproved && !p.rejectionReason).length,
-        outOfStock: products.filter(p => p.rejectionReason).length
+        if (format === 'pdf') {
+            exportProductsToPDF(products);
+        } else if (format === 'excel') {
+            exportProductsToExcel(products);
+        }
     };
 
     return (
@@ -185,10 +205,11 @@ const ProductsPage = () => {
             <div className="products-table-section">
                 <ProductFilters
                     filters={filters}
-                    setFilters={setFilters}
+                    setFilters={handleFilterUpdate}
                     selectedCount={selectedRows.length}
-                    onExport={handleExport}
-                    onClear={() => setFilters({
+                    onExport={showToast}
+                    onDownload={handleExport}
+                    onClear={() => handleFilterUpdate({
                         search: '', vendor: '', brand: '', category: '', subCategory: '', isApproved: ''
                     })}
                 />
@@ -200,7 +221,7 @@ const ProductsPage = () => {
                     </div>
                 ) : (
                     <ProductList
-                        products={paginatedData}
+                        products={products}
                         onAction={handleAction}
                         selectedRows={selectedRows}
                         onSelectRow={handleSelectRow}
@@ -234,6 +255,13 @@ const ProductsPage = () => {
                     </div>
                 </div>
             </div>
+
+            {viewingProductId && (
+                <ProductView 
+                    productId={viewingProductId} 
+                    onClose={() => setViewingProductId(null)} 
+                />
+            )}
 
             {toast.show && (
                 <Toast

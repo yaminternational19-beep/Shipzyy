@@ -325,6 +325,8 @@ const TABLES = [
                 rejection_reason TEXT,
                 approved_by BIGINT NULL,
                 approved_at TIMESTAMP NULL,
+                rejected_at DATETIME NULL,
+                rejected_by INT NULL;
 
                 is_live TINYINT(1) DEFAULT 0,
                 is_active TINYINT(1) DEFAULT 1,

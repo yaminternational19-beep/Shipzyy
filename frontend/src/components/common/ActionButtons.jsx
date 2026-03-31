@@ -1,7 +1,7 @@
 import React from 'react';
-import { Eye, ShieldCheck, Edit, Trash2, Power, Zap, ZapOff, Package } from 'lucide-react';
+import { Eye, ShieldCheck, Edit3, Trash2, Power, Zap, ZapOff, Package, CheckCircle, XCircle } from 'lucide-react';
 
-const ActionButtons = ({ onView, onPermissions, onEdit, onDelete, onStock, onToggleStatus, onToggleAutoApprove, isAutoApprove, isActive, type }) => {
+const ActionButtons = ({ onView, onPermissions, onEdit, onDelete, onStock, onToggleStatus, onToggleAutoApprove, onApprove, onReject, isAutoApprove, isActive, type }) => {
     const isCustomer = type === 'customer';
 
     return (
@@ -13,7 +13,7 @@ const ActionButtons = ({ onView, onPermissions, onEdit, onDelete, onStock, onTog
                     type="button"
                     title={isCustomer ? "View Profile" : "View Dashboard"}
                 >
-                    <Eye size={18} strokeWidth={2} />
+                    <Eye size={16} strokeWidth={2} />
                 </button>
             )}
 
@@ -71,7 +71,29 @@ const ActionButtons = ({ onView, onPermissions, onEdit, onDelete, onStock, onTog
                     type="button"
                     title="Edit"
                 >
-                    <Edit size={18} strokeWidth={2} />
+                    <Edit3 size={18} strokeWidth={2} />
+                </button>
+            )}
+
+            {onApprove && (
+                <button
+                    className="action-btn action-permissions"
+                    onClick={onApprove}
+                    type="button"
+                    title="Approve"
+                >
+                    <CheckCircle size={18} strokeWidth={2} />
+                </button>
+            )}
+
+            {onReject && (
+                <button
+                    className="action-btn action-delete"
+                    onClick={onReject}
+                    type="button"
+                    title="Reject"
+                >
+                    <XCircle size={18} strokeWidth={2} />
                 </button>
             )}
 

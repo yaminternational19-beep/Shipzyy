@@ -6,7 +6,8 @@
                 vendor_code VARCHAR(20) UNIQUE,
                 -- Basic Info
                 business_name VARCHAR(150) NOT NULL,
-                owner_name VARCHAR(150),
+                
+                 VARCHAR(150),
                 email VARCHAR(150) UNIQUE,
                 password VARCHAR(255),
                 country_code VARCHAR(10),

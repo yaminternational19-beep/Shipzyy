@@ -7,7 +7,7 @@ const ProductStats = ({ stats }) => {
         total: 0,
         active: 0,
         pending: 0,
-        outOfStock: 0
+        rejected: 0
     };
 
     return (
@@ -38,7 +38,7 @@ const ProductStats = ({ stats }) => {
                 </div>
                 <div className="stat-p-info">
                     <h3>{data.pending}</h3>
-                    <p>Pending Approval</p>
+                    <p>Approval Pending</p>
                 </div>
             </div>
 
@@ -47,8 +47,8 @@ const ProductStats = ({ stats }) => {
                     <AlertCircle size={24} />
                 </div>
                 <div className="stat-p-info">
-                    <h3>{data.outOfStock}</h3>
-                    <p>Out of Stock / Rejected</p>
+                    <h3>{data.rejected}</h3>
+                    <p>Rejected</p>
                 </div>
             </div>
         </div>

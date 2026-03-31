@@ -8,6 +8,7 @@ import Toast from '../../components/common/Toast/Toast';
 import { Plus, ChevronLeft, ChevronRight, ArrowLeft, Trash2, Download, FileSpreadsheet } from 'lucide-react';
 import './VendorProducts.css';
 import { fetchProducts, toggleProductLiveAPI, updateStockAPI, deleteProductAPI } from '../../api/product.api';
+import { exportVendorProductsToPDF, exportVendorProductsToExcel } from './services/export.service';
 import * as XLSX from 'xlsx';
 
 const VendorProductsPage = () => {
@@ -182,8 +183,12 @@ const VendorProductsPage = () => {
         }
     };
 
-    const handleExport = (message, type) => {
-        showToast(message, type);
+    const handleExport = (format) => {
+        if (format === 'pdf') {
+            exportVendorProductsToPDF(products);
+        } else if (format === 'excel') {
+            exportVendorProductsToExcel(products);
+        }
     };
 
     const handleToggleStatus = async (id) => {
@@ -354,7 +359,8 @@ const VendorProductsPage = () => {
                             categories={filterCategories}
                             brands={filterBrands}
                             selectedCount={selectedRows.length}
-                            onExport={handleExport}
+                            onExport={showToast}
+                            onDownload={handleExport}
                             onClear={() => setFilters({
                                 search: '', brand: '', category: '', subCategory: '', stock: '', status: ''
                             })}

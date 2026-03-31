@@ -3,7 +3,7 @@ import { Search, X } from 'lucide-react';
 import ActionButton from '../../../components/common/ActionButton/ActionButton';
 import ExportActions from '../../../components/common/ExportActions';
 
-const ProductFilters = ({ filters, setFilters, onClear, selectedCount = 0, onExport }) => {
+const ProductFilters = ({ filters, setFilters, onClear, selectedCount = 0, onExport, onDownload }) => {
 
     const handleChange = (key, value) => {
         setFilters(prev => ({ ...prev, [key]: value }));
@@ -26,7 +26,7 @@ const ProductFilters = ({ filters, setFilters, onClear, selectedCount = 0, onExp
                         <Search className="search-icon" size={16} />
                         <input
                             type="text"
-                            placeholder="Search product, brand, vendor..."
+                            placeholder="Search product, brand..."
                             value={filters.search}
                             onChange={(e) => handleChange('search', e.target.value)}
                         />
@@ -38,11 +38,8 @@ const ProductFilters = ({ filters, setFilters, onClear, selectedCount = 0, onExp
                         value={filters.vendor}
                         onChange={(e) => handleChange('vendor', e.target.value)}
                     >
-                        <option value="">All Vendors</option>
-                        <option value="TechSolution">TechSolution Ltd</option>
-                        <option value="FashionHub">FashionHub Inc</option>
-                        <option value="GroceryMart">GroceryMart</option>
-                        <option value="HomeStyle">HomeStyle Co</option>
+                        <option value="">All Companies</option>
+                        <option value="Testing Company">Testing Company</option>
                     </select>
 
                     {/* Category */}
@@ -53,9 +50,7 @@ const ProductFilters = ({ filters, setFilters, onClear, selectedCount = 0, onExp
                     >
                         <option value="">All Categories</option>
                         <option value="Electronics">Electronics</option>
-                        <option value="Fashion">Fashion</option>
-                        <option value="Groceries">Groceries</option>
-                        <option value="Home & Auto">Home & Auto</option>
+                        <option value="House">House</option>
                     </select>
 
                     {/* Sub Category */}
@@ -65,10 +60,7 @@ const ProductFilters = ({ filters, setFilters, onClear, selectedCount = 0, onExp
                         onChange={(e) => handleChange('subCategory', e.target.value)}
                     >
                         <option value="">All Sub Categories</option>
-                        <option value="Mobile">Mobile</option>
                         <option value="Laptop">Laptop</option>
-                        <option value="Shoes">Shoes</option>
-                        <option value="Kitchen">Kitchen</option>
                     </select>
 
                     {/* Brand */}
@@ -78,10 +70,8 @@ const ProductFilters = ({ filters, setFilters, onClear, selectedCount = 0, onExp
                         onChange={(e) => handleChange('brand', e.target.value)}
                     >
                         <option value="">All Brands</option>
-                        <option value="Sony">Sony</option>
-                        <option value="Organic India">Organic India</option>
-                        <option value="Noise">Noise</option>
-                        <option value="Samsung">Samsung</option>
+                        <option value="Apple">Apple</option>
+                        <option value="MyBrand">MyBrand</option>
                     </select>
 
                     {/* Status */}
@@ -91,8 +81,8 @@ const ProductFilters = ({ filters, setFilters, onClear, selectedCount = 0, onExp
                         onChange={(e) => handleChange('isApproved', e.target.value)}
                     >
                         <option value="">All Status</option>
-                        <option value="true">Approved</option>
                         <option value="false">Pending</option>
+                        <option value="true">Approved</option>
                         <option value="rejected">Rejected</option>
                     </select>
 
@@ -114,6 +104,7 @@ const ProductFilters = ({ filters, setFilters, onClear, selectedCount = 0, onExp
                 <ExportActions
                     selectedCount={selectedCount}
                     onExport={onExport}
+                    onDownload={onDownload}
                 />
             </div>
 

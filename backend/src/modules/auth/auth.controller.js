@@ -40,6 +40,21 @@ export const login = asyncHandler(async (req, res) => {
     );
   }
 
+  // After password verified
+// if (user.role === "VENDOR_OWNER") {
+//     if (vendor.kyc_status === "Pending") {
+//       throw new ApiError(403, "Your KYC is under review. Please wait for admin approval.");
+//     }
+
+//     if (vendor.kyc_status === "Rejected") {
+//       throw new ApiError(403, "Your KYC was rejected. Contact admin.");
+//     }
+
+//     if (vendor.kyc_status !== "Approved") {
+//       throw new ApiError(403, "Your account is not approved.");
+//     }
+//   }
+
   // generate OTP
   const otp = authService.generateOtp();
 

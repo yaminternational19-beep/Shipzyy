@@ -11,11 +11,13 @@ const ExportActions = ({ selectedCount, onExport, onDownload }) => {
             return;
         }
 
+        const msg = `Exporting ${selectedCount} selected data as ${type === 'pdf' ? 'PDF' : 'Excel'}...`;
+        onExport(msg, 'info');
+
         if (onDownload) {
             onDownload(type);
-        } else {
-            onExport(`Exporting ${selectedCount} selected data as ${type === 'pdf' ? 'PDF' : 'Excel'}...`, 'info');
         }
+        
         setIsOpen(false);
     };
 
