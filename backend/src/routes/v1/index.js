@@ -92,4 +92,26 @@ import adminProductsRoutes from '../../modules/admin_products/admin_products.rou
 router.use("/admin-products", adminProductsRoutes);
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* ===============================
+    CUSTOMERS AUTH ROUTES
+================================= */
+
+import customersAuthRoutes from '../../modules/customers/auth/customers.auth.routes.js';
+
+router.use("/customers", customersAuthRoutes);
+
+
 export default router;

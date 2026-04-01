@@ -63,22 +63,62 @@ const Sidebar = () => {
     return (
         <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
             <div className="sidebar-header">
-                {!isCollapsed && (
-                    <div className="sidebar-logo">
-                        <div className="logo-icon">
-                            <Truck size={20} />
-                        </div>
-                        <span className="logo-text">Shipzzy</span>
-                    </div>
-                )}
-                <button
-                    className="sidebar-toggle"
-                    onClick={() => setIsCollapsed(!isCollapsed)}
-                >
-                    {isCollapsed ? <Menu size={20} /> : <ChevronLeft size={20} />}
-                </button>
+    {!isCollapsed && (
+        <div
+            className="sidebar-logo"
+            onClick={() => navigate("/admin/dashboard")}
+            style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                padding: "12px",
+                cursor: "pointer"
+            }}
+        >
+            <div
+                style={{
+                    width: "44px",
+                    height: "44px",
+                    background: "#3d3e41",
+                    borderRadius: "15px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: "0 2px 6px rgba(0,0,0,0.08)"
+                }}
+            >
+                <img
+                    src="/logo.png"
+                    alt="Shipzzy Logo"
+                    style={{
+                        width: "26px",
+                        height: "26px",
+                        objectFit: "contain"
+                    }}
+                />
             </div>
 
+            <span
+                style={{
+                    fontSize: "19px",
+                    fontWeight: "600",
+                    color: "#071b46"
+                }}
+            >
+                Shipzzy
+            </span>
+        </div>
+    )}
+
+    <button
+        className="sidebar-toggle"
+        onClick={() => setIsCollapsed(!isCollapsed)}
+    >
+        {isCollapsed ? <Menu size={20} /> : <ChevronLeft size={20} />}
+    </button>
+</div>
+
+                
             <div className="sidebar-content">
                 {Object.keys(groupedMenu).map(groupKey => (
                     <div key={groupKey} className="sidebar-group">
