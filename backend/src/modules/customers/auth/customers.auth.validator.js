@@ -4,7 +4,7 @@ const authRequestSchema = Joi.object({
   country_code: Joi.string().required().messages({ "any.required": "country_code is required" }),
   mobile: Joi.string().min(8).max(15).required().messages({ "any.required": "mobile number is required" }),
   name: Joi.string().optional(),
-  email: Joi.string().email().required().messages({
+  email: Joi.string().email().optional().messages({
     "any.required": "email is required",
     "string.email": "Invalid email format"
   }),
