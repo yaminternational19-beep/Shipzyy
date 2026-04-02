@@ -1,15 +1,15 @@
 import Joi from "joi";
 
 const authRequestSchema = Joi.object({
-  country_code: Joi.string().required().messages({ "any.required": "Country code is required" }),
-  mobile: Joi.string().min(8).max(15).required().messages({ "any.required": "Mobile number is required" }),
+  country_code: Joi.string().required().messages({ "any.required": "country_code is required" }),
+  mobile: Joi.string().min(8).max(15).required().messages({ "any.required": "mobile number is required" }),
   name: Joi.string().optional(),
   email: Joi.string().email().required().messages({
-    "any.required": "Email is required",
+    "any.required": "email is required",
     "string.email": "Invalid email format"
   }),
-  device_id: Joi.string().required().messages({ "any.required": "Device ID is required" }),
-  player_id: Joi.string().required().messages({ "any.required": "Player ID is required" }),
+  device_id: Joi.string().required().messages({ "any.required": "device_id is required" }),
+  player_id: Joi.string().required().messages({ "any.required": "player_id is required" }),
   device_type: Joi.string().valid("android", "ios", "web").required().messages({
     "any.required": "device_type is required",
     "any.only": "device_type must be one of: android, ios, web"
@@ -19,41 +19,40 @@ const authRequestSchema = Joi.object({
 });
 
 const verifyOtpSchema = Joi.object({
-  token: Joi.string().required().messages({ "any.required": "Session token is required" }),
-  otp: Joi.string().length(6).pattern(/^\d{6}$/).required().messages({
-    "any.required": "OTP is required",
-    "string.length": "OTP must be exactly 6 digits",
-    "string.pattern.base": "OTP must contain digits only"
+  token: Joi.string().required().messages({ "any.required": "token is required" }),
+  otp: Joi.string().length(6).required().messages({ 
+    "any.required": "otp is required", 
+    "string.length": "otp must be 6 digits" 
   })
 });
 
 const resendOtpSchema = Joi.object({
-  token: Joi.string().required().messages({ "any.required": "Session token is required" })
+  token: Joi.string().required().messages({ "any.required": "token is required" })
 });
 
 const refreshSchema = Joi.object({
-  token: Joi.string().required().messages({ "any.required": "Refresh token is required" })
+  token: Joi.string().required().messages({ "any.required": "token is required" })
 });
 
-export const logoutSchema = Joi.object({
-  refreshToken: Joi.string().required().messages({
-    "string.empty": "Refresh token is required",
-    "any.required": "Refresh token is required"
-  }),
+const logoutSchema = Joi.object({
+  refreshToken: Joi.string().required().messages({ "any.required": "refreshToken is required" }),
   logoutAll: Joi.boolean().optional()
 });
 
 const socialLoginSchema = Joi.object({
-  provider: Joi.string().valid("google", "apple").required(),
-  provider_id: Joi.string().required(),
+  provider: Joi.string().valid("google", "apple").required().messages({ 
+    "any.required": "provider is required",
+    "any.only": "provider must be google or apple" 
+  }),
+  provider_id: Joi.string().required().messages({ "any.required": "provider_id is required" }),
   email: Joi.string().email().required().messages({
-    "any.required": "Social email is required",
+    "any.required": "email is required",
     "string.email": "Invalid email format"
   }),
   name: Joi.string().optional(),
   profile_image: Joi.string().optional(),
-  device_id: Joi.string().required(),
-  player_id: Joi.string().required(),
+  device_id: Joi.string().required().messages({ "any.required": "device_id is required" }),
+  player_id: Joi.string().required().messages({ "any.required": "player_id is required" }),
   device_type: Joi.string().valid("android", "ios", "web").required().messages({
     "any.required": "device_type is required",
     "any.only": "device_type must be one of: android, ios, web"
@@ -61,4 +60,4 @@ const socialLoginSchema = Joi.object({
   app_version: Joi.string().optional()
 });
 
-export { authRequestSchema, verifyOtpSchema, resendOtpSchema, refreshSchema, socialLoginSchema };
+export { authRequestSchema, verifyOtpSchema, resendOtpSchema, refreshSchema, logoutSchema, socialLoginSchema };
