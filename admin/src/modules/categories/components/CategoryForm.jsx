@@ -5,22 +5,31 @@ const CategoryForm = ({ initialData, onCancel, onSave }) => {
     const [formData, setFormData] = useState({
         name: '',
         description: '',
+        banner_name: '',
+        banner_image: '',
         status: 'Active'
     });
     const [imagePreview, setImagePreview] = useState(null);
     const [imageFile, setImageFile] = useState(null);
+    const [bannerImagePreview, setBannerImagePreview] = useState(null);
+    const [bannerImageFile, setBannerImageFile] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const fileInputRef = useRef(null);
+    const bannerFileInputRef = useRef(null);
 
     useEffect(() => {
         if (initialData) {
             setFormData({
                 name: initialData.name || '',
                 description: initialData.description || '',
+                banner_name: initialData.banner_name || '',
                 status: initialData.status || 'Active'
             });
             if (initialData.icon) {
                 setImagePreview(initialData.icon);
+            }
+            if (initialData.banner_image) {
+                setBannerImagePreview(initialData.banner_image);
             }
         }
     }, [initialData]);
@@ -29,7 +38,7 @@ const CategoryForm = ({ initialData, onCancel, onSave }) => {
         e.preventDefault();
         setIsSubmitting(true);
         try {
-            await onSave({ ...formData, image: imageFile });
+            await onSave({ ...formData, image: imageFile, banner_image: bannerImageFile });
         } catch (error) {
             console.error('Error saving category:', error);
         } finally {
@@ -44,6 +53,18 @@ const CategoryForm = ({ initialData, onCancel, onSave }) => {
             const reader = new FileReader();
             reader.onloadend = () => {
                 setImagePreview(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleBannerImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setBannerImageFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setBannerImagePreview(reader.result);
             };
             reader.readAsDataURL(file);
         }
@@ -112,6 +133,47 @@ const CategoryForm = ({ initialData, onCancel, onSave }) => {
                                 )}
                                 <span className="vendor-cat-upload-text">
                                     {imagePreview ? 'Click to change image' : 'Click to upload image'}
+                                </span>
+                                <span className="vendor-cat-upload-hint">SVG, PNG, JPG (max 2MB)</span>
+                            </div>
+                        </div>
+                        <div>
+                            <div className="vendor-cat-form-group">
+                                <label className="vendor-cat-label">Banner Name</label>
+                                <input
+                                    type="text"
+                                    className="vendor-cat-input"
+                                    placeholder="e.g. Spices & Herbs"
+                                    value={formData.banner_name}
+                                    onChange={(e) => setFormData({ ...formData, banner_name: e.target.value })}
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        {/* Banner Image Upload */}
+                        <div className="vendor-cat-form-group">
+                            <label className="vendor-cat-label">Banner Image</label>
+                            <div className="vendor-cat-upload-zone">
+                                <input
+                                    ref={bannerFileInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleBannerImageUpload}
+                                />
+                                {bannerImagePreview ? (
+                                    <img
+                                        src={bannerImagePreview}
+                                        alt="Preview"
+                                        className="vendor-cat-upload-preview"
+                                    />
+                                ) : (
+                                    <div className="vendor-cat-upload-icon-wrapper">
+                                        <Upload size={22} color="var(--primary-color)" />
+                                    </div>
+                                )}
+                                <span className="vendor-cat-upload-text">
+                                    {bannerImagePreview ? 'Click to change image' : 'Click to upload image'}
                                 </span>
                                 <span className="vendor-cat-upload-hint">SVG, PNG, JPG (max 2MB)</span>
                             </div>

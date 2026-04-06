@@ -23,6 +23,7 @@ import NotificationsPage from '../pages/NotificationsPage';
 import { TicketsPage } from '../modules/tickets';
 import { RefundsPage } from '../modules/refunds';
 import { SettingsPage } from '../modules/settings';
+import BannersPage from '../modules/banners/BannersPage';
 
 //vendor routes
 import VendorProductPage from '../modules/vendor_products/VendorProductsPage';
@@ -171,6 +172,15 @@ const GlobalRoutes = () => {
                     </ProtectedRoute>
                 }
             /> */}
+
+            <Route
+                path="/banners"
+                element={
+                    <ProtectedRoute allowedRoles={["SUPER_ADMIN", "ADMIN"]}>
+                        <BannersPage />
+                    </ProtectedRoute>
+                }
+            />
 
             <Route
                 path="/customers"

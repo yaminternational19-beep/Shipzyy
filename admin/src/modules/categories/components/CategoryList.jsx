@@ -120,6 +120,7 @@ const CategoryList = ({
                             </div>
                         </th>
                         <th className="vendor-cat-col-logo">ICON</th>
+                        <th className="vendor-cat-col-logo">BANNER IMAGE</th>
                         <th>CATEGORY ID</th>
                         <th>NAME</th>
                         <th>DESCRIPTION</th>
@@ -144,6 +145,11 @@ const CategoryList = ({
                                 <td>
                                     <div className="vendor-cat-icon-box">
                                         {cat.icon ? <img src={cat.icon} alt="" className="vendor-cat-icon-img" /> : '📁'}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div className="vendor-cat-icon-box">
+                                        {cat.banner_image ? <img src={cat.banner_image} alt="" className="vendor-cat-icon-img" /> : '📁'}
                                     </div>
                                 </td>
                                 <td><span className="cat-id-badge">{cat.category_code || cat.id}</span></td>

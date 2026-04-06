@@ -8,7 +8,7 @@ import service from './category.service.js';
 export const createCategory = async (req, res) => {
   try {
 
-    const category = await service.createCategory(req.body, req.file);
+    const category = await service.createCategory(req.body, req.files);
 
     return ApiResponse.success(
       res,
@@ -63,7 +63,7 @@ export const updateCategory = async (req, res) => {
     const category = await service.updateCategory(
       req.params.id,
       req.body,
-      req.file
+      req.files
     );
 
     return ApiResponse.success(

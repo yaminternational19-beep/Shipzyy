@@ -6,17 +6,26 @@ import { getPagination, getPaginationMeta } from '../../utils/pagination.js';
 
 
 
-const createCategory = async (data, file) => {
+const createCategory = async (data, files) => {
 
   let imageUrl = null;
+  let bannerImageUrl = null;
 
   /* ===============================
      UPLOAD IMAGE
   =============================== */
 
-  if (file) {
-    const upload = await s3Service.uploadFile(file, "categories");
+  const imageFile = files && files.image ? files.image[0] : null;
+  const bannerImageFile = files && files.banner_image ? files.banner_image[0] : null;
+
+  if (imageFile) {
+    const upload = await s3Service.uploadFile(imageFile, "categories");
     imageUrl = upload.url;
+  }
+
+  if (bannerImageFile) {
+    const upload = await s3Service.uploadFile(bannerImageFile, "categories");
+    bannerImageUrl = upload.url;
   }
 
   /* ===============================
@@ -40,8 +49,8 @@ const createCategory = async (data, file) => {
 
   const query = `
     INSERT INTO categories
-    (category_code,name,description,icon,status)
-    VALUES (?,?,?,?,?)
+    (category_code,name,description,icon, banner_name, banner_image, status)
+    VALUES (?,?,?,?,?,?,?)
   `;
 
   const values = [
@@ -49,6 +58,8 @@ const createCategory = async (data, file) => {
     data.name,
     data.description || "",
     imageUrl,
+    data.banner_name || "",
+    bannerImageUrl || "",
     data.status || "Active"
   ];
 
@@ -60,6 +71,8 @@ const createCategory = async (data, file) => {
     name: data.name,
     description: data.description,
     icon: imageUrl,
+    banner_name: data.banner_name || "",
+    banner_image: bannerImageUrl || "",
     status: data.status || "Active"
   };
 };
@@ -110,6 +123,8 @@ const getCategories = async (queryParams) => {
         c.description,
         c.icon,
         c.status,
+        c.banner_name,
+        c.banner_image,
         c.created_at,
         COUNT(sc.id) AS subCategoryCount
      FROM categories c
@@ -133,6 +148,8 @@ const getCategories = async (queryParams) => {
     description: cat.description,
     icon: cat.icon,
     status: cat.status,
+    banner_name: cat.banner_name,
+    banner_image: cat.banner_image,
     subCategoryCount: cat.subCategoryCount,
     createdAt: cat.created_at
   }));
@@ -171,7 +188,7 @@ const statsData = {
 };
 
 
-const updateCategory = async (id, data, file) => {
+const updateCategory = async (id, data, files) => {
 
   /* ===============================
      CHECK CATEGORY
@@ -189,14 +206,23 @@ const updateCategory = async (id, data, file) => {
   const category = rows[0];
 
   let imageUrl = category.icon;
+  let bannerImageUrl = category.banner_image;
 
   /* ===============================
      UPLOAD NEW IMAGE
   =============================== */
 
-  if (file) {
-    const upload = await s3Service.uploadFile(file, "categories");
+  const imageFile = files && files.image ? files.image[0] : null;
+  const bannerImageFile = files && files.banner_image ? files.banner_image[0] : null;
+
+  if (imageFile) {
+    const upload = await s3Service.uploadFile(imageFile, "categories");
     imageUrl = upload.url;
+  }
+
+  if (bannerImageFile) {
+    const upload = await s3Service.uploadFile(bannerImageFile, "categories");
+    bannerImageUrl = upload.url;
   }
 
   /* ===============================
@@ -209,6 +235,8 @@ const updateCategory = async (id, data, file) => {
       name = ?,
       description = ?,
       icon = ?,
+      banner_name = ?,
+      banner_image = ?,
       status = ?
     WHERE id = ?
   `;
@@ -217,6 +245,8 @@ const updateCategory = async (id, data, file) => {
     data.name ?? category.name,
     data.description ?? category.description,
     imageUrl,
+    data.banner_name ?? category.banner_name,
+    bannerImageUrl,
     data.status ?? category.status,
     id
   ];
@@ -229,6 +259,8 @@ const updateCategory = async (id, data, file) => {
     name: data.name ?? category.name,
     description: data.description ?? category.description,
     icon: imageUrl,
+    banner_name: data.banner_name ?? category.banner_name,
+    banner_image: bannerImageUrl,
     status: data.status ?? category.status
   };
 };

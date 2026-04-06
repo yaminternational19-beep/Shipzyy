@@ -93,6 +93,8 @@ const TABLES = [
                 id BIGINT AUTO_INCREMENT PRIMARY KEY,
                 category_code VARCHAR(20) UNIQUE,
                 name VARCHAR(100) NOT NULL,
+                banner_name VARCHAR(150) NULL AFTER name,
+                banner_image VARCHAR(255) NULL AFTER banner_name;
                 description TEXT,
                 icon TEXT,
                 status ENUM('Active','Inactive') DEFAULT 'Active',
@@ -436,6 +438,21 @@ const TABLES = [
                 INDEX idx_date (created_at)
             );
         `
+    },
+    {
+        name: "banners",
+        query: `
+            CREATE TABLE IF NOT EXISTS banners (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                banner_name VARCHAR(100) NOT NULL,
+                description TEXT,
+                banner_image VARCHAR(255) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX idx_banner_name (banner_name),
+                INDEX idx_created_at (created_at)
+            );
+        `   
     }
 ];
 

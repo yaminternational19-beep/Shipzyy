@@ -100,8 +100,12 @@ const CategoriesPage = () => {
             formData.append('name', data.name);
             formData.append('description', data.description || '');
             formData.append('status', data.status);
+            formData.append('banner_name', data.banner_name || '');
             if (data.image) {
                 formData.append('image', data.image);
+            }
+            if (data.banner_image) {
+                formData.append('banner_image', data.banner_image);
             }
 
             let response;

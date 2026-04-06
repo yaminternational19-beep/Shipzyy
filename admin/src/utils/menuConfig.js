@@ -20,7 +20,8 @@ import {
     FileText,
     BellRing,
     HelpCircle,
-    UserCheck
+    UserCheck,
+    Image as ImageIcon
 } from 'lucide-react';
 
 export const menuItems = [
@@ -36,6 +37,7 @@ export const menuItems = [
     { name: "Vendor Orders", key: "VENDOR_ORDERS", icon: ShoppingBag, path: "/vendor-orders", group: "MANAGEMENT", description: "Manage vendor orders" },
     { name: "Vehicle Types", key: "VEHICLES", icon: Car, path: "/vehicles", group: "MANAGEMENT", description: "Manage vehicle types" },
     // { name: "Quantity", key: "QUANTITY", icon: Scale, path: "/quantity", group: "MANAGEMENT", description: "Manage quantity units" },
+    { name: "Banners", key: "BANNERS", icon: ImageIcon, path: "/banners", group: "MANAGEMENT", description: "Manage banners" },
     { name: "Riders", key: "RIDERS", icon: Bike, path: "/riders", group: "MANAGEMENT", description: "Live tracking and rider management" },
     { name: "Customers", key: "CUSTOMERS", icon: Users, path: "/customers", group: "MANAGEMENT", description: "Client accounts and support tickets" },
     { name: "Tickets", key: "TICKETS", icon: Ticket, path: "/tickets", group: "SUPPORT", description: "Manage support tickets" },

@@ -10,8 +10,8 @@ import authenticate from '../../middlewares/auth.middleware.js';
 
 // GET categories
 router.get("/", authenticate, controller.getCategories);
-router.post("/", authenticate, upload.single("image"), validate(createCategorySchema), controller.createCategory);
-router.put("/:id", authenticate, upload.single("image"), validate(updateCategorySchema), controller.updateCategory);
+router.post("/", authenticate, upload.fields([{ name: "image", maxCount: 1 }, { name: "banner_image", maxCount: 1 }]), validate(createCategorySchema), controller.createCategory);
+router.put("/:id", authenticate, upload.fields([{ name: "image", maxCount: 1 }, { name: "banner_image", maxCount: 1 }]), validate(updateCategorySchema), controller.updateCategory);
 router.delete("/:id", authenticate, controller.deleteCategory);
 router.patch("/:id/status", authenticate, controller.toggleStatus);
 

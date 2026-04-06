@@ -63,6 +63,9 @@ import categoryRoutes from '../../modules/categories/category.routes.js';
 
 router.use("/categories", categoryRoutes);
 
+import bannerRoutes from '../../modules/banners/banners.routes.js';
+router.use("/banners", bannerRoutes);
+
 
 import subCategoryRoutes from '../../modules/subcategory/subcategory.routes.js';
 
