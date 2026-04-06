@@ -7,8 +7,20 @@ import ActionButtons from '../../../components/common/ActionButtons';
 import ExportActions from '../../../components/common/ExportActions';
 import { exportSubCategoriesToPDF, exportSubCategoriesToExcel } from '../services/export.service';
 
-const SubCategoryList = ({ subcategories = [], parentCategories = [], loading = false, pagination = null, onRefresh, onEdit, onDelete, onToggleStatus, showToast }) => {
-    const [selectedRows, setSelectedRows] = useState([]);
+const SubCategoryList = ({
+    subcategories = [],
+    parentCategories = [],
+    loading = false,
+    pagination = null,
+    selectedRows = [],
+    setSelectedRows,
+    onSelectAll,
+    onRefresh,
+    onEdit,
+    onDelete,
+    onToggleStatus,
+    showToast
+}) => {
     const [statusFilter, setStatusFilter] = useState('All');
     const [categoryFilter, setCategoryFilter] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
@@ -22,10 +34,10 @@ const SubCategoryList = ({ subcategories = [], parentCategories = [], loading = 
     };
 
     const toggleSelectAll = () => {
-        if (selectedRows.length === subcategories.length && subcategories.length > 0) {
-            setSelectedRows([]);
-        } else {
-            setSelectedRows(subcategories.map(item => item.id));
+        const total = pagination?.totalRecords || 0;
+        const isCurrentlyFullySelected = selectedRows.length === total && total > 0;
+        if (onSelectAll) {
+            onSelectAll(!isCurrentlyFullySelected);
         }
     };
 
@@ -134,15 +146,6 @@ const SubCategoryList = ({ subcategories = [], parentCategories = [], loading = 
                 />
             </div>
 
-            {/* ── Bulk Selection Bar ── */}
-            {selectedRows.length > 0 && (
-                <div className="vendor-sc-bulk-bar">
-                    <span>
-                        {selectedRows.length} {selectedRows.length === 1 ? 'item' : 'items'} selected
-                    </span>
-                    <button onClick={() => setSelectedRows([])}>Clear Selection</button>
-                </div>
-            )}
 
             {/* ── Table ── */}
             <table className="vendor-sc-table dashboard-table">
@@ -153,7 +156,7 @@ const SubCategoryList = ({ subcategories = [], parentCategories = [], loading = 
                                 onClick={toggleSelectAll}
                                 className="vendor-sc-clickable-cell"
                             >
-                                {selectedRows.length === subcategories.length && subcategories.length > 0
+                                {selectedRows.length === (pagination?.totalRecords || 0) && pagination?.totalRecords > 0
                                     ? <CheckSquare size={17} color="var(--primary-color)" />
                                     : <Square size={17} color="#94a3b8" />
                                 }

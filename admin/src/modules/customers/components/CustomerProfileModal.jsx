@@ -17,14 +17,21 @@ const CustomerProfileModal = ({ customer, onClose, onTerminate, onBlock, onActiv
                 <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                         <div className="profile-large-avatar">
-                            {customer.name.split(' ').map(n => n[0]).join('')}
+                            {customer.name ? 
+                                customer.name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase() : 
+                                '?'
+                            }
                         </div>
                         <div>
-                            <h2 style={{ margin: 0, fontSize: '1.5rem', color: 'var(--text-primary)', fontWeight: 700 }}>{customer.name}</h2>
+                            <h2 style={{ margin: 0, fontSize: '1.5rem', color: 'var(--text-primary)', fontWeight: 700 }}>{customer.name || 'Anonymous Customer'}</h2>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                                <span className="cust-id-badge" style={{ margin: 0 }}>{customer.id}</span>
-                                <span className={`badge ${customer.status === 'Active' ? 'success' : customer.status === 'Terminated' ? 'error' : 'warning'}`} style={{ fontSize: '0.7rem' }}>
-                                    {customer.status}
+                                <span className="cust-id-badge" style={{ margin: 0 }}>CUST-{customer.id}</span>
+                                <span className={`badge ${
+                                    customer.status?.toLowerCase() === 'active' ? 'success' : 
+                                    customer.status?.toLowerCase() === 'terminated' ? 'error' : 
+                                    'warning'
+                                }`} style={{ fontSize: '0.7rem' }}>
+                                    {customer.status || 'Active'}
                                 </span>
                             </div>
                         </div>
@@ -36,14 +43,14 @@ const CustomerProfileModal = ({ customer, onClose, onTerminate, onBlock, onActiv
                     <div className="profile-grid">
                         <div className="profile-left">
                             <h3 className="section-title"><Hash size={16} /> Personal Details</h3>
-                            <div className="detail-item"><Phone size={18} /> {customer.phone}</div>
-                            <div className="detail-item"><Mail size={18} /> {customer.email}</div>
-                            <div className="detail-item"><MapPin size={18} /> {customer.city}, {customer.country}</div>
+                            <div className="detail-item"><Phone size={18} /> {customer.phone || 'No Phone Number'}</div>
+                            <div className="detail-item"><Mail size={18} /> {customer.email || 'No Email Address'}</div>
+                            <div className="detail-item"><MapPin size={18} /> {customer.location || 'Location Not Provided'}</div>
                             <div className="detail-item"><Calendar size={18} /> Joined {customer.joined}</div>
 
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '40px' }}>
                                 <h3 className="section-title">Manage Account</h3>
-                                {customer.status === 'Terminated' ? (
+                                {customer.status?.toLowerCase() === 'terminated' ? (
                                     <button
                                         className="btn btn-primary"
                                         style={{ width: '100%', background: '#10b981', border: 'none' }}
@@ -56,7 +63,7 @@ const CustomerProfileModal = ({ customer, onClose, onTerminate, onBlock, onActiv
                                     </button>
                                 ) : (
                                     <>
-                                        {customer.status === 'Blocked' ? (
+                                        {customer.status?.toLowerCase() === 'suspended' || customer.status?.toLowerCase() === 'blocked' ? (
                                             <button
                                                 className="btn"
                                                 style={{ width: '100%', background: '#f59e0b', color: 'white', border: 'none' }}
@@ -83,7 +90,7 @@ const CustomerProfileModal = ({ customer, onClose, onTerminate, onBlock, onActiv
                                             className="btn btn-secondary"
                                             style={{ width: '100%', color: '#ef4444', borderColor: '#fecaca' }}
                                             onClick={() => {
-                                                if (window.confirm(`Are you sure you want to terminate customer ${customer.name}?`)) {
+                                                if (window.confirm(`Are you sure you want to terminate customer ${customer.name || 'this account'}?`)) {
                                                     onTerminate(customer.id);
                                                     onClose();
                                                 }
@@ -105,7 +112,7 @@ const CustomerProfileModal = ({ customer, onClose, onTerminate, onBlock, onActiv
                                             <ShoppingBag size={20} />
                                         </div>
                                         <div>
-                                            <div className="stat-val">{customer.totalOrders}</div>
+                                            <div className="stat-val">{customer.orders || 0}</div>
                                             <div className="stat-lbl">Total Orders</div>
                                         </div>
                                     </div>

@@ -4,6 +4,7 @@ import ActionButton from '../../../components/common/ActionButton/ActionButton';
 
 const VendorProductList = ({
     products,
+    totalFilteredCount = 0,
     selectedRows,
     onSelectRow,
     onSelectAll,
@@ -26,8 +27,8 @@ const VendorProductList = ({
 
 
     const allSelected =
-        products.length > 0 &&
-        selectedRows.length === products.length;
+        totalFilteredCount > 0 &&
+        selectedRows.length === totalFilteredCount;
 
     const formatCurrency = (val) => {
         return new Intl.NumberFormat('en-IN', {

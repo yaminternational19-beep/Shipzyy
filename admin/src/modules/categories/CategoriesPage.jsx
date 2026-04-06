@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import CategoryStats from './components/CategoryStats';
 import CategoryList from './components/CategoryList';
@@ -14,6 +14,7 @@ const CategoriesPage = () => {
     const [stats, setStats] = useState(null);
     const [pagination, setPagination] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [selectedRows, setSelectedRows] = useState([]);
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
     const fetchCategories = async (params = {}) => {
@@ -32,7 +33,7 @@ const CategoriesPage = () => {
         }
     };
 
-    useState(() => {
+    useEffect(() => {
         fetchCategories();
     }, []);
 
@@ -56,6 +57,26 @@ const CategoriesPage = () => {
             }
         } catch (error) {
             showToast(error.response?.data?.message || 'Failed to toggle status', 'error');
+        }
+    };
+
+    const handleSelectAll = async (checked) => {
+        if (!checked) {
+            setSelectedRows([]);
+            return;
+        }
+
+        try {
+            setLoading(true);
+            const response = await getCategoriesApi({ limit: pagination?.totalRecords || 100 });
+            if (response.data.success) {
+                const allIds = (response.data.data.records || []).map(c => c.id);
+                setSelectedRows(allIds);
+            }
+        } catch (error) {
+            showToast('Failed to select all categories', 'error');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -126,6 +147,9 @@ const CategoriesPage = () => {
                     categories={categories}
                     pagination={pagination}
                     loading={loading}
+                    selectedRows={selectedRows}
+                    setSelectedRows={setSelectedRows}
+                    onSelectAll={handleSelectAll}
                     onEdit={handleEditCategory}
                     onDelete={handleDeleteCategory}
                     onToggleStatus={handleToggleStatus}

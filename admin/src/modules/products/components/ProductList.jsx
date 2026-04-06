@@ -2,8 +2,8 @@ import React from 'react';
 import { CheckCircle, XCircle, CheckSquare, Square, Eye } from 'lucide-react';
 import ActionButton from '../../../components/common/ActionButton/ActionButton';
 
-const ProductList = ({ products, onAction, selectedRows, onSelectRow, onSelectAll }) => {
-    const allSelected = products.length > 0 && selectedRows.length === products.length;
+const ProductList = ({ products, totalFilteredCount = 0, onAction, selectedRows, onSelectRow, onSelectAll }) => {
+    const allSelected = totalFilteredCount > 0 && selectedRows.length === totalFilteredCount;
 
     const handleSelectAll = (e) => {
         if (onSelectAll) {

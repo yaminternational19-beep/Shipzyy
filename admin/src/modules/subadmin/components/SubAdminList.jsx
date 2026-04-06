@@ -58,9 +58,24 @@ const SubAdminList = ({ onEdit, onEditPermissions, onDeactivate, onDelete, onSho
         return () => clearTimeout(timer);
     }, [searchQuery, selectedRole, currentPage]);
 
-    const handleSelectAll = (e) => {
+    const handleSelectAll = async (e) => {
         if (e.target.checked) {
-            setSelectedSubAdmins(subAdmins.map(u => u.id));
+            try {
+                setIsLoading(true);
+                const params = {
+                    limit: pagination.totalRecords || 1000,
+                    search: searchQuery,
+                    role: selectedRole,
+                };
+                const res = await getSubAdminsApi(params);
+                const allIds = (res.data.data.records || []).map(u => u.id);
+                setSelectedSubAdmins(allIds);
+            } catch (error) {
+                console.error("Select all error:", error);
+                onShowToast('Failed to select all sub-admins', 'error');
+            } finally {
+                setIsLoading(false);
+            }
         } else {
             setSelectedSubAdmins([]);
         }
@@ -141,12 +156,6 @@ const SubAdminList = ({ onEdit, onEditPermissions, onDeactivate, onDelete, onSho
             </div>
 
             {/* Bulk Actions Bar */}
-            {selectedSubAdmins.length > 0 && (
-                <div className="c-bulk-bar">
-                    <span>{selectedSubAdmins.length} sub-admins selected</span>
-                    <button onClick={() => setSelectedSubAdmins([])}>Clear Selection</button>
-                </div>
-            )}
 
             {/* Table Section */}
             <div style={{ overflowX: 'auto' }}>
@@ -156,10 +165,10 @@ const SubAdminList = ({ onEdit, onEditPermissions, onDeactivate, onDelete, onSho
                         <tr>
                             <th style={{ width: '48px' }}>
                                 <div
-                                    onClick={() => handleSelectAll({ target: { checked: selectedSubAdmins.length !== subAdmins.length } })}
+                                    onClick={() => handleSelectAll({ target: { checked: selectedSubAdmins.length !== (pagination?.totalRecords || 0) || pagination?.totalRecords === 0 } })}
                                     style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                                 >
-                                    {subAdmins.length > 0 && selectedSubAdmins.length === subAdmins.length
+                                    {selectedSubAdmins.length === (pagination?.totalRecords || 0) && pagination?.totalRecords > 0
                                         ? <CheckSquare size={17} color="var(--primary-color)" />
                                         : <Square size={17} color="#94a3b8" />
                                     }

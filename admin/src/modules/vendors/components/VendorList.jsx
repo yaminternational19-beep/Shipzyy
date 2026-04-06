@@ -68,8 +68,26 @@ const VendorList = ({ onEdit, onDelete, showToast, onTabChange, onStatsUpdate })
         }
     };
 
-    const toggleSelectAll = () => {
-        setSelectedRows(selectedRows.length === vendors.length ? [] : vendors.map(v => v.id));
+    const toggleSelectAll = async () => {
+        if (selectedRows.length === (pagination.totalRecords || vendors.length)) {
+            setSelectedRows([]);
+        } else {
+            try {
+                setLoading(true);
+                const params = { limit: pagination.totalRecords || 1000 };
+                if (statusFilter) params.status = statusFilter;
+                if (kycFilter) params.kyc_status = kycFilter;
+                if (searchQuery) params.search = searchQuery;
+
+                const res = await getVendorsApi(params);
+                const allIds = (res.data.data.records || []).map(v => v.id);
+                setSelectedRows(allIds);
+            } catch (err) {
+                showToast?.('Failed to select all vendors', 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
     };
 
     const toggleSelectRow = (id) => {
@@ -155,7 +173,7 @@ const VendorList = ({ onEdit, onDelete, showToast, onTabChange, onStatsUpdate })
                         <tr>
                             <th style={{ width: '40px' }}>
                                 <div onClick={toggleSelectAll} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    {vendors.length > 0 && selectedRows.length === vendors.length
+                                    {selectedRows.length === (pagination?.totalRecords || 0) && pagination?.totalRecords > 0
                                         ? <CheckSquare size={17} color="var(--primary-color)" />
                                         : <Square size={17} color="#94a3b8" />}
                                 </div>

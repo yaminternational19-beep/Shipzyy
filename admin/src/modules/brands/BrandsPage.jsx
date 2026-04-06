@@ -18,6 +18,13 @@ const BrandsPage = () => {
     const [stats, setStats] = useState(null);
     const [pagination, setPagination] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [selectedRows, setSelectedRows] = useState([]);
+    const [filters, setFilters] = useState({
+        search: '',
+        status: 'All',
+        categoryId: 'All',
+        subCategoryId: 'All'
+    });
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
     const fetchBrands = async (params = {}) => {
@@ -101,6 +108,35 @@ const BrandsPage = () => {
         }
     };
 
+    const handleSelectAll = async (checked) => {
+        if (!checked) {
+            setSelectedRows([]);
+            return;
+        }
+
+        try {
+            setLoading(true);
+            const params = {
+                limit: pagination.totalRecords,
+                search: filters.search || undefined,
+                status: filters.status === 'All' ? undefined : filters.status,
+                categoryId: filters.categoryId === 'All' ? undefined : filters.categoryId,
+                subCategoryId: filters.subCategoryId === 'All' ? undefined : filters.subCategoryId,
+            };
+
+            const response = await getBrandsApi(params);
+            if (response.data.success) {
+                const allIds = (response.data.data.records || []).map(b => b.id);
+                setSelectedRows(allIds);
+            }
+        } catch (error) {
+            console.error('Select All Error:', error);
+            showToast('Failed to select all brands', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleSave = async (data) => {
         try {
             const formData = new FormData();
@@ -160,7 +196,12 @@ const BrandsPage = () => {
                     categories={categories}
                     subCategories={subCategories}
                     pagination={pagination}
+                    filters={filters}
+                    setFilters={setFilters}
                     loading={loading}
+                    selectedRows={selectedRows}
+                    setSelectedRows={setSelectedRows}
+                    onSelectAll={handleSelectAll}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                     onToggleStatus={handleToggleStatus}

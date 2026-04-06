@@ -16,6 +16,7 @@ const SubCategoriesPage = () => {
     const [stats, setStats] = useState(null);
     const [pagination, setPagination] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [selectedRows, setSelectedRows] = useState([]);
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
     const fetchSubCategories = async (params = {}) => {
@@ -70,6 +71,32 @@ const SubCategoriesPage = () => {
             }
         } catch (error) {
             showToast(error.response?.data?.message || 'Failed to toggle status', 'error');
+        }
+    };
+
+    const handleSelectAll = async (checked, currentFilters) => {
+        if (!checked) {
+            setSelectedRows([]);
+            return;
+        }
+
+        try {
+            setLoading(true);
+            const params = {
+                limit: pagination?.totalRecords || 100,
+                // Passing filters if we ever lift them, for now global search fetches all or relies on component
+            };
+
+            const response = await getSubCategoriesApi(params);
+            if (response.data.success) {
+                const allIds = (response.data.data.records || []).map(sc => sc.id);
+                setSelectedRows(allIds);
+            }
+        } catch (error) {
+            console.error('Select All Error:', error);
+            showToast('Failed to select all sub-categories', 'error');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -146,6 +173,9 @@ const SubCategoriesPage = () => {
                     parentCategories={categories}
                     pagination={pagination}
                     loading={loading}
+                    selectedRows={selectedRows}
+                    setSelectedRows={setSelectedRows}
+                    onSelectAll={handleSelectAll}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                     onToggleStatus={handleToggleStatus}

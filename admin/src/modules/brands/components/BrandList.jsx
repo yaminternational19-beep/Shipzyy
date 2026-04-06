@@ -12,19 +12,23 @@ const BrandList = ({
     categories = [],
     subCategories = [],
     pagination = null,
+    filters = {
+        search: '',
+        status: 'All',
+        categoryId: 'All',
+        subCategoryId: 'All'
+    },
+    setFilters,
     loading = false,
+    selectedRows = [],
+    setSelectedRows,
+    onSelectAll,
     onEdit,
     onDelete,
     onToggleStatus,
     onRefresh,
     showToast
 }) => {
-    const [selectedRows, setSelectedRows] = useState([]);
-    const [statusFilter, setStatusFilter] = useState('All');
-    const [categoryFilter, setCategoryFilter] = useState('All');
-    const [subCategoryFilter, setSubCategoryFilter] = useState('All');
-    const [searchQuery, setSearchQuery] = useState('');
-
     // ── Helpers ──────────────────────────────────────────────────
     // Use == (loose) because API returns numeric IDs but select stores strings
     // eslint-disable-next-line eqeqeq
@@ -43,15 +47,15 @@ const BrandList = ({
     // Sub-categories filtered by selected category — use == to handle number vs string
     const filteredSubCatOptions = subCategories.filter(sc =>
         // eslint-disable-next-line eqeqeq
-        categoryFilter === 'All' || sc.categoryId == categoryFilter
+        filters.categoryId === 'All' || sc.categoryId == filters.categoryId
     );
 
     // ── Selection ─────────────────────────────────────────────────
     const toggleSelectAll = () => {
-        if (selectedRows.length === brands.length && brands.length > 0) {
-            setSelectedRows([]);
-        } else {
-            setSelectedRows(brands.map(b => b.id));
+        const total = pagination?.totalRecords || 0;
+        const isCurrentlyFullySelected = selectedRows.length === total && total > 0;
+        if (onSelectAll) {
+            onSelectAll(!isCurrentlyFullySelected);
         }
     };
 
@@ -65,45 +69,47 @@ const BrandList = ({
     const handlePageChange = (newPage) => {
         onRefresh({
             page: newPage,
-            search: searchQuery,
-            status: statusFilter === 'All' ? '' : statusFilter,
-            categoryId: categoryFilter === 'All' ? '' : categoryFilter,
-            subCategoryId: subCategoryFilter === 'All' ? '' : subCategoryFilter
+            search: filters.search,
+            status: filters.status === 'All' ? '' : filters.status,
+            categoryId: filters.categoryId === 'All' ? '' : filters.categoryId,
+            subCategoryId: filters.subCategoryId === 'All' ? '' : filters.subCategoryId
         });
     };
 
     const handleSearch = (e) => {
         const value = e.target.value;
-        setSearchQuery(value);
+        const newFilters = { ...filters, search: value };
+        setFilters(newFilters);
         onRefresh({
             page: 1,
             search: value,
-            status: statusFilter === 'All' ? '' : statusFilter,
-            categoryId: categoryFilter === 'All' ? '' : categoryFilter,
-            subCategoryId: subCategoryFilter === 'All' ? '' : subCategoryFilter
+            status: filters.status === 'All' ? '' : filters.status,
+            categoryId: filters.categoryId === 'All' ? '' : filters.categoryId,
+            subCategoryId: filters.subCategoryId === 'All' ? '' : filters.subCategoryId
         });
     };
 
     const handleStatusFilter = (e) => {
         const value = e.target.value;
-        setStatusFilter(value);
+        const newFilters = { ...filters, status: value };
+        setFilters(newFilters);
         onRefresh({
             page: 1,
-            search: searchQuery,
+            search: filters.search,
             status: value === 'All' ? '' : value,
-            categoryId: categoryFilter === 'All' ? '' : categoryFilter,
-            subCategoryId: subCategoryFilter === 'All' ? '' : subCategoryFilter
+            categoryId: filters.categoryId === 'All' ? '' : filters.categoryId,
+            subCategoryId: filters.subCategoryId === 'All' ? '' : filters.subCategoryId
         });
     };
 
     const handleCategoryFilter = (e) => {
         const value = e.target.value;
-        setCategoryFilter(value);
-        setSubCategoryFilter('All');
+        const newFilters = { ...filters, categoryId: value, subCategoryId: 'All' };
+        setFilters(newFilters);
         onRefresh({
             page: 1,
-            search: searchQuery,
-            status: statusFilter === 'All' ? '' : statusFilter,
+            search: filters.search,
+            status: filters.status === 'All' ? '' : filters.status,
             categoryId: value === 'All' ? '' : value,
             subCategoryId: ''
         });
@@ -111,12 +117,13 @@ const BrandList = ({
 
     const handleSubCategoryFilter = (e) => {
         const value = e.target.value;
-        setSubCategoryFilter(value);
+        const newFilters = { ...filters, subCategoryId: value };
+        setFilters(newFilters);
         onRefresh({
             page: 1,
-            search: searchQuery,
-            status: statusFilter === 'All' ? '' : statusFilter,
-            categoryId: categoryFilter === 'All' ? '' : categoryFilter,
+            search: filters.search,
+            status: filters.status === 'All' ? '' : filters.status,
+            categoryId: filters.categoryId === 'All' ? '' : filters.categoryId,
             subCategoryId: value === 'All' ? '' : value
         });
     };
@@ -155,7 +162,7 @@ const BrandList = ({
                         <input
                             type="text"
                             placeholder="Search by brand name or ID..."
-                            value={searchQuery}
+                            value={filters.search}
                             onChange={handleSearch}
                         />
                     </div>
@@ -163,7 +170,7 @@ const BrandList = ({
                     <div className="vendor-filter-select vendor-w-190">
                         <Layers size={15} className="field-icon" />
                         <select
-                            value={categoryFilter}
+                            value={filters.categoryId}
                             onChange={handleCategoryFilter}
                         >
                             <option value="All">All Categories</option>
@@ -176,9 +183,9 @@ const BrandList = ({
                     <div className="vendor-filter-select vendor-w-190">
                         <ListTree size={15} className="field-icon" />
                         <select
-                            value={subCategoryFilter}
+                            value={filters.subCategoryId}
                             onChange={handleSubCategoryFilter}
-                            disabled={categoryFilter === 'All'}
+                            disabled={filters.categoryId === 'All'}
                         >
                             <option value="All">All Sub-Categories</option>
                             {filteredSubCatOptions.map(sc => (
@@ -190,7 +197,7 @@ const BrandList = ({
                     <div className="vendor-filter-select vendor-w-150">
                         <Filter size={15} className="field-icon" />
                         <select
-                            value={statusFilter}
+                            value={filters.status}
                             onChange={handleStatusFilter}
                         >
                             <option value="All">All Status</option>
@@ -207,23 +214,13 @@ const BrandList = ({
                 />
             </div>
 
-            {/* ── Bulk Selection Bar ── */}
-            {selectedRows.length > 0 && (
-                <div className="vendor-bulk-bar">
-                    <span>
-                        {selectedRows.length} {selectedRows.length === 1 ? 'brand' : 'brands'} selected
-                    </span>
-                    <button onClick={() => setSelectedRows([])}>Clear Selection</button>
-                </div>
-            )}
-
             {/* ── Table ── */}
             <table className="vendor-brand-table dashboard-table">
                 <thead>
                     <tr>
                         <th className="vendor-col-checkbox">
                             <div onClick={toggleSelectAll} className="vendor-clickable-cell">
-                                {selectedRows.length === brands.length && brands.length > 0
+                                {selectedRows.length === (pagination?.totalRecords || 0) && pagination?.totalRecords > 0
                                     ? <CheckSquare size={17} color="var(--primary-color)" />
                                     : <Square size={17} color="#94a3b8" />
                                 }

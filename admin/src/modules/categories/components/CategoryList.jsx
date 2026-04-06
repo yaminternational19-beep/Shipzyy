@@ -7,16 +7,27 @@ import ActionButtons from '../../../components/common/ActionButtons';
 import ExportActions from '../../../components/common/ExportActions';
 import { exportCategoriesToPDF, exportCategoriesToExcel } from '../services/export.service';
 
-const CategoryList = ({ categories = [], pagination = null, loading = false, onEdit, onDelete, onToggleStatus, onRefresh, showToast }) => {
-    const [selectedRows, setSelectedRows] = useState([]);
+const CategoryList = ({
+    categories = [],
+    pagination = null,
+    loading = false,
+    selectedRows = [],
+    setSelectedRows,
+    onSelectAll,
+    onEdit,
+    onDelete,
+    onToggleStatus,
+    onRefresh,
+    showToast
+}) => {
     const [statusFilter, setStatusFilter] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
 
     const toggleSelectAll = () => {
-        if (selectedRows.length === categories.length && categories.length > 0) {
-            setSelectedRows([]);
-        } else {
-            setSelectedRows(categories.map(c => c.id));
+        const total = pagination?.totalRecords || 0;
+        const isCurrentlyFullySelected = selectedRows.length === total && total > 0;
+        if (onSelectAll) {
+            onSelectAll(!isCurrentlyFullySelected);
         }
     };
 
@@ -96,21 +107,13 @@ const CategoryList = ({ categories = [], pagination = null, loading = false, onE
                 />
             </div>
 
-            {/* Bulk Selection Bar */}
-            {selectedRows.length > 0 && (
-                <div className="vendor-cat-bulk-bar">
-                    <span>{selectedRows.length} items selected</span>
-                    <button onClick={() => setSelectedRows([])}>Clear</button>
-                </div>
-            )}
-
             {/* Table */}
             <table className="vendor-category-table dashboard-table">
                 <thead>
                     <tr>
                         <th className="vendor-cat-col-checkbox">
                             <div onClick={toggleSelectAll} className="vendor-cat-clickable-cell">
-                                {selectedRows.length === categories.length && categories.length > 0
+                                {selectedRows.length === (pagination?.totalRecords || 0) && pagination?.totalRecords > 0
                                     ? <CheckSquare size={17} color="var(--primary-color)" />
                                     : <Square size={17} color="#94a3b8" />
                                 }

@@ -1,6 +1,6 @@
 import React from 'react';
-import { Search, MapPin, ChevronLeft, ChevronRight, X, Square, CheckSquare } from 'lucide-react';
-import ActionButtons from '../../../components/common/ActionButtons';
+import { Search, MapPin, ChevronLeft, ChevronRight, X, Square, CheckSquare, Eye, Power, Trash2 } from 'lucide-react';
+import ActionButton from '../../../components/common/ActionButton/ActionButton';
 import ExportActions from '../../../components/common/ExportActions';
 
 const CustomerList = ({
@@ -18,6 +18,7 @@ const CustomerList = ({
     onBlock,
     onActivate,
     onTerminate,
+    onSelectAll,
     showToast
 }) => {
     const { currentPage, itemsPerPage } = pagination;
@@ -48,10 +49,9 @@ const CustomerList = ({
     // };
 
     const toggleSelectAll = () => {
-        if (selectedCustomerIds.length === customers.length && customers.length > 0) {
-            setSelectedCustomerIds([]);
-        } else {
-            setSelectedCustomerIds(customers.map(c => c.id));
+        const isCurrentlyFullySelected = selectedCustomerIds.length === totalCount && totalCount > 0;
+        if (onSelectAll) {
+            onSelectAll(!isCurrentlyFullySelected);
         }
     };
 
@@ -108,10 +108,9 @@ const CustomerList = ({
                             onChange={(e) => handleFilterChange('status', e.target.value)}
                         >
                             <option value="All">All Status</option>
-                            <option value="Active">Active</option>
-                            <option value="Blocked">Blocked</option>
-                            <option value="Inactive">Inactive</option>
-                            <option value="Terminated">Terminated</option>
+                            <option value="active">Active</option>
+                            <option value="suspended">Suspended</option>
+                            <option value="terminated">Terminated</option>
                         </select>
                     </div>
                 </div>
@@ -122,88 +121,159 @@ const CustomerList = ({
                 />
             </div>
 
-            {/* ── Bulk Selection Bar ── */}
-            {selectedCustomerIds.length > 0 && (
-                <div className="cust-bulk-bar">
-                    <span>{selectedCustomerIds.length} {selectedCustomerIds.length === 1 ? 'customer' : 'customers'} selected</span>
-                    <button onClick={() => setSelectedCustomerIds([])}>Clear Selection</button>
-                </div>
-            )}
-
             {/* ── Table ── */}
-            <div className="cust-table-wrapper">
-                <table className="dashboard-table">
+            <div className="p-table-container">
+                <table className="dashboard-table" style={{ minWidth: '1200px' }}>
                     <thead>
                         <tr>
-                            <th className="cust-col-checkbox">
-                                <div onClick={toggleSelectAll} className="cust-clickable-cell">
-                                    {selectedCustomerIds.length === customers.length && customers.length > 0
+                            <th style={{ width: '48px', textAlign: 'center' }}>
+                                <div onClick={toggleSelectAll} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    {selectedCustomerIds.length === totalCount && totalCount > 0
                                         ? <CheckSquare size={17} color="var(--primary-color)" />
                                         : <Square size={17} color="#94a3b8" />
                                     }
                                 </div>
                             </th>
-                            <th className="cust-col-profile">PROFILE</th>
-                            <th>CUSTOMER ID</th>
-                            <th>NAME</th>
-                            <th>CONTACT</th>
-                            <th>LOCATION</th>
-                            <th>ORDERS</th>
-                            <th>JOINED</th>
-                            <th>STATUS</th>
-                            <th className="cust-col-actions">ACTIONS</th>
+                            <th style={{ width: '80px', textAlign: 'center' }}>PROFILE</th>
+                            <th style={{ textAlign: 'center' }}>CUSTOMER ID</th>
+                            <th style={{ textAlign: 'center' }}>NAME</th>
+                            <th style={{ textAlign: 'center' }}>CONTACT</th>
+                            <th style={{ textAlign: 'center' }}>LOCATION</th>
+                            <th style={{ width: '100px', textAlign: 'center' }}>ORDERS</th>
+                            <th style={{ width: '120px', textAlign: 'center' }}>PROFILE COMPLETION</th>
+                            <th style={{ width: '120px', textAlign: 'center' }}>JOINED</th>
+                            <th style={{ width: '120px', textAlign: 'center' }}>STATUS</th>
+                            <th style={{ width: '180px', textAlign: 'center' }}>ACTIONS</th>
                         </tr>
                     </thead>
                     <tbody>
                         {customers.length === 0 ? (
                             <tr>
-                                <td colSpan={10} className="cust-empty-state">
-                                    No customers found matching your filters.
+                                <td colSpan={10} className="cust-empty-state" style={{ padding: '60px', textAlign: 'center' }}>
+                                    <div style={{ fontSize: '1.2rem', color: '#94a3b8', marginBottom: '8px' }}>No Customers Found</div>
+                                    <p style={{ color: '#cbd5e1', fontSize: '0.9rem' }}>Try adjusting your filters or search terms.</p>
                                 </td>
                             </tr>
                         ) : (
                             customers.map((customer) => (
                                 <tr key={customer.id} className={selectedCustomerIds.includes(customer.id) ? 'selected-row' : ''}>
-                                    <td>
-                                        <div onClick={() => toggleSelectRow(customer.id)} className="cust-clickable-cell">
+                                    <td style={{ textAlign: 'center' }}>
+                                        <div onClick={() => toggleSelectRow(customer.id)} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                             {selectedCustomerIds.includes(customer.id)
                                                 ? <CheckSquare size={17} color="var(--primary-color)" />
                                                 : <Square size={17} color="#94a3b8" />
                                             }
                                         </div>
                                     </td>
-                                    <td>
-                                        <div className="profile-initials">
-                                            {customer.name.split(' ').map(n => n[0]).join('')}
+                                    <td style={{ textAlign: 'center' }}>
+                                        <div className="cust-profile-cell" style={{ display: 'flex', justifyContent: 'center' }}>
+                                            {customer.profile_image ? (
+                                                <div style={{ width: '36px', height: '36px', borderRadius: '50%', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                                                    <img 
+                                                        src={customer.profile_image} 
+                                                        alt={customer.name} 
+                                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                        onError={(e) => {
+                                                            e.target.onerror = null;
+                                                            e.target.style.display = 'none';
+                                                            e.target.nextSibling.style.display = 'flex';
+                                                        }}
+                                                    />
+                                                    <div className="profile-initials" style={{ width: '100%', height: '100%', display: 'none', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9', color: '#475569', fontWeight: 600, fontSize: '0.8rem' }}>
+                                                        {customer.name ? customer.name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase() : '?'}
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="profile-initials" style={{ width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9', color: '#475569', fontWeight: 600, fontSize: '0.8rem', border: '1px solid #e2e8f0' }}>
+                                                    {customer.name ? customer.name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase() : '?'}
+                                                </div>
+                                            )}
                                         </div>
                                     </td>
-                                    <td><span className="cust-id-badge">{customer.id}</span></td>
-                                    <td><span className="cust-name-text">{customer.name}</span></td>
-                                    <td>
-                                        <div className="cust-contact-primary">{customer.email}</div>
-                                        <div className="cust-contact-secondary">{customer.phone}</div>
-                                    </td>
-                                    <td>
-                                        <div className="cust-location-box">
-                                            <MapPin size={12} /> {customer.city}, {customer.country}
-                                        </div>
-                                    </td>
-                                    <td className="cust-orders-count">{customer.totalOrders}</td>
-                                    <td className="cust-joined-date">{customer.joined}</td>
-                                    <td>
-                                        <span className={`badge ${customer.status === 'Active' ? 'success' : customer.status === 'Terminated' ? 'error' : 'warning'}`}>
-                                            {customer.status}
+                                    <td style={{ textAlign: 'center' }}><span className="cust-id-badge">CUST-{customer.id}</span></td>
+                                    <td style={{ textAlign: 'center' }}>
+                                        <span className="cust-name-text" style={{ 
+                                            maxWidth: '200px', 
+                                            display: 'inline-block', 
+                                            wordWrap: 'break-word', 
+                                            whiteSpace: 'normal',
+                                            lineHeight: '1.2'
+                                        }}>
+                                            {customer.name || 'Anonymous'}
                                         </span>
                                     </td>
-                                    <td className="cust-actions-cell">
-                                        <ActionButtons
-                                            onView={() => onView(customer)}
-                                            onEdit={() => onEdit(customer)}
-                                            onToggleStatus={customer.status === 'Active' ? () => onBlock(customer.id) : () => onActivate(customer.id)}
-                                            onDelete={() => onTerminate(customer.id)}
-                                            isActive={customer.status === 'Active'}
-                                            type="customer"
-                                        />
+                                    <td style={{ textAlign: 'center' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                            <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.88rem' }}>{customer.phone || 'No Phone'}</div>
+                                            <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{customer.email || 'No Email'}</div>
+                                        </div>
+                                    </td>
+                                    <td style={{ textAlign: 'center' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                            <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.85rem' }}>
+                                                {(() => {
+                                                    const parts = customer.location ? customer.location.split(', ') : [];
+                                                    if (parts.length > 1) {
+                                                        const country = parts.pop();
+                                                        return parts.join(', ');
+                                                    }
+                                                    return customer.location || 'Unknown';
+                                                })()}
+                                            </div>
+                                            <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                                                {(() => {
+                                                    const parts = customer.location ? customer.location.split(', ') : [];
+                                                    return parts.length > 1 ? parts[parts.length - 1] : '';
+                                                })()}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td style={{ textAlign: 'center' }} className="cust-orders-count">{customer.orders || 0}</td>
+                                    <td style={{ textAlign: 'center' }}>
+                                        <div style={{ 
+                                            display: 'inline-flex', 
+                                            alignItems: 'center', 
+                                            justifyContent: 'center',
+                                            padding: '4px 8px',
+                                            borderRadius: '6px',
+                                            fontSize: '0.8rem',
+                                            fontWeight: 700,
+                                            background: customer.profile_completion >= 80 ? '#dcfce7' : customer.profile_completion >= 50 ? '#fef9c3' : '#fee2e2',
+                                            color: customer.profile_completion >= 80 ? '#166534' : customer.profile_completion >= 50 ? '#854d0e' : '#991b1b',
+                                        }}>
+                                            {customer.profile_completion || 0}%
+                                        </div>
+                                    </td>
+                                    <td style={{ textAlign: 'center' }} className="cust-joined-date">{customer.joined}</td>
+                                    <td style={{ textAlign: 'center' }}>
+                                        <span className={`status-badge ${customer.status?.toLowerCase() || 'active'}`}>
+                                            {customer.status || 'Active'}
+                                        </span>
+                                    </td>
+                                    <td style={{ textAlign: 'center' }}>
+                                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                                            <ActionButton
+                                                icon={Eye}
+                                                onClick={() => onView(customer)}
+                                                variant="secondary"
+                                                size={16}
+                                                tooltip="View Profile"
+                                            />
+                                            <ActionButton
+                                                icon={Power}
+                                                onClick={() => customer.status?.toLowerCase() === 'active' ? onBlock(customer.id) : onActivate(customer.id)}
+                                                variant="secondary"
+                                                size={16}
+                                                tooltip={customer.status?.toLowerCase() === 'active' ? "Block User" : "Activate User"}
+                                            />
+                                            <ActionButton
+                                                icon={Trash2}
+                                                onClick={() => onTerminate(customer.id)}
+                                                variant="secondary"
+                                                size={16}
+                                                tooltip="Terminate Account"
+                                            />
+                                        </div>
                                     </td>
                                 </tr>
                             ))
@@ -213,35 +283,29 @@ const CustomerList = ({
             </div>
 
             {/* ── Pagination ── */}
-            <div className="cust-pagination">
-                <span className="cust-pagination-info">
-                    Showing <strong>{Math.min(itemsPerPage * (currentPage - 1) + 1, totalCount)}</strong> to <strong>{Math.min(itemsPerPage * currentPage, totalCount)}</strong> of <strong>{totalCount}</strong> customers
+            <div className="c-pagination">
+                <span className="c-pagination-info">
+                    Showing {Math.min(itemsPerPage * (currentPage - 1) + 1, totalCount)}–{Math.min(itemsPerPage * currentPage, totalCount)} of {totalCount} customers
                 </span>
-                <div className="cust-pagination-btns">
+                <div className="c-pagination-btns">
                     <button
-                        className="cust-page-btn"
+                        className="c-page-btn"
                         disabled={currentPage === 1}
                         onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage - 1 }))}
                     >
-                        <ChevronLeft size={16} /> Prev
+                        <ChevronLeft size={14} /> Prev
                     </button>
 
-                    {[...Array(totalPages)].map((_, i) => (
-                        <button
-                            key={i + 1}
-                            onClick={() => setPagination(prev => ({ ...prev, currentPage: i + 1 }))}
-                            className={`cust-page-btn ${currentPage === i + 1 ? 'active' : ''}`}
-                        >
-                            {i + 1}
-                        </button>
-                    ))}
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', padding: '0 4px', display: 'flex', alignItems: 'center' }}>
+                        {currentPage} / {totalPages || 1}
+                    </span>
 
                     <button
-                        className="cust-page-btn"
+                        className="c-page-btn"
                         disabled={currentPage === totalPages || totalPages === 0}
                         onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage + 1 }))}
                     >
-                        Next <ChevronRight size={16} />
+                        Next <ChevronRight size={14} />
                     </button>
                 </div>
             </div>

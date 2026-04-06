@@ -170,11 +170,40 @@ const ProductsPage = () => {
         }
     };
 
-    const handleSelectAll = (checked) => {
-        if (checked) {
-            setSelectedRows(products.map(p => p.id));
-        } else {
+    const handleSelectAll = async (checked) => {
+        if (!checked) {
             setSelectedRows([]);
+            return;
+        }
+
+        try {
+            setLoading(true);
+            const statusMap = {
+                'true': 'APPROVED',
+                'false': 'PENDING',
+                'rejected': 'REJECTED'
+            };
+
+            const params = {
+                limit: pagination.total || 1000,
+                search: debouncedSearch,
+                vendor: filters.vendor,
+                brand: filters.brand,
+                category: filters.category,
+                subCategory: filters.subCategory,
+                status: statusMap[filters.isApproved] || filters.isApproved
+            };
+
+            const response = await getProductsApi(params);
+            if (response.data.success) {
+                const allIds = (response.data.data.records || []).map(p => p.id);
+                setSelectedRows(allIds);
+            }
+        } catch (error) {
+            console.error('Select All Error:', error);
+            showToast('Failed to select all products', 'error');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -222,6 +251,7 @@ const ProductsPage = () => {
                 ) : (
                     <ProductList
                         products={products}
+                        totalFilteredCount={pagination.total}
                         onAction={handleAction}
                         selectedRows={selectedRows}
                         onSelectRow={handleSelectRow}

@@ -177,7 +177,7 @@ const VendorProductsPage = () => {
 
     const handleSelectAll = (checked) => {
         if (checked) {
-            setSelectedRows(paginatedData.map(p => p.id));
+            setSelectedRows(filteredProducts.map(p => p.id));
         } else {
             setSelectedRows([]);
         }
@@ -368,6 +368,7 @@ const VendorProductsPage = () => {
 
                         <VendorProductList
                             products={paginatedData}
+                            totalFilteredCount={filteredProducts.length}
                             selectedRows={selectedRows}
                             onSelectRow={handleSelectRow}
                             onSelectAll={handleSelectAll}

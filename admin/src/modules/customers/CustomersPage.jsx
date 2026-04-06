@@ -1,10 +1,11 @@
-import React, { useState, useMemo } from 'react';
-import { UserPlus } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { UserPlus, Loader2 } from 'lucide-react';
 import CustomerStats from './components/CustomerStats';
 import CustomerList from './components/CustomerList';
 import CustomerProfileModal from './components/CustomerProfileModal';
 import Toast from '../../components/common/Toast/Toast';
 import './Customers.css';
+import { getAllCustomersApi } from '../../api/customers.api';
 
 const LOCATION_DATA = {
     "India": {
@@ -23,16 +24,14 @@ const LOCATION_DATA = {
 };
 
 const CustomersPage = () => {
-    const [customers, setCustomers] = useState([
-        { id: 'CUST-3001', name: 'Alice Johnson', email: 'alice@example.com', phone: '+91 98765 43210', totalOrders: 15, joined: '12 Oct 2025', country: 'India', state: 'Maharashtra', city: 'Mumbai', status: 'Active' },
-        { id: 'CUST-3002', name: 'Bob Smith', email: 'bob@example.com', phone: '+91 88765 43210', totalOrders: 4, joined: '05 Jan 2026', country: 'USA', state: 'California', city: 'Los Angeles', status: 'Active' },
-        { id: 'CUST-3003', name: 'Charlie Brown', email: 'charlie@example.com', phone: '+91 78765 43210', totalOrders: 0, joined: '10 Feb 2026', country: 'UK', state: 'London', city: 'Central London', status: 'Inactive' },
-        { id: 'CUST-3004', name: 'David Lee', email: 'david.l@example.com', phone: '+91 68765 43210', totalOrders: 28, joined: '20 Nov 2025', country: 'USA', state: 'New York', city: 'New York City', status: 'Active' },
-        { id: 'CUST-3005', name: 'Emma Watson', email: 'emma.w@example.com', phone: '+91 58765 43210', totalOrders: 12, joined: '15 Dec 2025', country: 'UK', state: 'Manchester', city: 'Old Trafford', status: 'Active' },
-        { id: 'CUST-3006', name: 'Frank Miller', email: 'frank@example.com', phone: '+92 34567 11223', totalOrders: 3, joined: '01 Feb 2026', country: 'USA', state: 'California', city: 'San Francisco', status: 'Blocked' },
-        { id: 'CUST-3007', name: 'Grace Hopper', email: 'grace@example.com', phone: '+91 91234 55667', totalOrders: 42, joined: '10 Aug 2025', country: 'India', state: 'Karnataka', city: 'Bangalore', status: 'Active' },
-        { id: 'CUST-3008', name: 'Henry Ford', email: 'henry@example.com', phone: '+91 82233 44556', totalOrders: 1, joined: '20 Jan 2026', country: 'India', state: 'Maharashtra', city: 'Pune', status: 'Active' },
-    ]);
+    const [customers, setCustomers] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState({
+        total: 0,
+        active: 0,
+        suspended: 0,
+        terminated: 0
+    });
 
     const [filters, setFilters] = useState({
         search: '',
@@ -44,7 +43,8 @@ const CustomersPage = () => {
 
     const [pagination, setPagination] = useState({
         currentPage: 1,
-        itemsPerPage: 5
+        itemsPerPage: 10,
+        totalRecords: 0
     });
 
     const [viewingCustomer, setViewingCustomer] = useState(null);
@@ -57,24 +57,64 @@ const CustomersPage = () => {
         setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
     };
 
+    const fetchCustomers = useCallback(async () => {
+        try {
+            setLoading(true);
+            const params = {
+                page: pagination.currentPage,
+                limit: pagination.itemsPerPage,
+                search: filters.search || undefined,
+                status: filters.status !== 'All' ? filters.status.toLowerCase() : undefined,
+                country: filters.country !== 'All' ? filters.country : undefined,
+                state: filters.state !== 'All' ? filters.state : undefined,
+            };
+
+            const res = await getAllCustomersApi(params);
+            const result = res.data;
+            
+            if (result.success) {
+                setCustomers(result.data.records || []);
+                setStats(result.data.stats || {
+                    total: 0,
+                    active: 0,
+                    suspended: 0,
+                    terminated: 0
+                });
+                setPagination(prev => ({
+                    ...prev,
+                    totalRecords: result.data.pagination?.totalRecords || 0
+                }));
+            }
+        } catch (error) {
+            console.error("API Error:", error);
+            showToast(error.response?.data?.message || error.message || 'Failed to fetch customers', 'error');
+        } finally {
+            setLoading(false);
+        }
+    }, [pagination.currentPage, pagination.itemsPerPage, filters]);
+
+    useEffect(() => {
+        fetchCustomers();
+    }, [fetchCustomers]);
+
     const handleFilterChange = (newFilters) => {
         setFilters(newFilters);
         setPagination(prev => ({ ...prev, currentPage: 1 }));
     };
 
     const handleTerminate = (id) => {
-        setCustomers(customers.map(c => c.id === id ? { ...c, status: 'Terminated' } : c));
-        showToast(`Customer ${id} has been terminated.`, 'error');
+        // API call would go here
+        showToast(`Termination functionality coming soon.`, 'error');
     };
 
     const handleBlock = (id) => {
-        setCustomers(customers.map(c => c.id === id ? { ...c, status: 'Blocked' } : c));
-        showToast(`Customer ${id} has been blocked.`, 'warning');
+        // API call would go here
+        showToast(`Block functionality coming soon.`, 'warning');
     };
 
     const handleActivate = (id) => {
-        setCustomers(customers.map(c => c.id === id ? { ...c, status: 'Active' } : c));
-        showToast(`Customer ${id} has been activated successfully.`, 'success');
+        // API call would go here
+        showToast(`Activation functionality coming soon.`, 'success');
     };
 
     const handleView = (customer) => {
@@ -82,55 +122,73 @@ const CustomersPage = () => {
         setIsViewModalOpen(true);
     };
 
-    const filteredCustomers = useMemo(() => {
-        return customers.filter(c => {
-            const matchesSearch = !filters.search ||
-                c.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-                c.id.toLowerCase().includes(filters.search.toLowerCase()) ||
-                c.email.toLowerCase().includes(filters.search.toLowerCase());
+    const handleSelectAll = async (checked) => {
+        if (!checked) {
+            setSelectedCustomerIds([]);
+            return;
+        }
 
-            const matchesStatus = filters.status === 'All' || c.status === filters.status;
-            const matchesCountry = filters.country === 'All' || c.country === filters.country;
-            const matchesState = filters.state === 'All' || c.state === filters.state;
-            const matchesCity = filters.city === 'All' || c.city === filters.city;
+        try {
+            setLoading(true);
+            const params = {
+                limit: pagination.totalRecords,
+                search: filters.search || undefined,
+                status: filters.status !== 'All' ? filters.status.toLowerCase() : undefined,
+                country: filters.country !== 'All' ? filters.country : undefined,
+                state: filters.state !== 'All' ? filters.state : undefined,
+            };
 
-            return matchesSearch && matchesStatus && matchesCountry && matchesState && matchesCity;
-        });
-    }, [customers, filters]);
+            const res = await getAllCustomersApi(params);
+            if (res.data.success) {
+                const allIds = (res.data.data.records || []).map(c => c.id);
+                setSelectedCustomerIds(allIds);
+            }
+        } catch (error) {
+            console.error("Select All Error:", error);
+            showToast('Failed to select all customers', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    const paginatedCustomers = useMemo(() => {
-        const startIndex = (pagination.currentPage - 1) * pagination.itemsPerPage;
-        return filteredCustomers.slice(startIndex, startIndex + pagination.itemsPerPage);
-    }, [filteredCustomers, pagination]);
-
-    const stats = {
-        total: customers.length,
-        active: customers.filter(c => c.status === 'Active').length,
-        new: 3,
-        inactive: customers.filter(c => c.status !== 'Active').length
+    // Adapt stats for the CustomerStats component
+    const adaptedStats = {
+        total: stats.total,
+        active: stats.active,
+        new: 3, // Mocked for now as per design
+        inactive: parseInt(stats.suspended) + parseInt(stats.terminated)
     };
 
     return (
         <div className="customers-module management-module">
             <div className="customers-header">
                 <div>
-                    <h1>Customer Management</h1>
-                    <p>Manage your user base, track orders and handle account statuses</p>
+                    <h1 style={{ fontSize: '1.8rem', margin: 0, fontWeight: 700, color: 'var(--text-primary)' }}>Customer Management</h1>
+                    <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '4px' }}>
+                        Manage your user base, track orders and handle account statuses
+                    </p>
                 </div>
                 <button
                     className="btn btn-primary"
                     onClick={() => showToast('Customer onboarding coming soon!', 'info')}
+                    style={{ borderRadius: '10px', padding: '10px 20px' }}
                 >
                     <UserPlus size={18} /> Add New Customer
                 </button>
             </div>
 
-            <CustomerStats stats={stats} />
+            <CustomerStats stats={adaptedStats} />
 
-            <div style={{ marginTop: '24px' }}>
+            <div style={{ marginTop: '24px', position: 'relative' }}>
+                {loading && (
+                    <div className="table-loader-overlay">
+                        <Loader2 className="animate-spin" size={40} color="var(--primary-color)" />
+                    </div>
+                )}
+                
                 <CustomerList
-                    customers={paginatedCustomers}
-                    totalCount={filteredCustomers.length}
+                    customers={customers}
+                    totalCount={pagination.totalRecords}
                     filters={filters}
                     setFilters={handleFilterChange}
                     pagination={pagination}
@@ -138,12 +196,14 @@ const CustomersPage = () => {
                     locationData={LOCATION_DATA}
                     selectedCustomerIds={selectedCustomerIds}
                     setSelectedCustomerIds={setSelectedCustomerIds}
+                    onSelectAll={handleSelectAll}
                     onView={handleView}
-                    onEdit={(c) => showToast(`Editing ${c.name}`, 'info')}
+                    onEdit={(c) => showToast(`Editing ${c.name || 'Customer'}`, 'info')}
                     onBlock={handleBlock}
                     onActivate={handleActivate}
                     onTerminate={handleTerminate}
                     showToast={showToast}
+                    isLoading={loading}
                 />
             </div>
 

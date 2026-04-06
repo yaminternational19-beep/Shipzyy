@@ -58,9 +58,24 @@ const VendorStaffList = ({ onEdit, onEditPermissions, onDeactivate, onDelete, on
         return () => clearTimeout(timer);
     }, [searchQuery, selectedRole, currentPage]);
 
-    const handleSelectAll = (e) => {
+    const handleSelectAll = async (e) => {
         if (e.target.checked) {
-            setSelectedVendorStaff(vendorStaff.map(u => u.id));
+            try {
+                setIsLoading(true);
+                const params = {
+                    limit: pagination.totalRecords || 1000,
+                    search: searchQuery,
+                    role: selectedRole,
+                };
+                const res = await getVendorStaffApi(params);
+                const allIds = (res.data.data.records || []).map(u => u.id);
+                setSelectedVendorStaff(allIds);
+            } catch (error) {
+                console.error("Select all error:", error);
+                onShowToast('Failed to select all vendor staff', 'error');
+            } finally {
+                setIsLoading(false);
+            }
         } else {
             setSelectedVendorStaff([]);
         }
@@ -141,12 +156,6 @@ const VendorStaffList = ({ onEdit, onEditPermissions, onDeactivate, onDelete, on
             </div>
 
             {/* Bulk Actions Bar */}
-            {selectedVendorStaff.length > 0 && (
-                <div className="c-bulk-bar">
-                    <span>{selectedVendorStaff.length} vendor staff selected</span>
-                    <button onClick={() => setSelectedVendorStaff([])}>Clear Selection</button>
-                </div>
-            )}
 
             {/* Table Section */}
             <div style={{ overflowX: 'auto' }}>
@@ -156,10 +165,10 @@ const VendorStaffList = ({ onEdit, onEditPermissions, onDeactivate, onDelete, on
                         <tr>
                             <th style={{ width: '48px' }}>
                                 <div
-                                    onClick={() => handleSelectAll({ target: { checked: selectedVendorStaff.length !== vendorStaff.length } })}
+                                    onClick={() => handleSelectAll({ target: { checked: selectedVendorStaff.length !== (pagination?.totalRecords || 0) || pagination?.totalRecords === 0 } })}
                                     style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                                 >
-                                    {vendorStaff.length > 0 && selectedVendorStaff.length === vendorStaff.length
+                                    {selectedVendorStaff.length === (pagination?.totalRecords || 0) && pagination?.totalRecords > 0
                                         ? <CheckSquare size={17} color="var(--primary-color)" />
                                         : <Square size={17} color="#94a3b8" />
                                     }
