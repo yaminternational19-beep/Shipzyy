@@ -106,8 +106,10 @@ router.use("/customers", customerAdminRoutes);
 
 import customerAuthRoutes from '../../modules/customers/auth/customers.auth.routes.js';
 import customerProfileRoutes from '../../modules/customers/profile/profile.routes.js';
+import customerHomeRoutes from '../../modules/customers/home/home.routes.js';
 
 router.use("/customers", customerAuthRoutes);
+router.use("/", customerHomeRoutes);
 router.use("/profile", customerProfileRoutes);
 
 
