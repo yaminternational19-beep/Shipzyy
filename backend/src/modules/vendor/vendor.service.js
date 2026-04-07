@@ -66,7 +66,7 @@ const createVendor = async (data, files) => {
         const vendorValues = [
             vendorCode, data.business_name, data.owner_name, data.email, hashedPassword,
             data.country_code, data.mobile, data.emergency_country_code || null, data.emergency_mobile || null,
-            data.business_categories, data.tier_id, commissionPercent, data.address,
+            Array.isArray(data.business_categories) ? JSON.stringify(data.business_categories) : data.business_categories, data.tier_id, commissionPercent, data.address,
             data.country, data.country_iso, data.state, data.state_iso, data.city, data.pincode,
             data.latitude || null, data.longitude || null, data.aadhar_number, data.pan_number,
             data.license_number || null, data.fassi_code || null, data.gst_number || null, data.bank_name,
@@ -319,7 +319,11 @@ const updateVendor = async (id, data, files) => {
         for (const field of fields) {
             if (data[field] !== undefined) {
                 updateFields.push(`${field} = ?`);
-                updateValues.push(data[field]);
+                let valueToSet = data[field];
+                if (field === 'business_categories' && Array.isArray(valueToSet)) {
+                    valueToSet = JSON.stringify(valueToSet);
+                }
+                updateValues.push(valueToSet);
             }
         }
 

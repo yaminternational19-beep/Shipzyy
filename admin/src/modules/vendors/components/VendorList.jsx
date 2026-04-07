@@ -267,10 +267,10 @@ const VendorList = ({ onEdit, onDelete, showToast, onTabChange, onStatsUpdate })
                                                 maxWidth: '200px',
                                                 margin: '5px auto 0'
                                             }}>
-                                                {cats.map((cat, i) => {
+                                                {cats.slice(0, 2).map((cat, i) => {
                                                     const c = CHIP_COLORS[i % CHIP_COLORS.length];
                                                     return (
-                                                        <span key={i} style={{
+                                                        <span key={i} title={cat} style={{
                                                             background: c.bg,
                                                             color: c.color,
                                                             fontSize: '10px',
@@ -284,6 +284,20 @@ const VendorList = ({ onEdit, onDelete, showToast, onTabChange, onStatsUpdate })
                                                         </span>
                                                     );
                                                 })}
+                                                {cats.length > 2 && (
+                                                    <span title={cats.slice(2).join(', ')} style={{
+                                                        background: '#f1f5f9',
+                                                        color: '#475569',
+                                                        fontSize: '10px',
+                                                        fontWeight: 700,
+                                                        padding: '2px 7px',
+                                                        borderRadius: '20px',
+                                                        whiteSpace: 'nowrap',
+                                                        cursor: 'help'
+                                                    }}>
+                                                        +{cats.length - 2}
+                                                    </span>
+                                                )}
                                             </div>
                                         );
                                     })()}
@@ -361,7 +375,7 @@ const VendorList = ({ onEdit, onDelete, showToast, onTabChange, onStatsUpdate })
                                             onView={() => navigate(`/vendors/${vendor.id}`, { state: { vendor } })}
                                             onEdit={() => onEdit?.(vendor)}
                                             onDelete={() => onDelete?.(vendor)}
-                                            onPermissions={() => onTabChange?.('kyc')}
+                                            // onPermissions={() => onTabChange?.('kyc')}
                                             onToggleStatus={() => handleStatusToggle(vendor)}
                                             onToggleAutoApprove={() => handleAutoApproveToggle(vendor)}
                                             isAutoApprove={vendor.auto_approve_products === 1}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, MapPin, ChevronLeft, ChevronRight, X, Square, CheckSquare, Eye, Power, Trash2 } from 'lucide-react';
+import { Search, MapPin, ChevronLeft, ChevronRight, X, Square, CheckSquare, Eye, Trash2, Ban, UserX } from 'lucide-react';
 import ActionButton from '../../../components/common/ActionButton/ActionButton';
 import ExportActions from '../../../components/common/ExportActions';
 
@@ -15,10 +15,10 @@ const CustomerList = ({
     setSelectedCustomerIds,
     onView,
     onEdit,
-    onBlock,
-    onActivate,
-    onTerminate,
+    onChangeStatus,
+    onDelete,
     onSelectAll,
+    onExport,
     showToast
 }) => {
     const { currentPage, itemsPerPage } = pagination;
@@ -117,7 +117,8 @@ const CustomerList = ({
 
                 <ExportActions
                     selectedCount={selectedCustomerIds.length}
-                    onExport={(format) => showToast(`Exporting as ${format}...`)}
+                    onExport={showToast}
+                    onDownload={onExport}
                 />
             </div>
 
@@ -259,20 +260,34 @@ const CustomerList = ({
                                                 size={16}
                                                 tooltip="View Profile"
                                             />
-                                            <ActionButton
-                                                icon={Power}
-                                                onClick={() => customer.status?.toLowerCase() === 'active' ? onBlock(customer.id) : onActivate(customer.id)}
-                                                variant="secondary"
-                                                size={16}
-                                                tooltip={customer.status?.toLowerCase() === 'active' ? "Block User" : "Activate User"}
-                                            />
-                                            <ActionButton
-                                                icon={Trash2}
-                                                onClick={() => onTerminate(customer.id)}
-                                                variant="secondary"
-                                                size={16}
-                                                tooltip="Terminate Account"
-                                            />
+                                            
+                                            {customer.status?.toLowerCase() !== 'terminated' && (
+                                                <>
+                                                    <ActionButton
+                                                        icon={Ban}
+                                                        onClick={() => onChangeStatus(customer.id, customer.status?.toLowerCase() === 'suspended' ? 'active' : 'suspended')}
+                                                        variant="secondary"
+                                                        size={16}
+                                                        tooltip={customer.status?.toLowerCase() === 'suspended' ? "Activate Account" : "Suspend Account"}
+                                                    />
+                                                    <ActionButton
+                                                        icon={UserX}
+                                                        onClick={() => onChangeStatus(customer.id, 'terminated')}
+                                                        variant="secondary"
+                                                        size={16}
+                                                        tooltip="Terminate Account"
+                                                    />
+                                                </>
+                                            )}
+                                            {customer.status?.toLowerCase() === 'terminated' && (
+                                                <ActionButton
+                                                    icon={Trash2}
+                                                    onClick={() => onDelete(customer.id)}
+                                                    variant="secondary"
+                                                    size={16}
+                                                    tooltip="Delete"
+                                                />
+                                            )}
                                         </div>
                                     </td>
                                 </tr>

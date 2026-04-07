@@ -191,6 +191,22 @@ const GlobalRoutes = () => {
                 }
             />
             <Route
+                path="/customers/suspended"
+                element={
+                    <ProtectedRoute allowedRoles={["SUPER_ADMIN", "ADMIN", "SUB_ADMIN"]}>
+                        <CustomerManagement />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/customers/terminated"
+                element={
+                    <ProtectedRoute allowedRoles={["SUPER_ADMIN", "ADMIN", "SUB_ADMIN"]}>
+                        <CustomerManagement />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
                 path="/staff"
                 element={
                     <ProtectedRoute allowedRoles={["SUPER_ADMIN", "ADMIN", "SUB_ADMIN", "VENDOR_OWNER"]}>

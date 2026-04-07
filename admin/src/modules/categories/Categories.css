@@ -301,8 +301,12 @@
 }
 
 .vendor-cat-actions-cell {
+    vertical-align: middle;
+}
+
+.vendor-cat-actions-cell .action-buttons {
     display: flex;
-    justify-content: center;
+    justify-content: flex-end;
 }
 
 /* ─── Status Badges ─── */

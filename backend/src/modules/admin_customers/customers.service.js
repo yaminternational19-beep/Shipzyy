@@ -36,9 +36,19 @@ export const getAllCustomers = async (queryParams) => {
      FILTERS
   =============================== */
 
-  if (queryParams.status) {
+  if (queryParams.status && queryParams.status !== 'All') {
     where.push("c.status = ?");
     values.push(queryParams.status);
+  }
+
+  if (queryParams.stats) {
+    if (queryParams.stats === 'active') {
+      where.push("c.status = 'active'");
+    } else if (queryParams.stats === 'inactive') {
+      where.push("c.status IN ('suspended', 'terminated')");
+    } else if (queryParams.stats === 'new') {
+      where.push("c.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)");
+    }
   }
 
   if (queryParams.search) {
@@ -48,12 +58,12 @@ export const getAllCustomers = async (queryParams) => {
     values.push(`%${queryParams.search}%`);
   }
 
-  if (queryParams.country) {
+  if (queryParams.country && queryParams.country !== 'All') {
     where.push("a.country = ?");
     values.push(queryParams.country);
   }
 
-  if (queryParams.state) {
+  if (queryParams.state && queryParams.state !== 'All') {
     where.push("a.state = ?");
     values.push(queryParams.state);
   }
@@ -156,7 +166,8 @@ export const getAllCustomers = async (queryParams) => {
       COUNT(*) as total,
       SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
       SUM(CASE WHEN status = 'suspended' THEN 1 ELSE 0 END) as suspended,
-      SUM(CASE WHEN status = 'terminated' THEN 1 ELSE 0 END) as terminatedCount
+      SUM(CASE WHEN status = 'terminated' THEN 1 ELSE 0 END) as terminatedCount,
+      SUM(CASE WHEN created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) THEN 1 ELSE 0 END) as new_accounts
     FROM customers
     WHERE is_deleted = FALSE
   `);
@@ -165,7 +176,8 @@ export const getAllCustomers = async (queryParams) => {
     total: customerStats[0].total,
     active: customerStats[0].active,
     suspended: customerStats[0].suspended,
-    terminated: customerStats[0].terminatedCount
+    terminated: customerStats[0].terminatedCount,
+    new: customerStats[0].new_accounts || 0
   };
 
   return {
@@ -241,14 +253,23 @@ export const getCustomerById = async (id) => {
 
 export const updateStatus = async (id, status) => {
 
-  const [result] = await db.query(
-    "UPDATE customers SET status = ?, updated_at = NOW() WHERE id = ? AND is_deleted = FALSE",
-    [status, id]
+  const [customer] = await db.query(
+    "SELECT status FROM customers WHERE id = ? AND is_deleted = FALSE",
+    [id]
   );
 
-  if (result.affectedRows === 0) {
+  if (!customer.length) {
     throw new ApiError(404, "Customer not found");
   }
+
+  if (customer[0].status === 'terminated') {
+    throw new ApiError(400, "Cannot change status of a terminated customer");
+  }
+
+  const [result] = await db.query(
+    "UPDATE customers SET status = ?, updated_at = NOW() WHERE id = ?",
+    [status, id]
+  );
 
   return true;
 
@@ -260,14 +281,23 @@ export const updateStatus = async (id, status) => {
 
 export const deleteCustomer = async (id) => {
 
+  const [customer] = await db.query(
+    "SELECT status FROM customers WHERE id = ? AND is_deleted = FALSE",
+    [id]
+  );
+
+  if (!customer.length) {
+    throw new ApiError(404, "Customer not found");
+  }
+
+  if (customer[0].status !== 'terminated') {
+    throw new ApiError(400, "Only terminated customers can be deleted");
+  }
+
   const [result] = await db.query(
     "UPDATE customers SET is_deleted = TRUE, updated_at = NOW() WHERE id = ?",
     [id]
   );
-
-  if (result.affectedRows === 0) {
-    throw new ApiError(404, "Customer not found");
-  }
 
   return true;
 

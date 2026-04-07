@@ -96,7 +96,7 @@ import adminProductsRoutes from '../../modules/admin_products/admin_products.rou
 
 router.use("/admin-products", adminProductsRoutes);
 
-import customerAdminRoutes from '../../modules/customers_admin/customers.routes.js';
+import customerAdminRoutes from '../../modules/admin_customers/customers.routes.js';
 
 router.use("/customers", customerAdminRoutes);
 
@@ -109,8 +109,8 @@ import customerProfileRoutes from '../../modules/customers/profile/profile.route
 import customerHomeRoutes from '../../modules/customers/home/home.routes.js';
 
 router.use("/customers", customerAuthRoutes);
-router.use("/", customerHomeRoutes);
-router.use("/profile", customerProfileRoutes);
+router.use("/customers", customerHomeRoutes);
+router.use("/customers", customerProfileRoutes);
 
 
 export default router;

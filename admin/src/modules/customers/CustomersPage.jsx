@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { UserPlus, Loader2 } from 'lucide-react';
 import CustomerStats from './components/CustomerStats';
 import CustomerList from './components/CustomerList';
 import CustomerProfileModal from './components/CustomerProfileModal';
 import Toast from '../../components/common/Toast/Toast';
 import './Customers.css';
-import { getAllCustomersApi } from '../../api/customers.api';
+import { getAllCustomersApi, updateCustomerStatusApi, deleteCustomerApi } from '../../api/customers.api';
+import { exportCustomersToPDF, exportCustomersToExcel } from './services/export.service';
 
 const LOCATION_DATA = {
     "India": {
@@ -33,13 +35,28 @@ const CustomersPage = () => {
         terminated: 0
     });
 
+    const location = useLocation();
+    
+    const initialStatus = location.pathname.includes('/suspended') ? 'suspended' 
+        : location.pathname.includes('/terminated') ? 'terminated' 
+        : 'active';
+
     const [filters, setFilters] = useState({
         search: '',
-        status: 'All',
+        status: initialStatus,
         country: 'All',
         state: 'All',
         city: 'All'
     });
+
+    // Update filters if the route changes (e.g., clicking sidebar links)
+    useEffect(() => {
+        const routeStatus = location.pathname.includes('/suspended') ? 'suspended' 
+            : location.pathname.includes('/terminated') ? 'terminated' 
+            : 'active';
+        setFilters(prev => ({ ...prev, status: routeStatus }));
+        setPagination(prev => ({ ...prev, currentPage: 1 }));
+    }, [location.pathname]);
 
     const [pagination, setPagination] = useState({
         currentPage: 1,
@@ -102,19 +119,30 @@ const CustomersPage = () => {
         setPagination(prev => ({ ...prev, currentPage: 1 }));
     };
 
-    const handleTerminate = (id) => {
-        // API call would go here
-        showToast(`Termination functionality coming soon.`, 'error');
+    const handleChangeStatus = async (id, status) => {
+        try {
+            const res = await updateCustomerStatusApi(id, status);
+            if (res.data.success) {
+                showToast(`Customer status updated to ${status}.`, 'success');
+                fetchCustomers();
+            }
+        } catch (error) {
+            showToast(error.response?.data?.message || 'Failed to update status', 'error');
+        }
     };
 
-    const handleBlock = (id) => {
-        // API call would go here
-        showToast(`Block functionality coming soon.`, 'warning');
-    };
-
-    const handleActivate = (id) => {
-        // API call would go here
-        showToast(`Activation functionality coming soon.`, 'success');
+    const handleDelete = async (id) => {
+        try {
+            if (window.confirm("Are you sure you want to delete this customer?")) {
+                const res = await deleteCustomerApi(id);
+                if (res.data.success) {
+                    showToast(`Customer deleted successfully.`, 'success');
+                    fetchCustomers();
+                }
+            }
+        } catch (error) {
+            showToast(error.response?.data?.message || 'Failed to delete customer', 'error');
+        }
     };
 
     const handleView = (customer) => {
@@ -148,6 +176,18 @@ const CustomersPage = () => {
             showToast('Failed to select all customers', 'error');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleExport = (format) => {
+        const dataToExport = customers.filter(c => selectedCustomerIds.includes(c.id));
+        
+        if (dataToExport.length === 0) return;
+
+        if (format === 'pdf') {
+            exportCustomersToPDF(dataToExport);
+        } else if (format === 'excel') {
+            exportCustomersToExcel(dataToExport);
         }
     };
 
@@ -199,9 +239,9 @@ const CustomersPage = () => {
                     onSelectAll={handleSelectAll}
                     onView={handleView}
                     onEdit={(c) => showToast(`Editing ${c.name || 'Customer'}`, 'info')}
-                    onBlock={handleBlock}
-                    onActivate={handleActivate}
-                    onTerminate={handleTerminate}
+                    onChangeStatus={handleChangeStatus}
+                    onDelete={handleDelete}
+                    onExport={handleExport}
                     showToast={showToast}
                     isLoading={loading}
                 />
@@ -211,9 +251,9 @@ const CustomersPage = () => {
                 <CustomerProfileModal
                     customer={viewingCustomer}
                     onClose={() => setIsViewModalOpen(false)}
-                    onTerminate={handleTerminate}
-                    onBlock={handleBlock}
-                    onActivate={handleActivate}
+                    onTerminate={(id) => handleChangeStatus(id, 'terminated')}
+                    onBlock={(id) => handleChangeStatus(id, 'suspended')}
+                    onActivate={(id) => handleChangeStatus(id, 'active')}
                 />
             )}
 

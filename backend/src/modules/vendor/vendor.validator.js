@@ -49,7 +49,7 @@ const updateVendorSchema = Joi.object({
   mobile: Joi.string().optional(),
   emergency_country_code: Joi.string().optional(),
   emergency_mobile: Joi.string().optional(),
-  business_categories: Joi.string().optional(),
+  business_categories: Joi.alternatives().try(Joi.string(), Joi.array()).optional(),
   tier_id: Joi.number().optional(),
   address: Joi.string().optional(),
   country: Joi.string().optional(),
