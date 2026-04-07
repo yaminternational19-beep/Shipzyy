@@ -2,6 +2,56 @@ import db from "../../../config/db.js";
 import ApiError from "../../../utils/ApiError.js";
 import s3Service from "../../../services/s3Service.js";
 
+// const getCustomerById = async (id) => {
+//   const [rows] = await db.query(
+//     `SELECT 
+//         id,
+//         country_code,
+//         mobile,
+//         full_phone,
+//         name,
+//         email,
+//         gender,
+//         profile_image,
+//         referral_code,
+//         referrer_id,
+//         status,
+//         default_address_id,
+//         last_login_at,
+//         created_at,
+//         updated_at
+//      FROM customers 
+//      WHERE id = ? AND is_deleted = FALSE 
+//      LIMIT 1`,
+//     [id]
+//   );
+
+//   if (!rows.length) return null;
+
+//   const customer = rows[0];
+
+//   // Get referrer name if exists
+//   if (customer.referrer_id) {
+//     const [ref] = await db.query(
+//       "SELECT name FROM customers WHERE id = ?",
+//       [customer.referrer_id]
+//     );
+//     customer.referred_by = ref.length ? ref[0].name : null;
+//   } else {
+//     customer.referred_by = null;
+//   }
+
+//   delete customer.referrer_id;
+
+
+//   // Clean status format
+//   customer.status = customer.status ? customer.status.toLowerCase() : "active";
+
+//   // ===== END =====
+  
+//   return formatCustomerDates(customer);
+// };
+
 const getCustomerById = async (id) => {
   const [rows] = await db.query(
     `SELECT 
@@ -21,7 +71,9 @@ const getCustomerById = async (id) => {
         created_at,
         updated_at
      FROM customers 
-     WHERE id = ? AND is_deleted = FALSE 
+     WHERE id = ? 
+     AND is_deleted = 0 
+     AND status = 'active'
      LIMIT 1`,
     [id]
   );
@@ -30,7 +82,6 @@ const getCustomerById = async (id) => {
 
   const customer = rows[0];
 
-  // Get referrer name if exists
   if (customer.referrer_id) {
     const [ref] = await db.query(
       "SELECT name FROM customers WHERE id = ?",
@@ -43,15 +94,10 @@ const getCustomerById = async (id) => {
 
   delete customer.referrer_id;
 
+  customer.status = customer.status?.toLowerCase() || "active";
 
-  // Clean status format
-  customer.status = customer.status ? customer.status.toLowerCase() : "active";
-
-  // ===== END =====
-  
   return formatCustomerDates(customer);
 };
-
 
 const calculateProfileCompletion = (customer, addresses) => {
   let total = 6;

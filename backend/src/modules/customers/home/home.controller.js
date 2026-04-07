@@ -3,7 +3,7 @@ import service from "./home.service.js";
 
 export const getHomeData = async (req, res) => {
   try {
-    const result = await service.getHomeData(req.user?.user_id || null, req.query);
+    const result = await service.getHomeData(req.user?.id || null, req.query);
     return ApiResponse.success(res, "Home data fetched successfully", result);
   } catch (error) {
     return ApiResponse.error(res, error.message || "Failed to fetch home data");
@@ -25,14 +25,29 @@ export const getSubCategories = async (req, res) => {
 
 export const getProducts = async (req, res) => {
   try {
-    const result = await service.getProducts(req.query);
+    const result = await service.getProducts(req.user?.id || null, req.query);
     return ApiResponse.success(res, "Products fetched successfully", result);
   } catch (error) {
     return ApiResponse.error(res, error.message || "Failed to fetch products");
   }
 };
+
+export const getProductById = async (req, res) => {
+  try {
+    const productId = req.params.id;
+    const result = await service.getProductById(req.user?.id || null, productId, req.query);
+    if (!result) {
+      return ApiResponse.error(res, "Product not found", 404);  
+    }
+    return ApiResponse.success(res, "Product details fetched successfully", result);
+  } catch (error) {
+    return ApiResponse.error(res, error.message || "Failed to fetch product details");
+  }
+};
+
 export default { 
     getHomeData,
     getSubCategories,
-    getProducts
+    getProducts,
+    getProductById
  };

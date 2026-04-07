@@ -98,7 +98,7 @@ router.use("/admin-products", adminProductsRoutes);
 
 import customerAdminRoutes from '../../modules/admin_customers/customers.routes.js';
 
-router.use("/customers", customerAdminRoutes);
+router.use("/admin-customers", customerAdminRoutes);
 
 
 
