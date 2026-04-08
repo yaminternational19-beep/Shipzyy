@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import db from "../../../config/db.js";
 import ApiError from "../../../utils/ApiError.js";
+import profileService from "../profile/profile.service.js";
 
 const formatCustomerDates = (customer) => {
   if (!customer) return customer;
@@ -152,7 +153,15 @@ const completeOtpAuth = async (decoded, rawToken, ipAddress, userAgent) => {
   const accessToken = generateAccessToken(customer);
   const refreshToken = generateRefreshToken(customer);
   await storeRefreshToken(customer.id, refreshToken, decoded.device_id, ipAddress, userAgent);
-  return { accessToken, refreshToken, customer: await getCustomerById(customer.id) };
+
+  // Fetch detailed profile for response
+  const fullCustomer = await profileService.getCustomerById(customer.id);
+  const addresses = await profileService.getAddresses(customer.id);
+  
+  // Calculate completion
+  fullCustomer.profile_completion = profileService.calculateProfileCompletion(fullCustomer, addresses);
+
+  return { accessToken, refreshToken, customer: fullCustomer, addresses };
 };
 
 const createCustomer = async ({ country_code, mobile, full_phone, name, email, device_id, player_id, referrer_id }) => {
@@ -208,7 +217,8 @@ const logoutCustomer = async (refreshToken, logoutAll = false) => {
   return true;
 };
 
-const findOrCreateSocialCustomer = async ({ provider, provider_id, email, name, profile_image, device_id, player_id, device_type, app_version }) => {
+const findOrCreateSocialCustomer = async (socialData, ipAddress, userAgent) => {
+  const { provider, provider_id, email, name, profile_image, device_id, player_id, device_type, app_version } = socialData;
   let customer;
   const col = provider === "google" ? "google_id" : "apple_id";
   const [rows] = await db.query(`SELECT * FROM customers WHERE ${col} = ? AND is_deleted = FALSE LIMIT 1`, [provider_id]);
@@ -226,7 +236,16 @@ const findOrCreateSocialCustomer = async ({ provider, provider_id, email, name, 
   if (customer.status !== "active") throw new ApiError(403, `Account ${customer.status}.`);
   await updateLoginDetails(customer.id, provider);
   await storeCustomerDevice({ customer_id: customer.id, device_id, player_id, device_type, app_version });
-  return await getCustomerById(customer.id);
+  
+  const accessToken = generateAccessToken(customer);
+  const refreshToken = generateRefreshToken(customer);
+  await storeRefreshToken(customer.id, refreshToken, device_id, ipAddress, userAgent);
+
+  const fullCustomer = await profileService.getCustomerById(customer.id);
+  const addresses = await profileService.getAddresses(customer.id);
+  fullCustomer.profile_completion = profileService.calculateProfileCompletion(fullCustomer, addresses);
+
+  return { accessToken, refreshToken, customer: fullCustomer, addresses };
 };
 
 const generateUniqueReferralCode = async () => {

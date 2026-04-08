@@ -27,12 +27,8 @@ const resendOtp = asyncHandler(async (req, res) => {
 });
 
 const socialLogin = asyncHandler(async (req, res) => {
-  const socialData = req.body;
-  const customer = await authService.findOrCreateSocialCustomer(socialData);
-  const accessToken = authService.generateAccessToken(customer);
-  const refreshToken = authService.generateRefreshToken(customer);
-  await authService.storeRefreshToken(customer.id, refreshToken, socialData.device_id, req.ip, req.headers["user-agent"]);
-  return ApiResponse.success(res, "Social login successful", { accessToken, refreshToken, customer });
+  const result = await authService.findOrCreateSocialCustomer(req.body, req.ip, req.headers["user-agent"]);
+  return ApiResponse.success(res, "Social login successful", result);
 });
 
 const refreshToken = asyncHandler(async (req, res) => {
