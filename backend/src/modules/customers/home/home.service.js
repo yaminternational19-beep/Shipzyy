@@ -1,8 +1,14 @@
-import { raw } from "express";
 import db from "../../../config/db.js";
 import { getPagination, getPaginationMeta } from "../../../utils/pagination.js";
+import { getFromCache, setToCache } from "../../../utils/cache.js";
 
 export const getHomeData = async (customerId, queryParams = {}) => {
+  const { page, limit, skip } = getPagination(queryParams);
+  const cacheKey = `customer:home:${page}:${limit}`;
+
+  const cachedData = await getFromCache(cacheKey);
+  if (cachedData) return cachedData;
+
   try {
     const [banners] = await db.query(`
       SELECT 
@@ -139,13 +145,17 @@ export const getHomeData = async (customerId, queryParams = {}) => {
 
     const pagination = getPaginationMeta(page, limit, totalRecords);
 
-    return {
+    const result = {
       banners,
       categories: categoriesWithSubcategories,
       recommended_products: [],
       pagination,
     };
 
+    // Cache for 10 minutes (static content)
+    await setToCache(cacheKey, result, 600);
+
+    return result;
   } catch (error) {
     console.error("Home Service Error:", error);
     throw error;
@@ -155,13 +165,14 @@ export const getHomeData = async (customerId, queryParams = {}) => {
 
 
 export const getSubCategories = async (categoryId, queryParams = {}) => {
-  try {
-    /* ===============================
-       PAGINATION
-    =============================== */
-    const { page = 1, limit = 20 } = queryParams;
-    const skip = (page - 1) * limit;
+  const { page = 1, limit = 20 } = queryParams;
+  const skip = (page - 1) * limit;
+  const cacheKey = `customer:subcategories:${categoryId}:${page}:${limit}`;
 
+  const cachedData = await getFromCache(cacheKey);
+  if (cachedData) return cachedData;
+
+  try {
     /* ===============================
        TOTAL COUNT
     =============================== */
@@ -195,10 +206,13 @@ export const getSubCategories = async (categoryId, queryParams = {}) => {
     =============================== */
     const pagination = getPaginationMeta(page, limit, totalRecords);
 
-    return {
+    const result = {
       records: subcategories,
       pagination
     };
+
+    await setToCache(cacheKey, result, 1800); // 30 mins
+    return result;
 
   } catch (error) {
     console.error("Subcategories Service Error:", error);
@@ -208,10 +222,14 @@ export const getSubCategories = async (categoryId, queryParams = {}) => {
 
 
 const getProducts = async (customerId, queryParams = {}) => {
-  try {
-    const { page = 1, limit = 20, category_id, subcategory_id } = queryParams;
-    const skip = (page - 1) * limit;
+  const { page = 1, limit = 20, category_id, subcategory_id } = queryParams;
+  const skip = (page - 1) * limit;
+  const cacheKey = `customer:products:${category_id || 0}:${subcategory_id || 0}:${page}:${limit}`;
 
+  const cachedData = await getFromCache(cacheKey);
+  if (cachedData) return cachedData;
+
+  try {
     let where = ["p.approval_status = 'APPROVED'", "p.is_live = 1", "p.is_active = 1"];
     let values = [];
 
@@ -283,11 +301,15 @@ const getProducts = async (customerId, queryParams = {}) => {
 
     const pagination = getPaginationMeta(page, limit, totalRecords);
 
-    return {
+    const result = {
       is_logged_in: customerId ? true : false,
       Products: enhancedProducts,
       pagination
     };
+
+    await setToCache(cacheKey, result, 300); // 5 mins
+    return result;
+
   } catch (error) {
     console.error("Get Products Service Error:", error);
     throw error;
@@ -295,6 +317,10 @@ const getProducts = async (customerId, queryParams = {}) => {
 };
 
 const getProductById = async (customerId, productId, queryParams = {}) => {
+  const cacheKey = `customer:product:${productId}`;
+  const cachedData = await getFromCache(cacheKey);
+  if (cachedData) return cachedData;
+
   try {
     // 1. Fetch base product details with vendor info
     const [productResult] = await db.query(`
@@ -421,7 +447,7 @@ const getProductById = async (customerId, productId, queryParams = {}) => {
     const pagination = getPaginationMeta(page, limit, totalSimilar);
 
     // Build the final response structure
-    return {
+    const result = {
       is_logged_in: customerId ? true : false,
       product: {
         id: rawProduct.id,
@@ -454,6 +480,9 @@ const getProductById = async (customerId, productId, queryParams = {}) => {
         pagination
       }
     };
+
+    await setToCache(cacheKey, result, 600); // 10 mins
+    return result;
 
   } catch (error) {
     console.error("Get Product By ID Service Error:", error);

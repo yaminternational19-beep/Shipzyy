@@ -266,14 +266,13 @@ const refreshAccessToken = async (token) => {
     const user = await getUserByEmail(decoded.email || ""); // We might need email in refresh token or search by ID
     // If we don't have email in refresh token, search by userId and role
     const activeUser = await getUserById(decoded.id, decoded.role);
-    
+
     // Check status standardized
     const [userRow] = await db.query(
-      `SELECT status FROM ${
-        decoded.role === 'SUPER_ADMIN' ? 'super_admins' :
+      `SELECT status FROM ${decoded.role === 'SUPER_ADMIN' ? 'super_admins' :
         decoded.role === 'SUB_ADMIN' ? 'sub_admins' :
-        decoded.role === 'VENDOR_OWNER' ? 'vendors' :
-        decoded.role === 'VENDOR_STAFF' ? 'vendor_staff' : 'users'
+          decoded.role === 'VENDOR_OWNER' ? 'vendors' :
+            decoded.role === 'VENDOR_STAFF' ? 'vendor_staff' : 'users'
       } WHERE id = ?`,
       [decoded.id]
     );

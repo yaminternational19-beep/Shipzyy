@@ -1,4 +1,5 @@
 import db from '../../config/db.js';
+import { getFromCache, setToCache, removeFromCache } from "../../utils/cache.js";
 
 
 const createDefaultTiers = async () => {
@@ -157,6 +158,9 @@ const createTier = async (data) => {
       JSON.stringify(features || [])
     ]);
 
+    // Invalidate cache
+    await removeFromCache("admin:tiers:list");
+
     return { id: result.insertId };
 
   } catch (error) {
@@ -170,6 +174,9 @@ const createTier = async (data) => {
 ================================= */
 const getTiers = async () => {
   try {
+    const cacheKey = "admin:tiers:list";
+    const cachedData = await getFromCache(cacheKey);
+    if (cachedData) return cachedData;
 
     // Create default tiers if empty
     await createDefaultTiers();
@@ -180,6 +187,7 @@ const getTiers = async () => {
       ORDER BY tier_order ASC
     `);
 
+    await setToCache(cacheKey, rows, 3600); // 1 hour
     return rows;
 
   } catch (error) {
@@ -222,6 +230,9 @@ const updateTier = async (id, data) => {
       id
     ]);
 
+    // Invalidate cache
+    await removeFromCache("admin:tiers:list");
+
     return { id };
 
   } catch (error) {
@@ -236,6 +247,10 @@ const updateTier = async (id, data) => {
 const deleteTier = async (id) => {
   try {
     await db.query(`DELETE FROM tiers WHERE id = ?`, [id]);
+    
+    // Invalidate cache
+    await removeFromCache("admin:tiers:list");
+
     return { id };
 
   } catch (error) {

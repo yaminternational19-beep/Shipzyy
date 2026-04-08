@@ -1,58 +1,14 @@
 import db from "../../../config/db.js";
 import ApiError from "../../../utils/ApiError.js";
 import s3Service from "../../../services/s3Service.js";
+import { getFromCache, setToCache, removeFromCache } from "../../../utils/cache.js";
 
-// const getCustomerById = async (id) => {
-//   const [rows] = await db.query(
-//     `SELECT 
-//         id,
-//         country_code,
-//         mobile,
-//         full_phone,
-//         name,
-//         email,
-//         gender,
-//         profile_image,
-//         referral_code,
-//         referrer_id,
-//         status,
-//         default_address_id,
-//         last_login_at,
-//         created_at,
-//         updated_at
-//      FROM customers 
-//      WHERE id = ? AND is_deleted = FALSE 
-//      LIMIT 1`,
-//     [id]
-//   );
-
-//   if (!rows.length) return null;
-
-//   const customer = rows[0];
-
-//   // Get referrer name if exists
-//   if (customer.referrer_id) {
-//     const [ref] = await db.query(
-//       "SELECT name FROM customers WHERE id = ?",
-//       [customer.referrer_id]
-//     );
-//     customer.referred_by = ref.length ? ref[0].name : null;
-//   } else {
-//     customer.referred_by = null;
-//   }
-
-//   delete customer.referrer_id;
-
-
-//   // Clean status format
-//   customer.status = customer.status ? customer.status.toLowerCase() : "active";
-
-//   // ===== END =====
-  
-//   return formatCustomerDates(customer);
-// };
 
 const getCustomerById = async (id) => {
+  const cacheKey = `customer:profile:${id}`;
+  const cachedData = await getFromCache(cacheKey);
+  if (cachedData) return cachedData;
+
   const [rows] = await db.query(
     `SELECT 
         id,
@@ -96,7 +52,9 @@ const getCustomerById = async (id) => {
 
   customer.status = customer.status?.toLowerCase() || "active";
 
-  return formatCustomerDates(customer);
+  const result = formatCustomerDates(customer);
+  await setToCache(cacheKey, result, 3600); // 1 hour
+  return result;
 };
 
 const calculateProfileCompletion = (customer, addresses) => {
@@ -115,6 +73,9 @@ const calculateProfileCompletion = (customer, addresses) => {
 
 
 const updateProfile = async (customerId, updateData, imageFile) => {
+  // Clear cache first or after update
+  const cacheKey = `customer:profile:${customerId}`;
+  
   const current = await getCustomerById(customerId);
   if (!current) throw new ApiError(404, "Customer not found");
 
@@ -220,14 +181,20 @@ const updateProfile = async (customerId, updateData, imageFile) => {
     // SYNC: If default_address_id was updated, sync the is_default flag in addresses table
     if (updateData.default_address_id) {
        await syncAddressDefaultFlag(customerId, updateData.default_address_id);
+       await removeFromCache(`customer:addresses:${customerId}`);
     }
   }
 
+  await removeFromCache(cacheKey);
   return await getCustomerById(customerId);
 };
 
 
 const getAddresses = async (customerId) => {
+  const cacheKey = `customer:addresses:${customerId}`;
+  const cachedData = await getFromCache(cacheKey);
+  if (cachedData) return cachedData;
+
   const [rows] = await db.query(
     `SELECT 
         id,
@@ -252,7 +219,9 @@ const getAddresses = async (customerId) => {
     [customerId]
   );
 
-  return formatCustomerDates(rows);
+  const result = formatCustomerDates(rows);
+  await setToCache(cacheKey, result, 3600);
+  return result;
 };
 
 const addAddress = async (customerId, addressData) => {
@@ -313,10 +282,13 @@ const addAddress = async (customerId, addressData) => {
 
   if (setAsDefault) {
     await updateDefaultAddress(customerId, result.insertId);
+    await removeFromCache(`customer:profile:${customerId}`);
   }
 
+  await removeFromCache(`customer:addresses:${customerId}`);
   return await getAddresses(customerId);
 };
+
 
 const updateAddress = async (customerId, addressId, updateData) => {
   const [exists] = await db.query(
@@ -376,8 +348,10 @@ const updateAddress = async (customerId, addressId, updateData) => {
 
   if (updateData.is_default === true) {
     await updateDefaultAddress(customerId, addressId);
+    await removeFromCache(`customer:profile:${customerId}`);
   }
 
+  await removeFromCache(`customer:addresses:${customerId}`);
   return await getAddresses(customerId);
 };
 
@@ -391,7 +365,10 @@ const deleteAddress = async (customerId, addressId) => {
     const [next] = await db.query("SELECT id FROM customers_addresses WHERE customer_id = ? ORDER BY created_at DESC LIMIT 1", [customerId]);
     if (next.length) await updateDefaultAddress(customerId, next[0].id);
     else await db.query("UPDATE customers SET default_address_id = NULL WHERE id = ?", [customerId]);
+    await removeFromCache(`customer:profile:${customerId}`);
   }
+
+  await removeFromCache(`customer:addresses:${customerId}`);
   return await getAddresses(customerId);
 };
 

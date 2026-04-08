@@ -1,6 +1,7 @@
 import s3Service from '../../services/s3Service.js';
 import db from '../../config/db.js';
 import { getPagination, getPaginationMeta } from '../../utils/pagination.js';
+import { getFromCache, setToCache, removeFromCache, removeByPattern } from "../../utils/cache.js";
 
 /* ===============================
    CREATE SUBCATEGORY
@@ -47,6 +48,10 @@ const createSubCategory = async (data, file) => {
 
   const [result] = await db.query(query, values);
 
+  // Invalidate caches
+  await removeByPattern("admin:subcategories:list:*");
+  await removeByPattern("customer:home:*");
+
   return {
     id: result.insertId,
     subCategoryCode: newCode,
@@ -64,6 +69,9 @@ const createSubCategory = async (data, file) => {
 ================================= */
 
 const getSubCategories = async (queryParams) => {
+  const cacheKey = `admin:subcategories:list:${JSON.stringify(queryParams)}`;
+  const cachedData = await getFromCache(cacheKey);
+  if (cachedData) return cachedData;
 
   const { page, limit, skip } = getPagination(queryParams);
 
@@ -155,11 +163,14 @@ const getSubCategories = async (queryParams) => {
     inactiveSubCategories: statsResult[0].inactive || 0,
   };
 
-  return {
+  const result = {
     records,
     pagination,
     stats
   };
+
+  await setToCache(cacheKey, result, 600); // 10 mins
+  return result;
 };
 
 
@@ -209,6 +220,11 @@ const updateSubCategory = async (id, data, file) => {
 
   await db.query(query, values);
 
+  // Invalidate caches
+  await removeByPattern("admin:subcategories:list:*");
+  await removeByPattern("customer:home:*");
+  await removeByPattern("customer:products:*");
+
   return {
     id,
     categoryId: data.categoryId ?? subCategory.category_id,
@@ -243,6 +259,11 @@ const toggleStatus = async (id, status) => {
      WHERE id = ?`,
     [status, id]
   );
+
+  // Invalidate caches
+  await removeByPattern("admin:subcategories:list:*");
+  await removeByPattern("customer:home:*");
+  await removeByPattern("customer:products:*");
 
   const subCategory = rows[0];
 
@@ -288,6 +309,10 @@ const deleteSubCategory = async (id) => {
     [id]
   );
 
+  // Invalidate caches
+  await removeByPattern("admin:subcategories:list:*");
+  await removeByPattern("customer:home:*");
+
   return {
     id: subCategory.subcategory_code,
     name: subCategory.name,
@@ -302,4 +327,4 @@ export default {
   updateSubCategory,
   deleteSubCategory,
   toggleStatus
-};
+};

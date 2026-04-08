@@ -131,6 +131,38 @@ const TABLES = [
                 FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
             );
         `
+    },
+    {
+        name: "customers_cart",
+        query: `
+            CREATE TABLE IF NOT EXISTS customers_cart (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+
+                customer_id BIGINT NOT NULL,
+                vendor_id BIGINT NOT NULL,
+                product_id BIGINT NOT NULL,
+
+                quantity INT NOT NULL DEFAULT 1,
+
+                -- snapshot (temporary)
+                offer_price DECIMAL(10,2),
+                mrp DECIMAL(10,2),
+
+                -- flags
+                price_changed BOOLEAN DEFAULT FALSE,
+                is_available BOOLEAN DEFAULT TRUE,
+
+                added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                UNIQUE KEY unique_cart (customer_id, vendor_id, product_id),
+
+                INDEX idx_customer (customer_id),
+                INDEX idx_vendor (vendor_id),
+
+                FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
+            );
+        `
     }
 ];
 
@@ -148,7 +180,6 @@ const initDatabase = async () => {
         console.log(`Table already exists: ${table.name}`);
       }
     }
-
     console.log("Database initialization complete");
     process.exit(0);
   } catch (error) {

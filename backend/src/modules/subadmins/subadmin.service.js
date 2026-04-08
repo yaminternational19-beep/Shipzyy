@@ -1,6 +1,7 @@
 import { getPagination, getPaginationMeta } from '../../utils/pagination.js';
 import buildFilters from '../../utils/filter.js';
 import db from '../../config/db.js';
+import { getFromCache, setToCache, removeFromCache, removeByPattern } from "../../utils/cache.js";
 
 
 /* ===============================
@@ -8,6 +9,9 @@ import db from '../../config/db.js';
 ================================= */
 
 const getSubAdmins = async (queryParams) => {
+  const cacheKey = `admin:subadmins:list:${JSON.stringify(queryParams)}`;
+  const cachedData = await getFromCache(cacheKey);
+  if (cachedData) return cachedData;
 
   
   const { page, limit, skip } = getPagination(queryParams);
@@ -105,14 +109,15 @@ const getSubAdmins = async (queryParams) => {
       FROM sub_admins
   `);
 
-  return {
+  const result = {
     stats: stats[0],
     records: formattedRecords,
     pagination
   };
+
+  await setToCache(cacheKey, result, 600); // 10 mins
+  return result;
 };
-
-
 
 
 /* ===============================
@@ -182,6 +187,9 @@ const createSubAdmin = async (data) => {
 
   const [result] = await db.execute(query, values);
 
+  // Invalidate caches
+  await removeByPattern("admin:subadmins:list:*");
+
   return {
     id: result.insertId,
     name: data.name,
@@ -200,12 +208,19 @@ const createSubAdmin = async (data) => {
 ================================= */
 
 const getSubAdminById = async (id) => {
+  const cacheKey = `admin:subadmin:profile:${id}`;
+  const cachedData = await getFromCache(cacheKey);
+  if (cachedData) return cachedData;
 
   const query = `SELECT * FROM sub_admins WHERE id = ?`;
 
   const [rows] = await db.execute(query, [id]);
+  const result = rows[0] || null;
 
-  return rows[0] || null;
+  if (result) {
+    await setToCache(cacheKey, result, 3600); // 1 hour
+  }
+  return result;
 
 };
 
@@ -258,6 +273,10 @@ UPDATE sub_admins SET
 
   console.log("UPDATE RESULT:", result);
 
+  // Invalidate caches
+  await removeFromCache(`admin:subadmin:profile:${id}`);
+  await removeByPattern("admin:subadmins:list:*");
+
   return {
     id,
     name: data.name,
@@ -296,6 +315,10 @@ const toggleStatus = async (id) => {
     "UPDATE sub_admins SET status = ? WHERE id = ?",
     [newStatus, id]
   );
+
+  // Invalidate caches
+  await removeFromCache(`admin:subadmin:profile:${id}`);
+  await removeByPattern("admin:subadmins:list:*");
 
   // return updated record
   const [updated] = await db.query(
@@ -339,6 +362,10 @@ const deleteSubAdmin = async (id) => {
     return { error: "Failed to delete sub admin" };
   }
 
+  // Invalidate caches
+  await removeFromCache(`admin:subadmin:profile:${id}`);
+  await removeByPattern("admin:subadmins:list:*");
+
   return { success: true };
 };
 
@@ -366,6 +393,10 @@ const updatePermissions = async (id, permissions) => {
     [JSON.stringify(uniquePermissions), id]
   );
 
+  // Invalidate caches
+  await removeFromCache(`admin:subadmin:profile:${id}`);
+  await removeByPattern("admin:subadmins:list:*");
+
   return {
     id: Number(id),
     permissions: uniquePermissions
@@ -386,4 +417,4 @@ export default {
   deleteSubAdmin,
   toggleStatus,
   updatePermissions,
-};
+};

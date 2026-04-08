@@ -1,6 +1,7 @@
 import ApiResponse from '../../utils/apiResponse.js';
 import asyncHandler from '../../utils/asyncHandler.js';
 import productService from './product.service.js';
+import ApiError from '../../utils/ApiError.js';
 
 export const createProduct = asyncHandler(async (req, res) => {
   const vendorId = req.user.vendor_id; 

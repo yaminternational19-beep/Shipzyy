@@ -1,7 +1,7 @@
-
 import db from '../../config/db.js';
 import s3Service from '../../services/s3Service.js';
 import { getPagination, getPaginationMeta } from '../../utils/pagination.js';
+import { getFromCache, setToCache, removeFromCache, removeByPattern } from "../../utils/cache.js";
 
 const createBrand = async (data, file) => {
 
@@ -43,6 +43,11 @@ const createBrand = async (data, file) => {
 
   const [result] = await db.query(query, values);
 
+  // Invalidate caches
+  await removeByPattern("admin:brands:list:*");
+  await removeByPattern("admin:products:list:*");
+  await removeByPattern("customer:products:*");
+
   return {
     id: result.insertId,
     brand_code: newCode,
@@ -56,6 +61,9 @@ const createBrand = async (data, file) => {
 };
 
 const getBrands = async (queryParams) => {
+  const cacheKey = `admin:brands:list:${JSON.stringify(queryParams)}`;
+  const cachedData = await getFromCache(cacheKey);
+  if (cachedData) return cachedData;
 
   const { page, limit, skip } = getPagination(queryParams);
 
@@ -142,11 +150,14 @@ const getBrands = async (queryParams) => {
     totalProducts: 0
   };
 
-  return {
+  const result = {
     stats: statsData,
     records,
     pagination
   };
+
+  await setToCache(cacheKey, result, 600); // 10 mins
+  return result;
 };
 
 const updateBrand = async (id, data, file) => {
@@ -193,6 +204,13 @@ const updateBrand = async (id, data, file) => {
 
   await db.query(query, values);
 
+  // Invalidate caches
+  await removeByPattern("admin:brands:list:*");
+  await removeByPattern("admin:products:list:*");
+  await removeByPattern("customer:products:*");
+  await removeByPattern("admin:product:profile:*");
+  await removeByPattern("customer:product:*");
+
   return { id };
 };
 
@@ -211,6 +229,10 @@ const toggleStatus = async (id, status) => {
     `UPDATE brands SET status = ? WHERE id = ?`,
     [status, id]
   );
+
+  // Invalidate caches
+  await removeByPattern("admin:brands:list:*");
+  await removeByPattern("customer:products:*");
 
   return { id, status };
 };
@@ -242,6 +264,10 @@ const deleteBrand = async (id) => {
     [id]
   );
 
+  // Invalidate caches
+  await removeByPattern("admin:brands:list:*");
+  await removeByPattern("customer:products:*");
+
   return { id };
 };
 
@@ -251,4 +277,4 @@ export default {
     updateBrand,
     toggleStatus,
     deleteBrand
-};  
+};

@@ -4,6 +4,7 @@ import slugify from 'slugify';
 import s3Service from '../../services/s3Service.js';
 import { createProductSchema } from './product.validator.js';
 import ApiError from '../../utils/ApiError.js';
+import { getFromCache, setToCache, removeFromCache, removeByPattern } from "../../utils/cache.js";
 
 const createProduct = async (data, files) => {
   // Handle JSON strings if from multipart
@@ -170,6 +171,13 @@ const createProduct = async (data, files) => {
     }
 
     await connection.commit();
+
+    // Invalidate caches
+    await removeByPattern("vendor:products:list:*");
+    await removeByPattern("admin:products:list:*");
+    await removeByPattern("customer:home:*");
+    await removeByPattern("customer:products:*");
+
     return { product_id: productId };
   } catch (error) {
     if (connection) await connection.rollback();
@@ -180,6 +188,10 @@ const createProduct = async (data, files) => {
 };
 
 const getAllProducts = async (queryParams) => {
+  const cacheKey = `vendor:products:list:${JSON.stringify(queryParams)}`;
+  const cachedData = await getFromCache(cacheKey);
+  if (cachedData) return cachedData;
+
   const { page, limit, skip } = getPagination(queryParams);
 
   let where = [];
@@ -308,7 +320,9 @@ const getAllProducts = async (queryParams) => {
     });
   }
 
+
   // Simplified: Returning only the data records as requested
+  await setToCache(cacheKey, rows, 300); // 5 mins
   return rows;
 };
 
@@ -446,6 +460,15 @@ const updateProduct = async (productId, data, files) => {
     }
 
     await connection.commit();
+
+    // Invalidate caches
+    await removeFromCache(`admin:product:profile:${productId}`);
+    await removeFromCache(`customer:product:${productId}`);
+    await removeByPattern("vendor:products:list:*");
+    await removeByPattern("admin:products:list:*");
+    await removeByPattern("customer:home:*");
+    await removeByPattern("customer:products:*");
+
     return { product_id: productId };
   } catch (error) {
     if (connection) await connection.rollback();
@@ -476,6 +499,13 @@ const toggleProductLiveStatus = async (productId, isLive) => {
     `UPDATE products SET is_live = ? WHERE id = ?`,
     [isLive ? 1 : 0, productId]
   );
+
+  // Invalidate caches
+  await removeFromCache(`admin:product:profile:${productId}`);
+  await removeFromCache(`customer:product:${productId}`);
+  await removeByPattern("vendor:products:list:*");
+  await removeByPattern("customer:home:*");
+  await removeByPattern("customer:products:*");
 
   return { product_id: productId, is_live: isLive ? 1 : 0 };
 };
@@ -535,6 +565,13 @@ const updateStock = async (vendorId, payload) => {
 
 
     await connection.commit();
+
+    // Invalidate caches
+    await removeFromCache(`admin:product:profile:${product_id}`);
+    await removeFromCache(`customer:product:${product_id}`);
+    await removeByPattern("vendor:products:list:*");
+    await removeByPattern("customer:cart:*");
+
     return { previous_stock, change: (new_stock - previous_stock), new_stock };
   } catch (error) {
     if (connection) await connection.rollback();
@@ -571,6 +608,15 @@ const deleteProduct = async (productId, vendorId) => {
     await connection.query(`DELETE FROM products WHERE id = ?`, [productId]);
 
     await connection.commit();
+
+    // Invalidate caches
+    await removeFromCache(`admin:product:profile:${productId}`);
+    await removeFromCache(`customer:product:${productId}`);
+    await removeByPattern("vendor:products:list:*");
+    await removeByPattern("admin:products:list:*");
+    await removeByPattern("customer:home:*");
+    await removeByPattern("customer:products:*");
+
     return { success: true, deleted_id: productId };
   } catch (error) {
     if (connection) await connection.rollback();

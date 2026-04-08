@@ -107,10 +107,12 @@ router.use("/admin-customers", customerAdminRoutes);
 import customerAuthRoutes from '../../modules/customers/auth/customers.auth.routes.js';
 import customerProfileRoutes from '../../modules/customers/profile/profile.routes.js';
 import customerHomeRoutes from '../../modules/customers/home/home.routes.js';
+import cartRoutes from '../../modules/customers/cart/cart.routes.js';
 
 router.use("/customers", customerAuthRoutes);
 router.use("/customers", customerHomeRoutes);
 router.use("/customers", customerProfileRoutes);
+router.use("/customers", cartRoutes);
 
 
 export default router;

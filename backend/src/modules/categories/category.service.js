@@ -1,7 +1,7 @@
-// import Category from '../../models/category.model.js';
 import s3Service from '../../services/s3Service.js';
 import db from '../../config/db.js';
 import { getPagination, getPaginationMeta } from '../../utils/pagination.js';
+import { getFromCache, setToCache, removeFromCache, removeByPattern } from "../../utils/cache.js";
 
 
 
@@ -65,6 +65,10 @@ const createCategory = async (data, files) => {
 
   const [result] = await db.query(query, values);
 
+  // Invalidate caches
+  await removeByPattern("admin:categories:list:*");
+  await removeByPattern("customer:home:*");
+
   return {
     id: result.insertId,
     categoryCode: newCode,
@@ -78,6 +82,9 @@ const createCategory = async (data, files) => {
 };
 
 const getCategories = async (queryParams) => {
+  const cacheKey = `admin:categories:list:${JSON.stringify(queryParams)}`;
+  const cachedData = await getFromCache(cacheKey);
+  if (cachedData) return cachedData;
 
   const { page, limit, skip } = getPagination(queryParams);
 
@@ -180,11 +187,14 @@ const statsData = {
   totalSubCategories: subCategoryStats[0].totalSubCategories
 };
 
-  return {
+  const result = {
     stats: statsData,
     records,
     pagination
   };
+
+  await setToCache(cacheKey, result, 600); // 10 mins
+  return result;
 };
 
 
@@ -253,6 +263,12 @@ const updateCategory = async (id, data, files) => {
 
   await db.query(query, values);
 
+  // Invalidate caches
+  await removeByPattern("admin:categories:list:*");
+  await removeByPattern("customer:home:*");
+  await removeByPattern("customer:subcategories:*");
+  await removeByPattern("customer:products:*");
+
   return {
     id: category.id,
     category_code: category.category_code,
@@ -292,6 +308,11 @@ const toggleStatus = async (id, status) => {
      WHERE id = ?`,
     [status, id]
   );
+
+  // Invalidate caches
+  await removeByPattern("admin:categories:list:*");
+  await removeByPattern("customer:home:*");
+  await removeByPattern("customer:products:*");
 
   const category = rows[0];
 
@@ -347,6 +368,10 @@ const deleteCategory = async (id) => {
     [id]
   );
 
+  // Invalidate caches
+  await removeByPattern("admin:categories:list:*");
+  await removeByPattern("customer:home:*");
+
   return {
     id: category.id,
     category_code: category.category_code,
@@ -363,4 +388,4 @@ export default {
   updateCategory,
   deleteCategory,
   toggleStatus
-};
+};

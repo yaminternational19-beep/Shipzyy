@@ -1,6 +1,7 @@
 import db from '../../config/db.js';
 import s3Service from '../../services/s3Service.js';
 import { getPagination, getPaginationMeta } from '../../utils/pagination.js';
+import { getFromCache, setToCache, removeFromCache, removeByPattern } from "../../utils/cache.js";
 
 const createBanner = async (data, file) => {
   let bannerImageUrl = null;
@@ -22,6 +23,10 @@ const createBanner = async (data, file) => {
 
   const [result] = await db.query(query, values);
 
+  // Invalidate caches
+  await removeByPattern("admin:banners:list:*");
+  await removeByPattern("customer:home:*");
+
   return {
     id: result.insertId,
     banner_name: data.banner_name,
@@ -31,6 +36,10 @@ const createBanner = async (data, file) => {
 };
 
 const getBanners = async (queryParams) => {
+  const cacheKey = `admin:banners:list:${JSON.stringify(queryParams)}`;
+  const cachedData = await getFromCache(cacheKey);
+  if (cachedData) return cachedData;
+
   const { page, limit, skip } = getPagination(queryParams);
   let where = [];
   let values = [];
@@ -50,10 +59,13 @@ const getBanners = async (queryParams) => {
     [...values, limit, skip]
   );
 
-  return {
+  const result = {
     records,
     pagination: getPaginationMeta(page, limit, totalRecords)
   };
+
+  await setToCache(cacheKey, result, 600); // 10 mins
+  return result;
 };
 
 const updateBanner = async (id, data, file) => {
@@ -95,6 +107,10 @@ const updateBanner = async (id, data, file) => {
 
   await db.query(query, values);
 
+  // Invalidate caches
+  await removeByPattern("admin:banners:list:*");
+  await removeByPattern("customer:home:*");
+
   return {
     id: banner.id,
     banner_name: data.banner_name ?? banner.banner_name,
@@ -122,6 +138,10 @@ const deleteBanner = async (id) => {
   }
 
   await db.query(`DELETE FROM banners WHERE id = ?`, [id]);
+
+  // Invalidate caches
+  await removeByPattern("admin:banners:list:*");
+  await removeByPattern("customer:home:*");
 
   return { id: banner.id, message: "Deleted successfully" };
 };

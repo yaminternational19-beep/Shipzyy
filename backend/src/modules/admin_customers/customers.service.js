@@ -2,6 +2,7 @@ import db from "../../config/db.js";
 import ApiError from "../../utils/ApiError.js";
 import { getPagination, getPaginationMeta } from "../../utils/pagination.js";
 import formatCustomerDates from "../../utils/formatCustomerDates.js";
+import { getFromCache, setToCache, removeFromCache, removeByPattern } from "../../utils/cache.js";
 
 /* ===============================
    PROFILE COMPLETION
@@ -26,6 +27,9 @@ const calculateProfileCompletion = (customer, address) => {
 ================================ */
 
 export const getAllCustomers = async (queryParams) => {
+  const cacheKey = `admin:customers:list:${JSON.stringify(queryParams)}`;
+  const cachedData = await getFromCache(cacheKey);
+  if (cachedData) return cachedData;
 
   const { page, limit, skip } = getPagination(queryParams);
 
@@ -180,11 +184,14 @@ export const getAllCustomers = async (queryParams) => {
     new: customerStats[0].new_accounts || 0
   };
 
-  return {
+  const result = {
     stats: statsData,
     records,
     pagination
   };
+
+  await setToCache(cacheKey, result, 300); // 5 mins
+  return result;
 };
 
 /* ===============================
@@ -192,6 +199,9 @@ export const getAllCustomers = async (queryParams) => {
 ================================ */
 
 export const getCustomerById = async (id) => {
+  const cacheKey = `admin:customer:profile:${id}`;
+  const cachedData = await getFromCache(cacheKey);
+  if (cachedData) return cachedData;
 
   const [rows] = await db.query(
     `SELECT 
@@ -238,13 +248,16 @@ export const getCustomerById = async (id) => {
 
   const profile_completion = calculateProfileCompletion(customer, address);
 
-  return {
+  const result = {
     ...customer,
     customer_code: `CUST-${customer.id}`,
     location: address,
     profile_completion,
     joined: customer.created_at
   };
+
+  await setToCache(cacheKey, result, 3600); // 1 hour
+  return result;
 };
 
 /* ===============================
@@ -270,6 +283,11 @@ export const updateStatus = async (id, status) => {
     "UPDATE customers SET status = ?, updated_at = NOW() WHERE id = ?",
     [status, id]
   );
+
+  // Invalidate caches
+  await removeFromCache(`admin:customer:profile:${id}`);
+  await removeFromCache(`customer:profile:${id}`); // Also clear customer-facing cache
+  await removeByPattern("admin:customers:list:*"); 
 
   return true;
 
@@ -298,6 +316,11 @@ export const deleteCustomer = async (id) => {
     "UPDATE customers SET is_deleted = TRUE, updated_at = NOW() WHERE id = ?",
     [id]
   );
+
+  // Invalidate caches
+  await removeFromCache(`admin:customer:profile:${id}`);
+  await removeFromCache(`customer:profile:${id}`); // Also clear customer-facing cache
+  await removeByPattern("admin:customers:list:*"); 
 
   return true;
 

@@ -2,6 +2,7 @@ import db from '../../config/db.js';
 import bcrypt from 'bcrypt';
 import s3Service from '../../services/s3Service.js';
 import { getPagination, getPaginationMeta } from '../../utils/pagination.js';
+import { getFromCache, setToCache, removeFromCache, removeByPattern } from "../../utils/cache.js";
 
 /* ===============================
    HELPER: GENERATE VENDOR CODE
@@ -121,6 +122,9 @@ const createVendor = async (data, files) => {
         await connection.commit();
         connection.release();
 
+        // Invalidate caches
+        await removeByPattern("admin:vendors:list:*");
+
         return { id: vendorId, vendor_code: vendorCode, email: data.email };
 
     } catch (error) {
@@ -135,6 +139,10 @@ const createVendor = async (data, files) => {
 ================================= */
 
 const getAllVendors = async (queryParams) => {
+    const cacheKey = `admin:vendors:list:${JSON.stringify(queryParams)}`;
+    const cachedData = await getFromCache(cacheKey);
+    if (cachedData) return cachedData;
+
     const { page, limit, skip } = getPagination(queryParams);
     const fetchAll = queryParams.all === 'true'; // skip pagination if ?all=true
 
@@ -271,13 +279,14 @@ const getAllVendors = async (queryParams) => {
             approved: statsResult[0].kyc_approved || 0,
             rejected: statsResult[0].kyc_rejected || 0
         }
-    };
-
-    return {
+    };    const result = {
         records: rows,
         pagination: fetchAll ? null : pagination,
         stats
     };
+
+    await setToCache(cacheKey, result, 600); // 10 mins
+    return result;
 };
 
 
@@ -292,7 +301,7 @@ const updateVendor = async (id, data, files) => {
 
     try {
         const [existingVendorRows] = await connection.query(
-            "SELECT profile_photo FROM vendors WHERE id = ?",
+            "SELECT profile_photo, business_name FROM vendors WHERE id = ?",
             [id]
         );
 
@@ -428,6 +437,17 @@ const updateVendor = async (id, data, files) => {
 
         await connection.commit();
         connection.release();
+
+        // Invalidate caches
+        await removeByPattern("admin:vendors:list:*");
+        
+        // If business name changed, product lists need refreshing
+        if (data.business_name && data.business_name !== existingVendor.business_name) {
+            await removeByPattern("vendor:products:list:*");
+            await removeByPattern("admin:products:list:*");
+            await removeByPattern("customer:products:*");
+        }
+
         return { id, message: "Vendor updated successfully" };
 
     } catch (error) {
@@ -450,6 +470,13 @@ const updateStatus = async (id, status) => {
     if (result.affectedRows === 0) {
         throw new Error("Vendor not found");
     }
+
+    // Invalidate caches
+    await removeByPattern("admin:vendors:list:*");
+    await removeByPattern("vendor:products:list:*");
+    await removeByPattern("admin:products:list:*");
+    await removeByPattern("customer:products:*");
+    await removeByPattern("customer:home:*");
 
     return { id, status };
 };
@@ -481,6 +508,9 @@ const updateKycStatus = async (id, data, userId) => {
         throw new Error("Vendor not found");
     }
 
+    // Invalidate caches
+    await removeByPattern("admin:vendors:list:*");
+
     return { id, kyc_status: data.kyc_status };
 };
 
@@ -494,6 +524,9 @@ const autoapproval = async (vendorId, status) => {
     if (result.affectedRows === 0) {
         throw new Error("Vendor not found");
     }
+
+    // Invalidate caches
+    await removeByPattern("admin:vendors:list:*");
 
     return { id: vendorId, auto_approve_products: status };
 }

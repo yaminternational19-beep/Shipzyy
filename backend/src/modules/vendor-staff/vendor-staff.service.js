@@ -1,6 +1,7 @@
 import { getPagination, getPaginationMeta } from '../../utils/pagination.js';
 import buildFilters from '../../utils/filter.js';
 import db from '../../config/db.js';
+import { getFromCache, setToCache, removeFromCache, removeByPattern } from "../../utils/cache.js";
 
 
 /* ===============================
@@ -8,6 +9,9 @@ import db from '../../config/db.js';
 ================================= */
 
 const getVendorStaff = async (queryParams) => {
+  const cacheKey = `vendor:staff:list:${JSON.stringify(queryParams)}`;
+  const cachedData = await getFromCache(cacheKey);
+  if (cachedData) return cachedData;
 
   const { page, limit, skip } = getPagination(queryParams);
 
@@ -106,11 +110,14 @@ const getVendorStaff = async (queryParams) => {
       FROM vendor_staff
   `);
 
-  return {
+  const result = {
     stats: stats[0],
     records: formattedRecords,
     pagination
   };
+
+  await setToCache(cacheKey, result, 600); // 10 mins
+  return result;
 };
 
 
@@ -119,8 +126,17 @@ const getVendorStaff = async (queryParams) => {
 ================================= */
 
 const getVendorStaffById = async (id) => {
+  const cacheKey = `vendor:staff:profile:${id}`;
+  const cachedData = await getFromCache(cacheKey);
+  if (cachedData) return cachedData;
+
   const [rows] = await db.execute('SELECT * FROM vendor_staff WHERE id = ?', [id]);
-  return rows[0] || null;
+  const result = rows[0] || null;
+
+  if (result) {
+    await setToCache(cacheKey, result, 3600); // 1 hour
+  }
+  return result;
 };
 
 
@@ -187,6 +203,9 @@ const createVendorStaff = async (data) => {
 
   const [result] = await db.execute(query, values);
 
+  // Invalidate caches
+  await removeByPattern("vendor:staff:list:*");
+
   return {
     id: result.insertId,
     vendorId: data.vendor_id,
@@ -249,6 +268,10 @@ WHERE id = ?
 
   await db.execute(query, values);
 
+  // Invalidate caches
+  await removeFromCache(`vendor:staff:profile:${id}`);
+  await removeByPattern("vendor:staff:list:*");
+
   return {
     id,
     name: data.name,
@@ -281,6 +304,10 @@ const toggleStatus = async (id) => {
     'UPDATE vendor_staff SET status = ? WHERE id = ?',
     [newStatus, id]
   );
+
+  // Invalidate caches
+  await removeFromCache(`vendor:staff:profile:${id}`);
+  await removeByPattern("vendor:staff:list:*");
 
   const [updated] = await db.query(
     'SELECT * FROM vendor_staff WHERE id = ?',
@@ -315,6 +342,10 @@ const deleteVendorStaff = async (id) => {
 
   if (!result.affectedRows) return { error: 'Failed to delete vendor staff' };
 
+  // Invalidate caches
+  await removeFromCache(`vendor:staff:profile:${id}`);
+  await removeByPattern("vendor:staff:list:*");
+
   return { success: true };
 };
 
@@ -338,6 +369,10 @@ const updatePermissions = async (id, permissions) => {
     'UPDATE vendor_staff SET permissions = ? WHERE id = ?',
     [JSON.stringify(uniquePermissions), id]
   );
+
+  // Invalidate caches
+  await removeFromCache(`vendor:staff:profile:${id}`);
+  await removeByPattern("vendor:staff:list:*");
 
   return {
     id: Number(id),

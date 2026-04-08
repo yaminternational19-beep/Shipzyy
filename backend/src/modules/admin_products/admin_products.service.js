@@ -1,9 +1,14 @@
 import db from "../../config/db.js";
 import s3Service from "../../services/s3Service.js";
 import { getPagination, getPaginationMeta } from "../../utils/pagination.js";
+import { getFromCache, setToCache, removeFromCache, removeByPattern } from "../../utils/cache.js";
 
 
 const getProducts = async (queryParams) => {
+    const cacheKey = `admin:products:list:${JSON.stringify(queryParams)}`;
+    const cachedData = await getFromCache(cacheKey);
+    if (cachedData) return cachedData;
+
     const { page, limit, skip } = getPagination(queryParams);
 
     let where = [];
@@ -137,15 +142,21 @@ LIMIT ? OFFSET ?`,
         rejectedCount: stats[0].rejectedCount
     }
 
-    return { 
+    const result = { 
         stats: statsData,
         records,
         pagination,
     };
+
+    await setToCache(cacheKey, result, 300); // 5 mins
+    return result;
 };
 
 
 const getProductById = async (productId) => {
+    const cacheKey = `admin:product:profile:${productId}`;
+    const cachedData = await getFromCache(cacheKey);
+    if (cachedData) return cachedData;
 
     const formatDate = (dateString) => {
         if (!dateString) return "-";
@@ -218,7 +229,7 @@ const getProductById = async (productId) => {
         WHERE product_id = ?
     `, [productId]);
 
-    return {
+    const result = {
         ...product,
         created_at: formatDate(product.created_at),
         approved_at: formatDate(product.approved_at),
@@ -228,6 +239,9 @@ const getProductById = async (productId) => {
         inventory_summary: variantSummary[0],
         variants
     };
+
+    await setToCache(cacheKey, result, 3600); // 1 hour
+    return result;
 };
 
 
@@ -282,6 +296,13 @@ const updateProductStatus = async (productId, status, reason, adminId) => {
         await connection.query(updateQuery, updateValues);
 
         await connection.commit();
+
+        // Invalidate caches
+        await removeFromCache(`admin:product:profile:${productId}`);
+        await removeFromCache(`customer:product:${productId}`);
+        await removeByPattern("admin:products:list:*");
+        await removeByPattern("customer:home:*");
+        await removeByPattern("customer:products:*");
 
         return { 
             id: productId, 
