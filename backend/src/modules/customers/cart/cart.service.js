@@ -22,12 +22,15 @@ export const getCartItems = async (customerId) => {
       (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) AS primary_image,
       pv.sale_price AS live_price,
       pv.mrp AS live_mrp,
-      pv.stock AS live_stock
+      pv.stock AS live_stock,
+      IF(cw.id IS NOT NULL, 1, 0) AS is_liked,
+      1 AS is_in_cart
     FROM customers_cart cc
     JOIN products p ON cc.product_id = p.id
     LEFT JOIN product_variants pv ON pv.id = (
       SELECT id FROM product_variants WHERE product_id = p.id LIMIT 1
     )
+    LEFT JOIN customers_wishlist cw ON cw.customer_id = cc.customer_id AND cw.product_id = cc.product_id
     WHERE cc.customer_id = ?
   `;
 
@@ -75,10 +78,19 @@ export const getCartItems = async (customerId) => {
     delete item.live_price;
     delete item.live_mrp;
     delete item.live_stock;
+
+    // Format boolean flags
+    item.is_liked = !!item.is_liked;
+    item.is_in_cart = !!item.is_in_cart;
   }
 
-  await setToCache(cacheKey, rows, 3600); // 1 hour
-  return rows;
+  const result = {
+    is_logged_in: customerId ? true : false,
+    items: rows
+  };
+
+  await setToCache(cacheKey, result, 3600); // 1 hour
+  return result;
 };
 
 

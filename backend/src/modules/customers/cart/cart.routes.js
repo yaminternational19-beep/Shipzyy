@@ -1,24 +1,19 @@
 import express from "express";
 import * as cartController from "./cart.controller.js";
 import customerAuthMiddleware from "../../../middlewares/customer.auth.middleware.js";
+import optionalCustomerAuth from "../../../middlewares/optionalCustomerAuth.middleware.js";
 import validate from "../../../middlewares/validate.js";
 import { addToCartSchema, removeFromCartSchema } from "./cart.validator.js";
 
 const router = express.Router();
 
-/**
- * All routes in this file are for customers
- * and require a valid customer token.
- */
-router.use(customerAuthMiddleware);
+// Get cart items (Optional auth for is_logged_in flag)
+router.get("/cart", optionalCustomerAuth, cartController.getCart);
 
-// Get cart items
-router.get("/cart", cartController.getCart);
+// Add item to cart (Using optional auth to return custom login message in controller)
+router.post("/cart", optionalCustomerAuth, validate(addToCartSchema), cartController.addItemToCart);
 
-// Add item to cart
-router.post("/cart", validate(addToCartSchema), cartController.addItemToCart);
-
-// Remove items from cart (single, multiple, or all)
-router.delete("/cart", validate(removeFromCartSchema), cartController.removeItemFromCart);
+// Remove items from cart (Using optional auth to return custom login message in controller)
+router.delete("/cart", optionalCustomerAuth, validate(removeFromCartSchema), cartController.removeItemFromCart);
 
 export default router;

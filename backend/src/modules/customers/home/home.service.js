@@ -4,7 +4,7 @@ import { getFromCache, setToCache } from "../../../utils/cache.js";
 
 export const getHomeData = async (customerId, queryParams = {}) => {
   const { page, limit, skip } = getPagination(queryParams);
-  const cacheKey = `customer:home:${page}:${limit}`;
+  const cacheKey = `customer:home:${customerId || 'guest'}:${page}:${limit}`;
 
   const cachedData = await getFromCache(cacheKey);
   if (cachedData) return cachedData;
@@ -20,7 +20,6 @@ export const getHomeData = async (customerId, queryParams = {}) => {
       ORDER BY created_at DESC
       LIMIT 10
     `);
-    const { page, limit, skip } = getPagination(queryParams);
 
     const [countResult] = await db.query(`
       SELECT COUNT(*) AS total
@@ -85,6 +84,11 @@ export const getHomeData = async (customerId, queryParams = {}) => {
             p.subcategory_id,
             sc.name AS subcategory_name,
             pi.image_url AS product_image,
+            pv.min_price AS offer_price,
+            pv.max_mrp AS mrp,
+            pv.discount_percentage,
+            IF(cw.id IS NOT NULL, 1, 0) AS is_liked,
+            IF(cc.id IS NOT NULL, 1, 0) AS is_in_cart,
             ROW_NUMBER() OVER(PARTITION BY p.category_id ORDER BY p.created_at DESC) as rn
           FROM products p
           LEFT JOIN categories c ON p.category_id = c.id
@@ -93,11 +97,14 @@ export const getHomeData = async (customerId, queryParams = {}) => {
           LEFT JOIN (
             SELECT product_id, 
                    MIN(sale_price) AS min_price, 
-                   MAX(mrp) AS max_mrp
+                   MAX(mrp) AS max_mrp,
+                   MAX(discount_value) AS discount_percentage
             FROM product_variants 
             WHERE is_live = 1 
             GROUP BY product_id
           ) pv ON p.id = pv.product_id
+          LEFT JOIN customers_wishlist cw ON cw.customer_id = ? AND cw.product_id = p.id
+          LEFT JOIN customers_cart cc ON cc.customer_id = ? AND cc.product_id = p.id
           WHERE p.category_id IN (${placeholders})
           AND p.approval_status = 'APPROVED'
           AND p.is_live = 1
@@ -105,7 +112,7 @@ export const getHomeData = async (customerId, queryParams = {}) => {
         ) t
         WHERE rn <= 5
       `,
-        categoryIds
+        [customerId, customerId, ...categoryIds]
       );
 
       // Group subcategories by category_id and sum product_count
@@ -131,7 +138,11 @@ export const getHomeData = async (customerId, queryParams = {}) => {
           productMap[prod.category_id] = [];
         }
         delete prod.rn;
-        productMap[prod.category_id].push(prod);
+        productMap[prod.category_id].push({
+          ...prod,
+          is_liked: !!prod.is_liked,
+          is_in_cart: !!prod.is_in_cart
+        });
       }
 
       // Attach subcategories and products to each category
@@ -146,6 +157,7 @@ export const getHomeData = async (customerId, queryParams = {}) => {
     const pagination = getPaginationMeta(page, limit, totalRecords);
 
     const result = {
+      is_logged_in: customerId ? true : false,
       banners,
       categories: categoriesWithSubcategories,
       recommended_products: [],
@@ -224,7 +236,7 @@ export const getSubCategories = async (categoryId, queryParams = {}) => {
 const getProducts = async (customerId, queryParams = {}) => {
   const { page = 1, limit = 20, category_id, subcategory_id } = queryParams;
   const skip = (page - 1) * limit;
-  const cacheKey = `customer:products:${category_id || 0}:${subcategory_id || 0}:${page}:${limit}`;
+  const cacheKey = `customer:products:${customerId || 'guest'}:${category_id || 0}:${subcategory_id || 0}:${page}:${limit}`;
 
   const cachedData = await getFromCache(cacheKey);
   if (cachedData) return cachedData;
@@ -271,7 +283,9 @@ const getProducts = async (customerId, queryParams = {}) => {
         pi.image_url AS product_image,
         pv.min_price AS offer_price,
         pv.max_mrp AS mrp,
-        pv.discount_percentage
+        pv.discount_percentage,
+        IF(cw.id IS NOT NULL, 1, 0) AS is_liked,
+        IF(cc.id IS NOT NULL, 1, 0) AS is_in_cart
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN subcategories sc ON p.subcategory_id = sc.id
@@ -287,16 +301,18 @@ const getProducts = async (customerId, queryParams = {}) => {
         WHERE is_live = 1 
         GROUP BY product_id
       ) pv ON p.id = pv.product_id
+      LEFT JOIN customers_wishlist cw ON cw.customer_id = ? AND cw.product_id = p.id
+      LEFT JOIN customers_cart cc ON cc.customer_id = ? AND cc.product_id = p.id
       ${whereClause}
       ORDER BY p.created_at DESC
       LIMIT ? OFFSET ?`,
-      [...values, limit, skip]
+      [customerId, customerId, ...values, limit, skip]
     );
 
     const enhancedProducts = products.map(p => ({
       ...p,
-      is_liked: false,
-      is_in_cart: false
+      is_liked: !!p.is_liked,
+      is_in_cart: !!p.is_in_cart
     }));
 
     const pagination = getPaginationMeta(page, limit, totalRecords);
@@ -317,7 +333,7 @@ const getProducts = async (customerId, queryParams = {}) => {
 };
 
 const getProductById = async (customerId, productId, queryParams = {}) => {
-  const cacheKey = `customer:product:${productId}`;
+  const cacheKey = `customer:product:${customerId || 'guest'}:${productId}`;
   const cachedData = await getFromCache(cacheKey);
   if (cachedData) return cachedData;
 
@@ -335,7 +351,9 @@ const getProductById = async (customerId, productId, queryParams = {}) => {
         p.vendor_id, v.business_name AS vendor_name,
         p.brand_id, p.custom_brand, COALESCE(b.name, p.custom_brand) AS brand_name,
         pi.image_url AS primary_image,
-        pv.min_price, pv.max_mrp, pv.total_stock, pv.unit, pv.discount_percentage
+        pv.min_price, pv.max_mrp, pv.total_stock, pv.unit, pv.discount_percentage,
+        IF(cw.id IS NOT NULL, 1, 0) AS is_liked,
+        IF(cc.id IS NOT NULL, 1, 0) AS is_in_cart
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN subcategories sc ON p.subcategory_id = sc.id
@@ -353,8 +371,10 @@ const getProductById = async (customerId, productId, queryParams = {}) => {
         WHERE is_live = 1 
         GROUP BY product_id
       ) pv ON p.id = pv.product_id
+      LEFT JOIN customers_wishlist cw ON cw.customer_id = ? AND cw.product_id = p.id
+      LEFT JOIN customers_cart cc ON cc.customer_id = ? AND cc.product_id = p.id
       WHERE p.id = ? AND p.approval_status = 'APPROVED' AND p.is_live = 1 AND p.is_active = 1
-    `, [productId]);
+    `, [customerId, customerId, productId]);
 
     if (productResult.length === 0) {
       return null;
@@ -420,7 +440,9 @@ const getProductById = async (customerId, productId, queryParams = {}) => {
         pi.image_url AS product_image,
         pv.min_price AS offer_price, 
         pv.max_mrp AS mrp, 
-        pv.discount_percentage
+        pv.discount_percentage,
+        IF(cw.id IS NOT NULL, 1, 0) AS is_liked,
+        IF(cc.id IS NOT NULL, 1, 0) AS is_in_cart
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN subcategories sc ON p.subcategory_id = sc.id
@@ -435,6 +457,8 @@ const getProductById = async (customerId, productId, queryParams = {}) => {
         WHERE is_live = 1 
         GROUP BY product_id
       ) pv ON p.id = pv.product_id
+      LEFT JOIN customers_wishlist cw ON cw.customer_id = ? AND cw.product_id = p.id
+      LEFT JOIN customers_cart cc ON cc.customer_id = ? AND cc.product_id = p.id
       WHERE ${similarWhere} 
         AND p.id != ? 
         AND p.approval_status = 'APPROVED' 
@@ -442,7 +466,7 @@ const getProductById = async (customerId, productId, queryParams = {}) => {
         AND p.is_active = 1
       ORDER BY p.created_at DESC
       LIMIT ? OFFSET ?
-    `, [similarValue, productId, parseInt(limit), skip]);
+    `, [customerId, customerId, similarValue, productId, parseInt(limit), skip]);
 
     const pagination = getPaginationMeta(page, limit, totalSimilar);
 
@@ -468,14 +492,14 @@ const getProductById = async (customerId, productId, queryParams = {}) => {
         made_in: rawProduct.made_in,
         return_allowed: rawProduct.return_allowed,
         return_days: rawProduct.return_days,
-        is_liked: false,
-        is_in_cart: false,
+        is_liked: !!rawProduct.is_liked,
+        is_in_cart: !!rawProduct.is_in_cart,
         company_name: rawProduct.vendor_name,
         images,
         similar_products: similarProducts.map(sp => ({
           ...sp,
-          is_liked: false,
-          is_in_cart: false
+          is_liked: !!sp.is_liked,
+          is_in_cart: !!sp.is_in_cart
         })),
         pagination
       }

@@ -163,6 +163,21 @@ const TABLES = [
                 FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
             );
         `
+    },
+    {
+        name: "customers_wishlist",
+        query: `
+            CREATE TABLE IF NOT EXISTS customers_wishlist (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                customer_id BIGINT NOT NULL,
+                product_id BIGINT NOT NULL,
+                added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY unique_wishlist (customer_id, product_id),
+                INDEX idx_customer (customer_id),
+                INDEX idx_product (product_id),
+                FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
+            );
+        `
     }
 ];
 
