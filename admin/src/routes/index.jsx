@@ -24,6 +24,8 @@ import { TicketsPage } from '../modules/tickets';
 import { RefundsPage } from '../modules/refunds';
 import { SettingsPage } from '../modules/settings';
 import BannersPage from '../modules/banners/BannersPage';
+import { CouponsPage } from '../modules/coupons';
+import { DeliveryChargesPage } from '../modules/delivery_charges';
 
 //vendor routes
 import VendorProductPage from '../modules/vendor_products/VendorProductsPage';
@@ -183,6 +185,15 @@ const GlobalRoutes = () => {
             />
 
             <Route
+                path="/coupons"
+                element={
+                    <ProtectedRoute allowedRoles={["SUPER_ADMIN", "ADMIN"]}>
+                        <CouponsPage />
+                    </ProtectedRoute>
+                }
+            />
+
+            <Route
                 path="/customers"
                 element={
                     <ProtectedRoute allowedRoles={["SUPER_ADMIN", "ADMIN", "SUB_ADMIN"]}>
@@ -229,6 +240,15 @@ const GlobalRoutes = () => {
                 element={
                     <ProtectedRoute allowedRoles={["SUPER_ADMIN", "ADMIN", "SUB_ADMIN"]}>
                         <RefundsPage />
+                    </ProtectedRoute>
+                }
+            />
+
+            <Route
+                path="/delivery-charges"
+                element={
+                    <ProtectedRoute allowedRoles={["SUPER_ADMIN", "ADMIN"]}>
+                        <DeliveryChargesPage />
                     </ProtectedRoute>
                 }
             />

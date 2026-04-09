@@ -100,6 +100,12 @@ import customerAdminRoutes from '../../modules/admin_customers/customers.routes.
 
 router.use("/admin-customers", customerAdminRoutes);
 
+import couponRoutes from '../../modules/coupons/coupons.routes.js';
+router.use("/coupons", couponRoutes);
+
+import deliveryChargeRoutes from '../../modules/delivery_charges/delivery_charges.routes.js';
+router.use("/delivery-charges", deliveryChargeRoutes);
+
 
 
 

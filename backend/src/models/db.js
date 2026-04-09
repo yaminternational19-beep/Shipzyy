@@ -453,6 +453,50 @@ const TABLES = [
                 INDEX idx_created_at (created_at)
             );
         `   
+    },
+    {
+        name: "coupons",
+        query: `
+            CREATE TABLE IF NOT EXISTS coupons (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                code VARCHAR(50) UNIQUE NOT NULL,
+                title VARCHAR(150) NOT NULL,
+                description TEXT,
+                discount_type ENUM('Percentage', 'Fixed') NOT NULL,
+                discount_value DECIMAL(10,2) NOT NULL,
+                min_order_value DECIMAL(10,2) DEFAULT 0,
+                max_discount_amount DECIMAL(10,2) DEFAULT 0,
+                usage_limit INT DEFAULT NULL,
+                used_count INT DEFAULT 0,
+                expiry_date DATETIME,
+                status ENUM('Active', 'Inactive') DEFAULT 'Active',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX idx_code (code),
+                INDEX idx_status (status),
+                INDEX idx_expiry (expiry_date)
+            );
+        `
+    },
+    {
+        name: "delivery_charges",
+        query: `
+            CREATE TABLE IF NOT EXISTS delivery_charges (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                type ENUM('Area', 'Distance') NOT NULL,
+                area_name VARCHAR(150) NULL,
+                min_distance DECIMAL(10,2) NULL,
+                max_distance DECIMAL(10,2) NULL,
+                charge_amount DECIMAL(10,2) NOT NULL,
+                min_order_amount DECIMAL(10,2) DEFAULT 0,
+                free_delivery_above DECIMAL(10,2) NULL,
+                status ENUM('Active', 'Inactive') DEFAULT 'Active',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX idx_status (status),
+                INDEX idx_type (type)
+            );
+        `
     }
 ];
 

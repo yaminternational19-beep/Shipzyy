@@ -17,7 +17,9 @@ export const rolePermissions = {
         "VENDOR_PRODUCTS",
         "VENDOR_SUPPORT",
         "STAFF",
-        "BANNERS"
+        "BANNERS",
+        "COUPONS",
+        "DELIVERY_CHARGES"
     ],
     
 
@@ -38,7 +40,9 @@ export const rolePermissions = {
         "VENDOR_PRODUCTS",
         "VENDOR_SUPPORT",
         "STAFF",
-        "BANNERS"
+        "BANNERS",
+        "COUPONS",
+        "DELIVERY_CHARGES"
     ],
 
     SUB_ADMIN: [

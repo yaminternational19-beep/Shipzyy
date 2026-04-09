@@ -38,6 +38,7 @@ export const menuItems = [
     // { name: "Vehicle Types", key: "VEHICLES", icon: Car, path: "/vehicles", group: "MANAGEMENT", description: "Manage vehicle types" },
     // { name: "Quantity", key: "QUANTITY", icon: Scale, path: "/quantity", group: "MANAGEMENT", description: "Manage quantity units" },
     { name: "Banners", key: "BANNERS", icon: ImageIcon, path: "/banners", group: "CATALOG MANAGEMENT", description: "Manage banners" },
+    { name: "Coupons", key: "COUPONS", icon: Ticket, path: "/coupons", group: "CATALOG MANAGEMENT", description: "Manage discount coupons" },
     { name: "Riders", key: "RIDERS", icon: Bike, path: "/riders", group: "RIDERS", description: "Live tracking and rider management" },
     { name: "Rider Terminations", key: "RIDER_TERMINATIONS", icon: Bike, path: "/riders", group: "RIDERS", description: "Manage rider terminations" },
     {name : "Customers", key: "CUSTOMERS", icon: Users, path: "/customers", group: "CUSTOMERS", description: "Manage customer accounts" },
@@ -47,6 +48,7 @@ export const menuItems = [
     { name: "Refunds", key: "REFUNDS", icon: Undo2, path: "/refunds", group: "SUPPORT", description: "Manage customer refunds" },
     { name: "Payouts", key: "PAYOUTS", icon: CreditCard, path: "/payouts", group: "FINANCE", description: "Manage vendor payouts" },
     { name: "Invoices", key: "INVOICES", icon: Receipt, path: "/invoices", group: "FINANCE", description: "Manage system invoices" },
+    { name: "Delivery Charges", key: "DELIVERY_CHARGES", icon: Truck, path: "/delivery-charges", group: "CATALOG MANAGEMENT", description: "Manage delivery fees" },
     { name: "Vendor Staff", key: "STAFF", icon: Users2, path: "/staff", group: "VENDOR MANAGEMENT", description: "Manage vendor staff members" },
 
     { name: "Reports", key: "REPORTS", icon: BarChart3, path: "/reports", group: "VENDOR MANAGEMENT", description: "View system reports" },
