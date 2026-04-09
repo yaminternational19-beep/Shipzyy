@@ -16,9 +16,11 @@ router.post("/",
   authenticate,
   upload.array("images", 10),
   jsonParser(['specification', 'variants', 'images']),
-  validate(createProductSchema),
   productController.createProduct
 );
+
+// POST bulk create products
+router.post("/bulk-create", authenticate, productController.bulkCreateProducts);
 
 // PUT update stock
 import { updateStockSchema } from './product.validator.js';
@@ -29,7 +31,6 @@ router.put("/:id",
   authenticate,
   upload.array("images", 10),
   jsonParser(['specification', 'variants', 'images']),
-  validate(createProductSchema),
   productController.updateProduct
 );
 

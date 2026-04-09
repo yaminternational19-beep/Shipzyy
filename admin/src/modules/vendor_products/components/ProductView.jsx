@@ -16,7 +16,13 @@ const ProductView = ({ product, onClose }) => {
     ];
 
     const getFieldValue = (field) => {
-        const val = product[field.name];
+        let val = product[field.name];
+
+        // Map ID fields to their name versions for display
+        if (field.name === 'category_id') val = product.category || val;
+        if (field.name === 'subcategory_id') val = product.subCategory || val;
+        if (field.name === 'brand_id') val = product.brand || val;
+
         if (field.type === 'checkbox') return val ? 'Yes' : 'No';
         if (!val || val === '--') return 'N/A';
         return val;

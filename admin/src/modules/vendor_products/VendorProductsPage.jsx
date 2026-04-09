@@ -9,89 +9,22 @@ import { Plus, ChevronLeft, ChevronRight, ArrowLeft, Trash2, Download, FileSprea
 import './VendorProducts.css';
 import { fetchProducts, toggleProductLiveAPI, updateStockAPI, deleteProductAPI } from '../../api/product.api';
 import { exportVendorProductsToPDF, exportVendorProductsToExcel } from './services/export.service';
+import { getCategoriesApi } from '../../api/categories.api';
+import { getBrandsApi } from '../../api/brands.api';
 import * as XLSX from 'xlsx';
 
 const VendorProductsPage = () => {
     // State
     const [products, setProducts] = useState([]);
-
-
-    const loadProductsList = async () => {
-        try {
-            const res = await fetchProducts();
-
-            // Simplified: Backend now returns the array of records directly in data
-            const remoteData = res.data?.data || res.data || [];
-
-            const mappedProducts = remoteData.map(prod => ({
-                id: prod.id,
-                variant_id: prod.inventory_info?.variant_id, // Carry the variant ID for quick-edits
-                itemId: prod.slug || `ITEM-${prod.id}`,
-                name: prod.name,
-                brand: prod.brand_name || 'N/A',
-                category: prod.category_name || 'N/A',
-                subCategory: prod.subcategory_name || '--',
-                MRP: prod.inventory_info?.min_mrp || 0,
-                salePrice: prod.inventory_info?.min_price || 0,
-                discountValue: prod.inventory_info?.max_discount || 0,
-                discountType: prod.inventory_info?.discount_type || 'Percent',
-                image: prod.primary_image || 'https://via.placeholder.com/200',
-                isApproved: prod.approval_status === 'APPROVED',
-                rejectionReason: prod.rejection_reason,
-                isActive: prod.is_live === 1,
-                createdAt: prod.created_at,
-                manufactureDate: prod.manufacture_date,
-                expiryDate: prod.expiry_date,
-                description: prod.description,
-
-                // RAW ID MAPPING: Passing actual DB IDs for flawless Dropdown hydration during Edit
-                category_id: prod.category_id,
-                subcategory_id: prod.subcategory_id,
-                brand_id: prod.brand_id || (prod.custom_brand ? 'Other' : ''),
-                custom_brand: prod.custom_brand || '',
-
-                mrp: prod.inventory_info?.min_mrp || 0,
-                sale_price: prod.inventory_info?.min_price || 0,
-                discount_value: prod.inventory_info?.max_discount || 0,
-                stock: prod.inventory_info?.total_stock || 0,
-                min_order: 1,
-                low_stock_alert: prod.inventory_info?.low_stock_alert || 5,
-                unit: prod.inventory_info?.unit || 'PCS',
-                variant_name: prod.inventory_info?.variant_name || 'Single',
-                color: prod.inventory_info?.color || 'N/A',
-                sku: prod.inventory_info?.sku || '',
-
-                specification: prod.specification && typeof prod.specification === 'object'
-                    ? Object.entries(prod.specification).map(([k, v]) => `${k}: ${v}`).join('\n')
-                    : 'No Specification Provided',
-                country_of_origin: prod.country_of_origin || 'Unknown',
-                manufacture_date: prod.manufacture_date || '',
-                expiry_date: prod.expiry_date || '',
-                return_allowed: prod.return_allowed === 1,
-                return_days: prod.return_days || 0,
-                images: prod.all_images || []
-
-            }));
-
-            setProducts(mappedProducts);
-
-        } catch (error) {
-            // Toast not available inside this scope directly if it uses showToast from below, wait...
-            // showToast is defined after this in the original file, so I need to make sure how I place this.
-            // Actually I can define this inside the component, but it requires showToast to be hoisted or just use console.error
-            console.error("GET Products Error:", error);
-        }
-    };
-
-    useEffect(() => {
-        loadProductsList();
-    }, []);
-
+    const [totalRecords, setTotalRecords] = useState(0);
+    const [allCategories, setAllCategories] = useState({});
+    const [allBrands, setAllBrands] = useState([]);
     const [selectedRows, setSelectedRows] = useState([]);
     const [showAddPage, setShowAddPage] = useState(false);
     const [viewingProduct, setViewingProduct] = useState(null);
     const [editingProduct, setEditingProduct] = useState(null);
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+
 
     const [pagination, setPagination] = useState({
         page: 1,
@@ -107,6 +40,119 @@ const VendorProductsPage = () => {
         status: ''
     });
 
+    const loadProductsList = async () => {
+        try {
+            const apiParams = {
+                page: pagination.page,
+                limit: pagination.limit,
+                search: filters.search,
+                category_id: filters.category, 
+                subcategory_id: filters.subCategory,
+                brand_id: filters.brand,
+                stock_status: filters.stock,
+                // Status Mapping: 
+                // 'approved' in UI check both approval_status=APPROVED and is_live=true
+                // 'pending' in UI checks approval_status=PENDING
+                is_live: filters.status === 'approved' ? 'true' : undefined,
+                approval_status: filters.status === 'pending' ? 'PENDING' : (filters.status === 'rejected' ? 'REJECTED' : undefined)
+            };
+
+            const res = await fetchProducts(apiParams);
+
+            let remoteData = [];
+            let paginationData = { totalRecords: 0 };
+
+            if (res.data?.data?.records) {
+                remoteData = res.data.data.records;
+                paginationData = res.data.data.pagination || res.data.data.meta || paginationData;
+            } else if (Array.isArray(res.data?.data)) {
+                remoteData = res.data.data;
+            } else if (res.data?.records) {
+                remoteData = res.data.records;
+                paginationData = res.data.pagination || res.data.meta || paginationData;
+            }
+
+            const mappedProducts = remoteData.map(prod => ({
+                id: prod.id,
+                variant_id: prod.variant_id || prod.inventory_info?.variant_id, // Multiple fallbacks to ensure ID is captured
+                itemId: prod.slug || `ITEM-${prod.id}`,
+                name: prod.name,
+                brand: prod.brand_name || 'N/A',
+                category: prod.category_name || 'N/A',
+                subCategory: prod.subcategory_name || '--',
+                MRP: prod.inventory_info?.min_mrp || 0,
+                salePrice: prod.inventory_info?.min_price || 0,
+                discountValue: prod.inventory_info?.max_discount || 0,
+                discountType: prod.inventory_info?.discount_type || 'Percent',
+                image: prod.primary_image || 'https://via.placeholder.com/200',
+                isApproved: prod.approval_status === 'APPROVED',
+                rejectionReason: prod.rejection_reason,
+                isActive: prod.is_live === 1,
+                createdAt: prod.created_at,
+                stock: prod.inventory_info?.total_stock || 0,
+                
+                category_id: prod.category_id,
+                subcategory_id: prod.subcategory_id,
+                brand_id: prod.brand_id || (prod.custom_brand ? 'Other' : ''),
+                custom_brand: prod.custom_brand || '',
+                
+                mrp: prod.inventory_info?.min_mrp || 0,
+                sale_price: prod.inventory_info?.min_price || 0,
+                discount_value: prod.inventory_info?.max_discount || 0,
+                unit: prod.inventory_info?.unit || 'PCS',
+                variant_name: prod.inventory_info?.variant_name || 'Standard',
+                color: prod.inventory_info?.color || 'N/A',
+                sku: prod.inventory_info?.sku || '',
+                specification: prod.specification?.details ? prod.specification.details.join('\n') : '',
+                return_allowed: prod.return_allowed === 1,
+                return_days: prod.return_days || 0,
+                manufacture_date: prod.manufacture_date || '',
+                expiry_date: prod.expiry_date || '',
+                manufactureDate: prod.manufacture_date || '',
+                expiryDate: prod.expiry_date || '',
+                images: (prod.all_images || []).map(img => img.image_url || img)
+            }));
+
+            setProducts(mappedProducts);
+            setTotalRecords(paginationData.totalRecords || mappedProducts.length);
+        } catch (error) {
+            console.error("GET Products Error:", error);
+        }
+    };
+
+    useEffect(() => {
+        const fetchFiltersData = async () => {
+            try {
+                const [catRes, brandRes] = await Promise.all([
+                    getCategoriesApi(),
+                    getBrandsApi()
+                ]);
+                const cats = catRes.data?.data?.records || catRes.data?.records || [];
+                const brands = brandRes.data?.data?.records || brandRes.data?.records || [];
+                
+                const catObj = {};
+                cats.forEach(c => catObj[c.name] = []);
+                setAllCategories(catObj);
+                setAllBrands(brands.map(b => b.name));
+            } catch (err) {
+                console.error("Fetch Filters Data Error:", err);
+            }
+        };
+        fetchFiltersData();
+    }, []);
+
+    useEffect(() => {
+        // Reset to page 1 whenever filters change, except when filters themselves are being reset
+        setPagination(prev => ({ ...prev, page: 1 }));
+    }, [filters]);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            loadProductsList();
+        }, 300); // 300ms debounce
+        return () => clearTimeout(timer);
+    }, [pagination.page, pagination.limit, filters]);
+
     // Stats Calculation
     const stats = {
         total: products.length,
@@ -121,50 +167,7 @@ const VendorProductsPage = () => {
         setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
     };
 
-    // Filtering Logic
-    const filteredProducts = useMemo(() => {
-        return products.filter(p => {
-            const searchMatch = !filters.search ||
-                p.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-                p.brand.toLowerCase().includes(filters.search.toLowerCase());
-
-            const brandMatch = !filters.brand || p.brand === filters.brand;
-            const categoryMatch = !filters.category || p.category === filters.category;
-            const subCategoryMatch = !filters.subCategory || p.subCategory === filters.subCategory;
-            const stockMatch = !filters.stock ||
-                (filters.stock === 'high' && p.stock > 10) ||
-                (filters.stock === 'low' && p.stock > 0 && p.stock <= 10) ||
-                (filters.stock === 'out' && p.stock === 0);
-
-            const statusMatch = !filters.status ||
-                (filters.status === 'approved' && p.isApproved) ||
-                (filters.status === 'pending' && !p.isApproved && !p.rejectionReason) ||
-                (filters.status === 'rejected' && p.rejectionReason);
-
-            return searchMatch && brandMatch && categoryMatch && subCategoryMatch && stockMatch && statusMatch;
-        });
-    }, [products, filters]);
-
-    // Dynamic Filter Data Derived Extracted from Loaded Products
-    const filterBrands = useMemo(() => {
-        return [...new Set(products.map(p => p.brand).filter(b => b && b !== 'N/A'))].sort();
-    }, [products]);
-
-    const filterCategories = useMemo(() => {
-        const catKeys = [...new Set(products.map(p => p.category).filter(c => c && c !== 'N/A'))].sort();
-        // Return object since the filter component iterates over Object.keys
-        const obj = {};
-        catKeys.forEach(k => obj[k] = []);
-        return obj;
-    }, [products]);
-
-    // Pagination Logic
-    const paginatedData = useMemo(() => {
-        const start = (pagination.page - 1) * pagination.limit;
-        return filteredProducts.slice(start, start + pagination.limit);
-    }, [filteredProducts, pagination]);
-
-    const totalPages = Math.ceil(filteredProducts.length / pagination.limit);
+    const totalPages = Math.ceil(totalRecords / pagination.limit);
 
     // Handlers
     const handleSelectRow = (id, checked) => {
@@ -177,7 +180,7 @@ const VendorProductsPage = () => {
 
     const handleSelectAll = (checked) => {
         if (checked) {
-            setSelectedRows(filteredProducts.map(p => p.id));
+            setSelectedRows(products.map(p => p.id));
         } else {
             setSelectedRows([]);
         }
@@ -356,8 +359,8 @@ const VendorProductsPage = () => {
                         <VendorProductFilters
                             filters={filters}
                             setFilters={setFilters}
-                            categories={filterCategories}
-                            brands={filterBrands}
+                            categories={allCategories}
+                            brands={allBrands}
                             selectedCount={selectedRows.length}
                             onExport={showToast}
                             onDownload={handleExport}
@@ -367,8 +370,8 @@ const VendorProductsPage = () => {
                         />
 
                         <VendorProductList
-                            products={paginatedData}
-                            totalFilteredCount={filteredProducts.length}
+                            products={products}
+                            totalFilteredCount={totalRecords}
                             selectedRows={selectedRows}
                             onSelectRow={handleSelectRow}
                             onSelectAll={handleSelectAll}
@@ -382,26 +385,42 @@ const VendorProductsPage = () => {
                         {/* Pagination */}
                         <div className="c-pagination" style={{ borderTop: '1px solid var(--border-color)', background: '#f8fafc' }}>
                             <span className="c-pagination-info">
-                                Showing {Math.min((pagination.page - 1) * pagination.limit + 1, filteredProducts.length)}–{Math.min(pagination.page * pagination.limit, filteredProducts.length)} of {filteredProducts.length} products
+                                Showing {Math.min((pagination.page - 1) * pagination.limit + 1, totalRecords)}–{Math.min(pagination.page * pagination.limit, totalRecords)} of {totalRecords} products
                             </span>
-                            <div className="c-pagination-btns" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <button
-                                    className="c-page-btn"
-                                    disabled={pagination.page === 1}
-                                    onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
-                                >
-                                    <ChevronLeft size={14} /> Prev
-                                </button>
-                                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', padding: '0 4px' }}>
-                                    {pagination.page} / {totalPages || 1}
-                                </span>
-                                <button
-                                    className="c-page-btn"
-                                    disabled={pagination.page === totalPages || totalPages === 0}
-                                    onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
-                                >
-                                    Next <ChevronRight size={14} />
-                                </button>
+                            <div className="c-pagination-btns" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                    <span>Rows:</span>
+                                    <select 
+                                        value={pagination.limit} 
+                                        onChange={(e) => setPagination(prev => ({ ...prev, page: 1, limit: Number(e.target.value) }))}
+                                        style={{ padding: '2px 4px', borderRadius: '4px', border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer' }}
+                                    >
+                                        <option value={10}>10</option>
+                                        <option value={20}>20</option>
+                                        <option value={50}>50</option>
+                                        <option value={100}>100</option>
+                                    </select>
+                                </div>
+
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <button
+                                        className="c-page-btn"
+                                        disabled={pagination.page === 1}
+                                        onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
+                                    >
+                                        <ChevronLeft size={14} /> Prev
+                                    </button>
+                                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', padding: '0 4px' }}>
+                                        {pagination.page} / {totalPages || 1}
+                                    </span>
+                                    <button
+                                        className="c-page-btn"
+                                        disabled={pagination.page === totalPages || totalPages === 0}
+                                        onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+                                    >
+                                        Next <ChevronRight size={14} />
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>

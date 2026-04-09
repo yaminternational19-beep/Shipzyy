@@ -178,7 +178,56 @@ const TABLES = [
                 FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
             );
         `
-    }
+    },
+    // {
+    //     name: "customers_wallets",
+    //     query: `
+    //         CREATE TABLE IF NOT EXISTS customers_wallets (
+    //             id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    //             customer_id BIGINT NOT NULL,
+    //             balance DECIMAL(12,2) DEFAULT 0.00,
+    //             currency VARCHAR(10) DEFAULT 'INR',
+    //             status ENUM('active','blocked') DEFAULT 'active',
+    //             last_transaction_at DATETIME DEFAULT NULL,
+    //             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    //             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    //             UNIQUE KEY unique_customer_wallet (customer_id),
+    //             INDEX idx_customer (customer_id),
+    //             FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
+    //         );
+    //     `   
+    // },
+    // {
+    //     name: "customers_wallet_transactions",
+    //     query: `
+    //         CREATE TABLE IF NOT EXISTS payments (
+    //             id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    //             customer_id BIGINT NOT NULL,
+    //             gateway VARCHAR(100) NOT NULL,
+    //             gateway_order_id VARCHAR(255) DEFAULT NULL,
+    //             gateway_payment_id VARCHAR(255) DEFAULT NULL,
+    //             gateway_signature VARCHAR(255) DEFAULT NULL,
+    //             amount DECIMAL(12,2) NOT NULL,
+    //             currency VARCHAR(10) DEFAULT 'INR',
+    //             payment_type VARCHAR(100) NOT NULL,
+    //             status ENUM(
+    //                 'created',
+    //                 'pending',
+    //                 'success',
+    //                 'failed'
+    //             ) DEFAULT 'created',
+    //             metadata JSON DEFAULT NULL,
+    //             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    //             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    //             INDEX idx_customer (customer_id),
+    //             INDEX idx_gateway_payment (gateway_payment_id),
+    //             FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
+    //         );
+    //     `
+    // }
+
+    
+
 ];
 
 const initDatabase = async () => {

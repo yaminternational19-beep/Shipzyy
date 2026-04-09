@@ -22,3 +22,6 @@ export const updateStockAPI = (data) =>
 export const deleteProductAPI = (id) =>
     api.delete(`/products/${id}`);
 
+export const bulkCreateProductAPI = (data) =>
+    api.post("/products/bulk-create", data);
+

@@ -11,12 +11,15 @@ const ProductForm = ({ onSave, showToast, initialData = null }) => {
     // Initialize state dynamically from fields.js
     const getInitialState = () => {
         if (initialData) {
-            const mappedImages = (initialData.images || []).map((url, i) => ({
-                id: `existing-${i}`,
-                file: null, // No new file object
-                preview: url,
-                image_url: url // Keep the original URL for backend tracking
-            }));
+            const mappedImages = (initialData.images || []).map((img, i) => {
+                const url = typeof img === 'string' ? img : (img.image_url || '');
+                return {
+                    id: `existing-${i}`,
+                    file: null,
+                    preview: url,
+                    image_url: url
+                };
+            });
             return { ...initialData, images: mappedImages };
         }
 
@@ -130,7 +133,7 @@ const ProductForm = ({ onSave, showToast, initialData = null }) => {
     const validate = () => {
         const newErrors = {};
         const requiredFields = [
-            'category_id', 'name', 'description', 
+            'name', 'description', 
             'specification', 'mrp', 'stock', 
             'min_order', 'variant_name'
         ];
@@ -141,9 +144,7 @@ const ProductForm = ({ onSave, showToast, initialData = null }) => {
             }
         });
 
-        if (!formData.brand_id && !formData.custom_brand) {
-            newErrors['brand_id'] = 'Please select a brand or enter a custom brand';
-        }
+        // Brand is now optional per USER_REQUEST
         if (formData.brand_id === 'Other' && (!formData.custom_brand || !formData.custom_brand.trim())) {
             newErrors['custom_brand'] = 'Custom brand name is required when "Other" is selected';
         }
@@ -160,7 +161,7 @@ const ProductForm = ({ onSave, showToast, initialData = null }) => {
     const buildProductPayload = (data) => {
         const payloadData = new FormData();
 
-        payloadData.append('vendor_id', 1);
+        // Removed vendor_id: Backend now takes it from the token
         payloadData.append('category_id', data.category_id ?? '');
         payloadData.append('subcategory_id', data.subcategory_id ?? '');
         payloadData.append('name', data.name || '');
@@ -181,34 +182,35 @@ const ProductForm = ({ onSave, showToast, initialData = null }) => {
         payloadData.append('return_allowed', isReturnAllowed ? 'true' : 'false');
         payloadData.append('return_days', isReturnAllowed ? (Number(data.return_days) || 0) : 0);
 
-        const variantObject = {
-            variant_name: data.variant_name || '',
-            unit: data.unit || 'PCS',
-            color: data.color || 'N/A',
-            sku: data.sku || '',
-            mrp: Number(data.mrp) || 0,
-            sale_price: Number(data.sale_price) || 0,
-            discount_value: Number(data.discount_value) || 0,
-            discount_type: 'Percent',
-            stock: Number(data.stock) || 0,
-            min_order: Number(data.min_order) || 1,
-            low_stock_alert: Number(data.low_stock_alert) || 5
-        };
-        payloadData.append('variants', JSON.stringify([variantObject]));
+        // VARIANT FIELDS (Flattened)
+        payloadData.append('variant_name', data.variant_name || 'Standard');
+        payloadData.append('unit', data.unit || 'PCS');
+        payloadData.append('color', data.color || 'N/A');
+        payloadData.append('sku', data.sku || '');
+        payloadData.append('mrp', Number(data.mrp) || 0);
+        payloadData.append('sale_price', Number(data.sale_price) || 0);
+        payloadData.append('discount_value', Number(data.discount_value) || 0);
+        payloadData.append('discount_type', 'Percent');
+        payloadData.append('stock', Number(data.stock) || 0);
+        payloadData.append('min_order', Number(data.min_order) || 1);
+        payloadData.append('low_stock_alert', Number(data.low_stock_alert) || 5);
 
         if (data.images && data.images.length > 0) {
+            const existingUrls = [];
             data.images.forEach(img => {
                 if (img.file) {
                     payloadData.append('images', img.file);
+                } else if (img.image_url) {
+                    existingUrls.push({
+                        image_url: img.image_url,
+                        is_primary: data.images[0].id === img.id,
+                        sort_order: data.images.indexOf(img)
+                    });
                 }
             });
-            // Also append existing image URLs to keep them if needed by backend (optional depends on backend implementation)
-            const existingUrls = data.images.filter(img => !img.file).map(img => ({
-                image_url: img.image_url,
-                is_primary: data.images[0].id === img.id,
-                sort_order: data.images.indexOf(img)
-            }));
-            payloadData.append('images', JSON.stringify(existingUrls));
+            if (existingUrls.length > 0) {
+                payloadData.append('images', JSON.stringify(existingUrls));
+            }
         }
 
         return payloadData;

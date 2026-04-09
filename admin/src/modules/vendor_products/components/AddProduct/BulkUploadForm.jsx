@@ -116,11 +116,29 @@ const BulkUploadForm = ({ onSaveAll, showToast }) => {
             const data = await parseExcel(file);
             const normalized = data.map((row, idx) => {
                 const p = { id: Date.now() + idx, images: [] };
+
+                // Create a record of row keys without asterisks for easier matching
+                const cleanRow = {};
+                Object.keys(row).forEach(key => {
+                    const cleanKey = key.replace(/\*/g, '').trim().toLowerCase();
+                    cleanRow[cleanKey] = row[key];
+                });
+
                 allFields.forEach(field => {
-                    // Simple mapping from excel column names (case insensitive)
-                    let excelVal = row[field.label] || row[field.name] || row[field.label.toLowerCase()] || '';
+                    const cleanLabel = field.label.replace(/\*/g, '').trim().toLowerCase();
+                    const cleanName = field.name.toLowerCase();
                     
-                    if (excelVal) {
+                    // Try matching by cleaned label or name
+                    let excelVal = cleanRow[cleanLabel] || cleanRow[cleanName];
+
+                    // Special fuzzy matching for common variants
+                    if (!excelVal) {
+                        if (cleanLabel.includes('minimum order')) excelVal = cleanRow['minimum order'];
+                        if (cleanLabel.includes('mrp')) excelVal = cleanRow['mrp'];
+                        if (cleanLabel === 'made in') excelVal = cleanRow['country of origin'];
+                    }
+                    
+                    if (excelVal !== undefined && excelVal !== null) {
                         // Translation from Excel String identifiers back into strictly ID mapped structures
                         if (field.name === 'category_id') {
                             const matched = rawCategories.find(c => c.name.toLowerCase().trim() === String(excelVal).toLowerCase().trim());
@@ -136,12 +154,12 @@ const BulkUploadForm = ({ onSaveAll, showToast }) => {
                         }
                     }
 
-                    p[field.name] = field.type === 'checkbox' ? (excelVal === 'true' || excelVal === true || excelVal === '1' || excelVal === 1) : excelVal;
+                    p[field.name] = field.type === 'checkbox' ? (excelVal === 'true' || excelVal === true || excelVal === '1' || excelVal === 1 || String(excelVal).toLowerCase() === 'yes') : (excelVal || '');
                 });
                 return p;
             });
             setProducts([...products, ...normalized]);
-            showToast(`Imported ${normalized.length} products`, 'success');
+            showToast(`Imported ${normalized.length} products. Verify and confirm.`, 'success');
         } catch (err) {
             showToast('Failed to parse file', 'error');
         }
@@ -163,6 +181,11 @@ const BulkUploadForm = ({ onSaveAll, showToast }) => {
                     isValid = false;
                 }
             });
+            if ((p.images || []).length === 0) {
+                rowErrors['images'] = true;
+                isValid = false;
+            }
+
             if (Object.keys(rowErrors).length > 0) {
                 newErrors[i] = rowErrors;
             }

@@ -21,10 +21,14 @@ const authMiddleware = (req, res, next) => {
     // };
 
 
+    const userId = decoded.user_id || decoded.id;
+    const vendorId = decoded.vendor_id || (decoded.role === 'VENDOR_OWNER' ? (decoded.user_id || decoded.id) : null);
+
     req.user = {
-      user_id: decoded.user_id,
+      id: userId, // Keep both for safety
+      user_id: userId,
       role: decoded.role,
-      vendor_id: decoded.vendor_id
+      vendor_id: vendorId
     };
 
     next();

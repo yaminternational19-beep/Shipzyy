@@ -8,7 +8,7 @@ const productFields = {
       name: "category_id",
       label: "Category",
       type: "select",
-      required: true,
+      required: false,
       options: []
     },
     {

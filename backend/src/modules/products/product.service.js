@@ -6,69 +6,72 @@ import { createProductSchema } from './product.validator.js';
 import ApiError from '../../utils/ApiError.js';
 import { getFromCache, setToCache, removeFromCache, removeByPattern } from "../../utils/cache.js";
 
-const createProduct = async (data, files) => {
+const createProduct = async (data, files, existingConnection = null) => {
   // Handle JSON strings if from multipart
-  if (typeof data.variants === 'string') data.variants = JSON.parse(data.variants);
   if (typeof data.specification === 'string') data.specification = JSON.parse(data.specification);
   if (typeof data.images === 'string') data.images = JSON.parse(data.images);
 
   // Clean up empty strings, 'null' strings, or non-numeric names for numeric ID fields
-  const idFields = ['category_id', 'subcategory_id', 'brand_id', 'vendor_id'];
+  const idFields = ['category_id', 'subcategory_id', 'brand_id', 'vendor_id', 'user_id'];
   idFields.forEach(field => {
-    const rawVal = data[field];
-    const val = typeof rawVal === 'string' ? rawVal.trim() : rawVal;
+      const rawVal = data[field];
+      const val = typeof rawVal === 'string' ? rawVal.trim() : rawVal;
 
-    // If value is missing, empty, or the text "null"/"undefined", strictly set to null
-    if (val === '' || val === 'null' || val === 'undefined' || val === undefined || val === null) {
-      data[field] = null;
-    } else if (isNaN(Number(val))) {
-      // If it's a string that can't be a number (like a category name from Excel), set to null
-      data[field] = null;
-    } else {
-      // Otherwise, safely cast to a real Number
-      data[field] = Number(val);
-    }
+      if (val === '' || val === 'null' || val === 'undefined' || val === undefined || val === null) {
+          data[field] = null;
+      } else if (isNaN(Number(val))) {
+          data[field] = null;
+      } else {
+          data[field] = Number(val);
+      }
   });
 
-  // Validate request and get transformed (type-casted) values
   const { error, value: validatedData } = createProductSchema.validate(data);
   if (error) {
-    throw new ApiError(400, "Validation failed", "VALIDATION_ERROR", error.details[0].message);
+      throw new ApiError(400, "Validation failed", "VALIDATION_ERROR", error.details[0].message);
   }
 
-  const connection = await db.getConnection();
+  const connection = existingConnection || await db.getConnection();
   try {
-    await connection.beginTransaction();
+      if (!existingConnection) await connection.beginTransaction();
 
     const {
       vendor_id, category_id, subcategory_id, brand_id, custom_brand,
       name, description, specification, country_of_origin,
       manufacture_date, expiry_date, return_allowed, return_days,
-      variants, images
+      images,
+      // Variant fields
+      variant_name, unit, color, sku, mrp, sale_price,
+      discount_value, discount_type, stock, min_order, low_stock_alert
     } = validatedData;
 
-    // Fetch Vendor/Category info for S3 path and approval policy
-    const [metaRows] = await connection.query(
-      `SELECT v.business_name, v.auto_approve_products, c.name as category_name
-       FROM vendors v, categories c 
-       WHERE v.id = ? AND c.id = ?`,
-      [vendor_id, category_id]
+    // Fetch Vendor info for S3 path and approval policy
+    const [vendorRows] = await connection.query(
+      `SELECT business_name, auto_approve_products FROM vendors WHERE id = ?`,
+      [vendor_id]
     );
 
-    if (metaRows.length === 0) throw new Error("Vendor or Category not found");
+    if (vendorRows.length === 0) throw new ApiError(404, "Vendor not found");
+    const vendorInfo = vendorRows[0];
 
-    const vendorInfo = metaRows[0];
+    // Fetch Category info if provided (now optional)
+    let categoryName = "general";
+    if (category_id) {
+      const [categoryRows] = await connection.query(
+        `SELECT name FROM categories WHERE id = ?`,
+        [category_id]
+      );
+      if (categoryRows.length > 0) categoryName = categoryRows[0].name;
+    }
 
     // 1. UNIQUE CHECK (Pre-insert)
     const [existing] = await connection.query(
       `SELECT p.id 
        FROM products p
-       JOIN product_variants v ON v.product_id = p.id
        WHERE p.vendor_id = ?
        AND p.name = ?
-       AND v.variant_name = ?
        LIMIT 1`,
-      [vendor_id, name, variants[0].variant_name]
+      [vendor_id, name]
     );
 
     if (existing.length > 0) {
@@ -76,7 +79,7 @@ const createProduct = async (data, files) => {
     }
 
     const vendorSlug = slugify(vendorInfo.business_name, { lower: true });
-    const categorySlug = slugify(vendorInfo.category_name, { lower: true });
+    const categorySlug = slugify(categoryName, { lower: true });
     const productPathName = slugify(name, { lower: true });
     const s3Folder = `${vendorSlug}/${categorySlug}/${productPathName}`;
 
@@ -94,6 +97,10 @@ const createProduct = async (data, files) => {
     }
 
     const finalImages = [...(images || []), ...uploadedImages];
+
+    if (finalImages.length === 0) {
+      throw new ApiError(400, "At least one product image is required");
+    }
 
     const m_date = manufacture_date ? new Date(manufacture_date).toISOString().split('T')[0] : null;
     const e_date = expiry_date ? new Date(expiry_date).toISOString().split('T')[0] : null;
@@ -143,21 +150,18 @@ const createProduct = async (data, files) => {
 
     const productId = productResult.insertId;
 
-    // Bulk Insert Variants
-    const variantValues = variants.map((v, i) => [
-      productId, v.variant_name, v.unit, v.color,
-      v.sku || `PROD-${productId}-${i + 1}-${Date.now()}`,
-      v.mrp, v.sale_price, v.discount_value, v.discount_type, v.stock, v.min_order, v.low_stock_alert
-    ]);
-
-    if (variantValues.length > 0) {
-      await connection.query(
-        `INSERT INTO product_variants 
-        (product_id, variant_name, unit, color, sku, mrp, sale_price, discount_value, discount_type, stock, min_order, low_stock_alert) 
-        VALUES ?`,
-        [variantValues]
-      );
-    }
+    // Insert SINGLE Variant (Always 1 variant per product)
+    const [variantResult] = await connection.query(
+      `INSERT INTO product_variants 
+      (product_id, variant_name, unit, color, sku, mrp, sale_price, discount_value, discount_type, stock, min_order, low_stock_alert) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        productId, variant_name || 'Standard', unit || 'PCS', color || 'N/A',
+        sku || `SKU-${productId}-${Date.now()}`,
+        mrp, sale_price, discount_value || 0, discount_type || 'Percent',
+        stock || 0, min_order || 1, low_stock_alert || 5
+      ]
+    );
 
     // Bulk Insert Images
     if (finalImages.length > 0) {
@@ -170,27 +174,29 @@ const createProduct = async (data, files) => {
       );
     }
 
-    await connection.commit();
+    if (!existingConnection) await connection.commit();
 
-    // Invalidate caches
-    await removeByPattern("vendor:products:list:*");
-    await removeByPattern("admin:products:list:*");
-    await removeByPattern("customer:home:*");
-    await removeByPattern("customer:products:*");
+    // Invalidate caches (Skip if in bulk - bulk handler does it once)
+    if (!existingConnection) {
+        await removeByPattern("vendor:products:list:*");
+        await removeByPattern("admin:products:list:*");
+        await removeByPattern("customer:home:*");
+        await removeByPattern("customer:products:*");
+    }
 
     return { product_id: productId };
   } catch (error) {
-    if (connection) await connection.rollback();
+    if (!existingConnection && connection) await connection.rollback();
     throw error;
   } finally {
-    if (connection) connection.release();
+    if (!existingConnection && connection) connection.release();
   }
 };
 
 const getAllProducts = async (queryParams) => {
   const cacheKey = `vendor:products:list:${JSON.stringify(queryParams)}`;
-  const cachedData = await getFromCache(cacheKey);
-  if (cachedData) return cachedData;
+  // const cachedData = await getFromCache(cacheKey);
+  // if (cachedData) return cachedData;
 
   const { page, limit, skip } = getPagination(queryParams);
 
@@ -198,35 +204,77 @@ const getAllProducts = async (queryParams) => {
   let values = [];
 
   // Filters
-  if (queryParams.vendor_id) {
+  const vendorId = queryParams.vendor_id;
+  if (vendorId) {
     where.push("p.vendor_id = ?");
-    values.push(queryParams.vendor_id);
+    values.push(vendorId);
   }
-  if (queryParams.category_id) {
-    where.push("p.category_id = ?");
+  
+  // Only add filters if they have a non-empty value
+  if (queryParams.category_id && queryParams.category_id !== '') {
+    if (isNaN(Number(queryParams.category_id))) {
+      where.push("c.name = ?");
+    } else {
+      where.push("p.category_id = ?");
+    }
     values.push(queryParams.category_id);
   }
-  if (queryParams.approval_status) {
+  
+  if (queryParams.subcategory_id && queryParams.subcategory_id !== '') {
+     if (isNaN(Number(queryParams.subcategory_id))) {
+      where.push("sc.name = ?");
+    } else {
+      where.push("p.subcategory_id = ?");
+    }
+    values.push(queryParams.subcategory_id);
+  }
+
+  if (queryParams.brand_id && queryParams.brand_id !== '') {
+    if (isNaN(Number(queryParams.brand_id))) {
+      where.push("b.name = ?");
+    } else {
+      where.push("p.brand_id = ?");
+    }
+    values.push(queryParams.brand_id);
+  }
+
+  if (queryParams.approval_status && queryParams.approval_status !== '') {
     where.push("p.approval_status = ?");
     values.push(queryParams.approval_status);
   }
-  if (queryParams.is_live !== undefined) {
-    where.push("p.is_live = ?");
-    values.push(queryParams.is_live === 'true' ? 1 : 0);
+
+  if (queryParams.stock_status && queryParams.stock_status !== '') {
+    if (queryParams.stock_status === 'out') {
+      where.push("p.id IN (SELECT product_id FROM product_variants GROUP BY product_id HAVING SUM(stock) = 0)");
+    } else if (queryParams.stock_status === 'low') {
+      where.push("p.id IN (SELECT product_id FROM product_variants GROUP BY product_id HAVING SUM(stock) > 0 AND SUM(stock) <= 10)");
+    } else if (queryParams.stock_status === 'high') {
+      where.push("p.id IN (SELECT product_id FROM product_variants GROUP BY product_id HAVING SUM(stock) > 10)");
+    }
   }
-  if (queryParams.search) {
-    where.push("(p.name LIKE ? OR p.custom_brand LIKE ?)");
-    const searchVal = `%${queryParams.search}%`;
-    values.push(searchVal, searchVal);
+
+  if (queryParams.is_live !== undefined && queryParams.is_live !== null && queryParams.is_live !== '') {
+    where.push("p.is_live = ?");
+    values.push(queryParams.is_live === 'true' || queryParams.is_live == 1 ? 1 : 0);
+  }
+
+  if (queryParams.search && queryParams.search.trim() !== '') {
+    where.push("(p.name LIKE ? OR p.custom_brand LIKE ? OR p.description LIKE ?)");
+    const searchVal = `%${queryParams.search.trim()}%`;
+    values.push(searchVal, searchVal, searchVal);
   }
 
   const whereClause = where.length ? `WHERE ${where.join(" AND ")}` : "";
 
   // Total Count
-  const [countResult] = await db.query(
-    `SELECT COUNT(*) as total FROM products p ${whereClause}`,
-    values
-  );
+  const countSql = `SELECT COUNT(*) as total 
+     FROM products p 
+     LEFT JOIN categories c ON p.category_id = c.id
+     LEFT JOIN subcategories sc ON p.subcategory_id = sc.id
+     LEFT JOIN brands b ON p.brand_id = b.id
+     ${whereClause}`;
+     
+  const [countResult] = await db.query(countSql, values);
   const totalRecords = countResult[0].total;
 
   // Fetch Products
@@ -296,183 +344,196 @@ const getAllProducts = async (queryParams) => {
     variants.forEach(v => {
       variantMap[v.product_id] = {
         variant_id: v.variant_id,
-        total_stock: v.total_stock,
-        min_price: v.min_price,
-        min_mrp: v.min_mrp,
-        max_discount: v.max_discount,
-        discount_type: v.discount_type,
-        low_stock_alert: v.low_stock_alert,
-        unit: v.unit,
-        color: v.color,
-        sku: v.sku,
-        variant_name: v.variant_name
+        stock: v.total_stock || 0,
+        sale_price: v.min_price || 0,
+        mrp: v.min_mrp || 0,
+        discount_value: v.max_discount || 0,
+        discount_type: v.discount_type || 'Percent',
+        low_stock_alert: v.low_stock_alert || 5,
+        unit: v.unit || 'PCS',
+        color: v.color || 'N/A',
+        sku: v.sku || '',
+        variant_name: v.variant_name || 'Standard'
       };
     });
 
-    rows.forEach(p => {
-      p.all_images = imagesMap[p.id] || [];
-      p.primary_image = (imagesMap[p.id] && imagesMap[p.id][0]) || null;
-      p.inventory_info = variantMap[p.id] || {
-        total_stock: 0, min_price: 0, min_mrp: 0, max_discount: 0,
-        discount_type: 'Percent', low_stock_alert: 5,
-        unit: 'PCS', color: 'N/A', sku: '', variant_name: 'Single'
-      };
+    rows.forEach((p, idx) => {
+      const v = variantMap[p.id] || {};
+
+      // Structure for VendorProductsPage mapping
+      p.inventory_info = {
+          variant_id: v.variant_id,
+          total_stock: v.stock || 0,
+          min_price: v.sale_price || 0,
+          min_mrp: v.mrp || 0,
+          max_discount: v.discount_value || 0,
+          discount_type: v.discount_type || 'Percent',
+          low_stock_alert: v.low_stock_alert || 5,
+          unit: v.unit || 'PCS',
+          color: v.color || 'N/A',
+          sku: v.sku || '',
+          variant_name: v.variant_name || 'Standard'
+      }; 
+      p.primary_image = imagesMap[p.id]?.[0] || '';
+      p.all_images = (imagesMap[p.id] || []).map(url => ({ image_url: url }));
+
+      // Flat keys for extra compatibility
+      p.variant_id = v.variant_id;
+      p.stock = v.stock;
+      p.sale_price = v.sale_price;
+      p.mrp = v.mrp;
+      p.offer_price = v.sale_price; 
+      p.discount_value = v.discount_value;
+      p.discount_type = v.discount_type;
+      p.low_stock_alert = v.low_stock_alert;
+      p.unit = v.unit;
+      p.color = v.color;
+      p.sku = v.sku;
+      p.variant_name = v.variant_name;
+      p.images = imagesMap[p.id] || [];
+
+      // Map to camelCase for frontend components
+      p.salePrice = v.sale_price;
+      p.MRP = v.mrp;
+      p.manufactureDate = p.manufacture_date;
+      p.expiryDate = p.expiry_date;
+      p.category = p.category_name;
+      p.subCategory = p.subcategory_name;
+      p.brand = p.brand_name;
+      p.isActive = p.is_live === 1;
     });
   }
 
+  const result = {
+    records: rows,
+    pagination: getPaginationMeta(page, limit, totalRecords)
+  };
 
-  // Simplified: Returning only the data records as requested
-  await setToCache(cacheKey, rows, 300); // 5 mins
-  return rows;
+  await setToCache(cacheKey, result, 3600);
+  return result;
 };
 
 const updateProduct = async (productId, data, files) => {
-  // Handle JSON strings if from multipart
-  if (typeof data.variants === 'string') data.variants = JSON.parse(data.variants);
+  // Handle JSON strings
   if (typeof data.specification === 'string') data.specification = JSON.parse(data.specification);
   if (typeof data.images === 'string') data.images = JSON.parse(data.images);
 
-  // Clean up empty strings, 'null' strings, or non-numeric names for numeric ID fields
-  const idFields = ['category_id', 'subcategory_id', 'brand_id', 'vendor_id'];
+  // Clean up IDs
+  const idFields = ['category_id', 'subcategory_id', 'brand_id', 'vendor_id', 'user_id'];
   idFields.forEach(field => {
     const rawVal = data[field];
-    const val = typeof rawVal === 'string' ? rawVal.trim() : rawVal;
+    const val = Number(rawVal);
 
-    // If value is missing, empty, or the text "null"/"undefined", strictly set to null
-    if (val === '' || val === 'null' || val === 'undefined' || val === undefined || val === null) {
-      data[field] = null;
-    } else if (isNaN(Number(val))) {
-      // If it's a string that can't be a number (like a category name from Excel), set to null
+    // If it's effectively empty or not a valid number, set to null
+    if (rawVal === '' || rawVal === 'null' || rawVal === 'undefined' || rawVal === undefined || rawVal === null || isNaN(val)) {
       data[field] = null;
     } else {
-      // Otherwise, safely cast to a real Number
-      data[field] = Number(val);
+      data[field] = val;
     }
   });
 
-  const { error, value: validatedData } = createProductSchema.validate(data);
-  if (error) {
-    throw new ApiError(400, "Validation failed", "VALIDATION_ERROR", error.details[0].message);
-  }
+  const { error, value: validatedData } = createProductSchema.validate({ ...data, vendor_id: data.vendor_id });
+  if (error) throw new ApiError(400, "Validation error: " + error.details[0].message);
+
+  const {
+    name, description, specification, country_of_origin,
+    manufacture_date, expiry_date, return_allowed, return_days,
+    category_id, subcategory_id, brand_id, custom_brand,
+    variant_name, unit, color, sku, mrp, sale_price,
+    discount_value, discount_type, stock, min_order, low_stock_alert,
+    images: incomingImages
+  } = validatedData;
 
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
 
-    const {
-      vendor_id, category_id, subcategory_id, brand_id, custom_brand,
-      name, description, specification, country_of_origin,
-      manufacture_date, expiry_date, return_allowed, return_days,
-      variants, images
-    } = validatedData;
-
-    // Fetch existing product and Vendor/Category for pathing
+    // Check if product exists
     const [existingRows] = await connection.query(`SELECT * FROM products WHERE id = ?`, [productId]);
     if (existingRows.length === 0) throw new ApiError(404, "Product not found");
 
+    // Fetch Vendor info for pathing
     const [metaRows] = await connection.query(
-      `SELECT v.business_name, v.auto_approve_products, c.name as category_name 
-       FROM vendors v, categories c 
-       WHERE v.id = ? AND c.id = ?`,
-      [vendor_id, category_id]
+      `SELECT v.business_name, c.name as category_name 
+             FROM vendors v, categories c 
+             WHERE v.id = ? AND c.id = ?`,
+      [validatedData.vendor_id, category_id]
     );
     if (metaRows.length === 0) throw new Error("Vendor or Category not found");
-
     const vendorInfo = metaRows[0];
-    const autoApprove = vendorInfo.auto_approve_products === 1;
-    const approvalStatus = autoApprove ? 'APPROVED' : 'PENDING';
-    const isLive = autoApprove ? 1 : 0;
 
+    // 1. Update Product details
+    await connection.query(
+      `UPDATE products SET 
+            name = ?, description = ?, specification = ?, country_of_origin = ?,
+            manufacture_date = ?, expiry_date = ?, return_allowed = ?, return_days = ?,
+            category_id = ?, subcategory_id = ?, brand_id = ?, custom_brand = ?, updated_at = NOW()
+            WHERE id = ?`,
+      [
+        name, description, JSON.stringify(specification), country_of_origin,
+        manufacture_date, expiry_date, return_allowed ? 1 : 0, return_days,
+        category_id, subcategory_id, brand_id, custom_brand, productId
+      ]
+    );
+
+    // 2. Update the SINGLE variant
+    await connection.query(
+      `UPDATE product_variants SET 
+            variant_name = ?, unit = ?, color = ?, sku = ?, mrp = ?, sale_price = ?,
+            discount_value = ?, discount_type = ?, stock = ?, min_order = ?, low_stock_alert = ?, updated_at = NOW()
+            WHERE product_id = ?`,
+      [
+        variant_name, unit, color, sku, mrp, sale_price,
+        discount_value, discount_type, stock, min_order, low_stock_alert, productId
+      ]
+    );
+
+    // 3. Image handling (simplified for this task)
     const vendorSlug = slugify(vendorInfo.business_name, { lower: true });
     const categorySlug = slugify(vendorInfo.category_name, { lower: true });
     const productPathName = slugify(name, { lower: true });
     const s3Folder = `${vendorSlug}/${categorySlug}/${productPathName}`;
 
-    // Handle Image Updates
     const newlyUploadedImages = [];
     if (files && files.length > 0) {
       for (let i = 0; i < files.length; i++) {
         const upload = await s3Service.uploadFile(files[i], s3Folder);
         newlyUploadedImages.push({
           image_url: upload.url,
-          is_primary: i === 0 && (!images || images.length === 0),
-          sort_order: (images ? images.length : 0) + i
+          is_primary: i === 0 && (!incomingImages || incomingImages.length === 0),
+          sort_order: (incomingImages ? incomingImages.length : 0) + i
         });
       }
     }
 
-    const finalImages = [...(images || []), ...newlyUploadedImages];
+    const finalImages = [...(incomingImages || []), ...newlyUploadedImages];
+    if (finalImages.length > 0) {
+      const [oldImages] = await connection.query(`SELECT image_url FROM product_images WHERE product_id = ?`, [productId]);
+      const incomingUrls = finalImages.map(img => img.image_url);
+      const removedImages = oldImages.filter(img => !incomingUrls.includes(img.image_url));
 
-    // Update main product details
-    const productSlug = slugify(name, { lower: true }) + '-' + productId;
-
-    await connection.query(
-      `UPDATE products SET 
-        vendor_id=?, category_id=?, subcategory_id=?, brand_id=?, custom_brand=?, name=?, slug=?, 
-        description=?, specification=?, country_of_origin=?, manufacture_date=?, expiry_date=?, 
-        return_allowed=?, return_days=?, approval_status=?, is_live=?, is_active=?, approved_at=?
-       WHERE id = ?`,
-      [
-        vendor_id, category_id, subcategory_id, brand_id, custom_brand, name, productSlug,
-        description, JSON.stringify(specification), country_of_origin, manufacture_date, expiry_date,
-        return_allowed ? 1 : 0, return_days, approvalStatus, isLive, 
-        autoApprove ? 1 : 0, 
-        autoApprove ? new Date() : null,
-        productId
-      ]
-    );
-
-    // Update Variants: Simple replace (Delete then Re-insert)
-    await connection.query(`DELETE FROM product_variants WHERE product_id = ?`, [productId]);
-    let variantIndex = 1;
-    for (const variant of variants) {
-      if (!variant.sku || variant.sku.trim() === '') {
-        variant.sku = `PROD-${productId}-${variantIndex}-${Date.now()}`;
+      for (const img of removedImages) {
+        try {
+          const key = img.image_url.split('.amazonaws.com/')[1];
+          if (key) await s3Service.deleteFile(key);
+        } catch (err) { console.warn("Failed to delete S3 file:", err.message); }
       }
-      variantIndex++;
 
-      await connection.query(
-        `INSERT INTO product_variants
-        (product_id, variant_name, unit, color, sku, mrp, sale_price, discount_value, discount_type, stock, min_order, low_stock_alert)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          productId, variant.variant_name, variant.unit, variant.color, variant.sku,
-          variant.mrp, variant.sale_price, variant.discount_value, variant.discount_type,
-          variant.stock, variant.min_order, variant.low_stock_alert
-        ]
-      );
-    }
-
-    // Image Clean-up (S3 Deletion for removed images) and Bulk Re-insert
-    const [oldImages] = await connection.query(`SELECT image_url FROM product_images WHERE product_id = ?`, [productId]);
-    const incomingUrls = finalImages.map(img => img.image_url);
-    const removedImages = oldImages.filter(img => !incomingUrls.includes(img.image_url));
-
-    for (const img of removedImages) {
-      const key = img.image_url.split('.amazonaws.com/')[1];
-      if (key) await s3Service.deleteFile(key);
-    }
-
-    await connection.query(`DELETE FROM product_images WHERE product_id = ?`, [productId]);
-    const imageValues = finalImages.map((img, i) => [productId, img.image_url, img.is_primary ? 1 : 0, i]);
-    if (imageValues.length > 0) {
+      await connection.query(`DELETE FROM product_images WHERE product_id = ?`, [productId]);
+      const imageValues = finalImages.map((img, i) => [productId, img.image_url, img.is_primary ? 1 : 0, i]);
       await connection.query(`INSERT INTO product_images (product_id, image_url, is_primary, sort_order) VALUES ?`, [imageValues]);
     }
 
     await connection.commit();
-
-    // Invalidate caches
+    await removeByPattern("vendor:products:*");
+    await removeByPattern("admin:products:*");
     await removeFromCache(`admin:product:profile:${productId}`);
-    await removeFromCache(`customer:product:${productId}`);
-    await removeByPattern("vendor:products:list:*");
-    await removeByPattern("admin:products:list:*");
-    await removeByPattern("customer:home:*");
-    await removeByPattern("customer:products:*");
+    await removeByPattern("customer:*");
 
-    return { product_id: productId };
-  } catch (error) {
+    return { success: true };
+  } catch (err) {
     if (connection) await connection.rollback();
-    throw error;
+    throw err;
   } finally {
     if (connection) connection.release();
   }
@@ -586,11 +647,9 @@ const deleteProduct = async (productId, vendorId) => {
   try {
     await connection.beginTransaction();
 
-    // 1. Verify Product ownership and Fetch Images for S3 cleanup
     let query = `SELECT image_url FROM product_images WHERE product_id = ?`;
     let params = [productId];
 
-    // If VendorId exists, confirm ownership first
     if (vendorId) {
       const [own] = await connection.query(`SELECT id FROM products WHERE id = ? AND vendor_id = ?`, [productId, vendorId]);
       if (own.length === 0) throw new ApiError(403, "Access denied - unauthorized item deletion");
@@ -598,18 +657,15 @@ const deleteProduct = async (productId, vendorId) => {
 
     const [images] = await connection.query(query, params);
 
-    // 2. Cleanup S3 Assets
     for (const img of images) {
       const key = img.image_url.split('.amazonaws.com/')[1];
       if (key) await s3Service.deleteFile(key);
     }
 
-    // 3. Delete from DB (Triggers CASCADE for variants and images)
     await connection.query(`DELETE FROM products WHERE id = ?`, [productId]);
 
     await connection.commit();
 
-    // Invalidate caches
     await removeFromCache(`admin:product:profile:${productId}`);
     await removeFromCache(`customer:product:${productId}`);
     await removeByPattern("vendor:products:list:*");
@@ -626,8 +682,53 @@ const deleteProduct = async (productId, vendorId) => {
   }
 };
 
+const bulkCreateProducts = async (vendorId, userId, productsArray) => {
+  if (!Array.isArray(productsArray)) throw new ApiError(400, "Invalid products data format - expected array");
+  if (productsArray.length > 100) throw new ApiError(400, "Bulk upload limited to 100 products per request");
+
+  const results = { total: productsArray.length, saved: 0, failed: 0, errors: [] };
+  const connection = await db.getConnection();
+
+  try {
+    for (const [index, productData] of productsArray.entries()) {
+      try {
+        // Each product gets its own transaction so one failure doesn't block the rest
+        await connection.beginTransaction();
+
+        // Inject identity
+        const data = { ...productData, vendor_id: vendorId, user_id: userId };
+
+        // Reuse the core logic (assuming no files for this JSON-based bulk API)
+        await createProduct(data, null, connection);
+
+        await connection.commit();
+        results.saved++;
+      } catch (err) {
+        if (connection) await connection.rollback();
+        results.failed++;
+        results.errors.push({
+          index,
+          productName: productData.name || "Unknown",
+          error: err.message || "Unknown error"
+        });
+      }
+    }
+
+    // Invalidate caches once after the whole loop
+    await removeByPattern("vendor:products:list:*");
+    await removeByPattern("admin:products:list:*");
+    await removeByPattern("customer:home:*");
+    await removeByPattern("customer:products:*");
+
+    return results;
+  } finally {
+    if (connection) connection.release();
+  }
+};
+
 export default {
   createProduct,
+  bulkCreateProducts,
   updateProduct,
   getAllProducts,
   toggleProductLiveStatus,

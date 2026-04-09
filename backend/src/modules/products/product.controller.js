@@ -4,10 +4,18 @@ import productService from './product.service.js';
 import ApiError from '../../utils/ApiError.js';
 
 export const createProduct = asyncHandler(async (req, res) => {
-  const vendorId = req.user.vendor_id; 
+  const { vendor_id: vendorId, user_id: userId } = req.user;
   if (!vendorId) throw new ApiError(403, "Vendor access required");
-  
-  const result = await productService.createProduct({ ...req.body, vendor_id: vendorId }, req.files);
+
+  // Remove vendor_id from body if present
+  const productData = { ...req.body };
+  delete productData.vendor_id;
+
+  const result = await productService.createProduct({ 
+    ...productData, 
+    vendor_id: vendorId, 
+    user_id: userId 
+  }, req.files);
   return ApiResponse.success(res, "Product created successfully", result);
 });
 
@@ -40,4 +48,15 @@ export const deleteProduct = asyncHandler(async (req, res) => {
   return ApiResponse.success(res, "Product deleted successfully", result);
 });
 
-export default { createProduct, getAllProducts, updateProduct, toggleLive, updateStock, deleteProduct };
+export const bulkCreateProducts = asyncHandler(async (req, res) => {
+  const { vendor_id: vendorId, user_id: userId } = req.user;
+  if (!vendorId) throw new ApiError(403, "Vendor access required");
+
+  // Expecting { products: [...] } or just an array [...] in body
+  const products = Array.isArray(req.body) ? req.body : (req.body.products || []);
+
+  const result = await productService.bulkCreateProducts(vendorId, userId, products);
+  return ApiResponse.success(res, "Bulk process completed", result);
+});
+
+export default { createProduct, getAllProducts, updateProduct, toggleLive, updateStock, deleteProduct, bulkCreateProducts };
