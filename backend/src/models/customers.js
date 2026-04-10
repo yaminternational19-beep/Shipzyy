@@ -226,8 +226,6 @@ const TABLES = [
     //     `
     // }
 
-    
-
 ];
 
 const initDatabase = async () => {

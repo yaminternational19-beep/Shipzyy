@@ -115,12 +115,16 @@ import customerProfileRoutes from '../../modules/customers/profile/profile.route
 import customerHomeRoutes from '../../modules/customers/home/home.routes.js';
 import cartRoutes from '../../modules/customers/cart/cart.routes.js';
 import wishlistRoutes from '../../modules/customers/wishlist/wishlist.routes.js';
+import paymentGatewayRoutes from '../../modules/customers/payment_gateway/payment_gateway.routes.js';
+import orderRoutes from '../../modules/customers/orders/orders.routes.js';
 
 router.use("/customers", customerAuthRoutes);
 router.use("/customers", customerHomeRoutes);
 router.use("/customers", customerProfileRoutes);
 router.use("/customers", cartRoutes);
 router.use("/customers", wishlistRoutes);
-
+router.use("/customers", paymentGatewayRoutes);
+router.use("/customers", orderRoutes);
+  
 
 export default router;
