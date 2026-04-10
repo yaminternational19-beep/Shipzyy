@@ -1,67 +1,86 @@
-import React, { useState } from 'react';
-import { Plus, HelpCircle, Save, Trash2, Edit2, ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Plus, HelpCircle, Save, Trash2, Edit2, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import SettingTabs from './SettingTabs';
+import { getFAQsApi, createFAQApi, updateFAQApi, deleteFAQApi } from '../../../api/settings.api';
 
 const FAQ = ({ onShowToast }) => {
     const [activeTab, setActiveTab] = useState('customer');
     const [expandedId, setExpandedId] = useState(null);
     const [showModal, setShowModal] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     
     const [faqs, setFaqs] = useState({
-        customer: [
-            { id: 1, question: 'How do I track my order?', answer: 'You can track your order in real-time from the "Orders" section in the app.' },
-            { id: 2, question: 'What are the payment methods available?', answer: 'We accept Credit/Debit cards, UPI, and Cash on Delivery.' }
-        ],
-        rider: [
-            { id: 3, question: 'How do I start my shift?', answer: 'Go to the "Shift" tab and click the "Go Online" button.' }
-        ],
-        vendor: [
-            { id: 4, question: 'How do I update menu items?', answer: 'Use the "Menu Management" section to add or disable items.' }
-        ]
+        customer: [],
+        rider: [],
+        vendor: []
     });
 
     const [newFAQ, setNewFAQ] = useState({ question: '', answer: '', category: 'customer' });
     const [editId, setEditId] = useState(null);
+    const [isSaving, setIsSaving] = useState(false);
+
+    const loadFAQs = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const response = await getFAQsApi();
+            if (response.data.success) {
+                const grouped = { customer: [], rider: [], vendor: [] };
+                response.data.data.forEach(faq => {
+                    if (grouped[faq.category]) grouped[faq.category].push(faq);
+                });
+                setFaqs(grouped);
+            }
+        } catch (error) {
+            onShowToast(error.response?.data?.message || 'Failed to load FAQs', 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [onShowToast]);
+
+    useEffect(() => {
+        loadFAQs();
+    }, []); // Only load on mount
 
     const toggleExpand = (id) => {
         setExpandedId(expandedId === id ? null : id);
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!newFAQ.question || !newFAQ.answer) {
             onShowToast('Please fill in both question and answer', 'warning');
             return;
         }
-        if (editId) {
-            // Edit mode
-            setFaqs(prev => ({
-                ...prev,
-                [newFAQ.category]: prev[newFAQ.category].map(faq => faq.id === editId ? { ...faq, ...newFAQ } : faq)
-            }));
-            onShowToast('FAQ updated successfully');
-        } else {
-            // Add mode
-            const faq = {
-                id: Date.now(),
-                ...newFAQ
-            };
-            setFaqs(prev => ({
-                ...prev,
-                [newFAQ.category]: [...prev[newFAQ.category], faq]
-            }));
-            onShowToast('FAQ added successfully');
+
+        setIsSaving(true);
+        try {
+            if (editId) {
+                await updateFAQApi(editId, newFAQ);
+                onShowToast('FAQ updated successfully');
+            } else {
+                await createFAQApi(newFAQ);
+                onShowToast('FAQ added successfully');
+            }
+            setShowModal(false);
+            setEditId(null);
+            setNewFAQ({ question: '', answer: '', category: activeTab });
+            loadFAQs();
+        } catch (error) {
+            onShowToast(error.response?.data?.message || 'Failed to save FAQ', 'error');
+        } finally {
+            setIsSaving(false);
         }
-        setNewFAQ({ question: '', answer: '', category: activeTab });
-        setEditId(null);
-        setShowModal(false);
     };
 
-    const handleDelete = (id) => {
-        setFaqs(prev => ({
-            ...prev,
-            [activeTab]: prev[activeTab].filter(f => f.id !== id)
-        }));
-        onShowToast('FAQ deleted', 'error');
+    const handleDelete = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this FAQ?')) return;
+        
+        try {
+            await deleteFAQApi(id);
+            onShowToast('FAQ deleted', 'success');
+            loadFAQs();
+        } catch (error) {
+            onShowToast(error.response?.data?.message || 'Failed to delete FAQ', 'error');
+        }
     };
 
     return (
@@ -77,54 +96,65 @@ const FAQ = ({ onShowToast }) => {
                 </button>
             </div>
 
-            <div className="faq-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {faqs[activeTab].length === 0 && !showModal && (
-                    <div style={{ padding: '48px', textAlign: 'center', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                        <HelpCircle size={40} color="#94a3b8" style={{ marginBottom: '12px' }} />
-                        <h3 style={{ color: '#475569', margin: 0 }}>No FAQs found</h3>
-                        <p style={{ color: '#64748b', fontSize: '14px' }}>Click the "Add FAQ" button to create one for this category.</p>
+            <div className="faq-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px', minHeight: '300px', position: 'relative' }}>
+                {isLoading ? (
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                        <Loader2 className="animate-spin" size={32} color="var(--primary-color)" />
+                        <p style={{ color: '#64748b', fontSize: '14px' }}>Loading FAQs...</p>
                     </div>
-                )}
-
-                {faqs[activeTab].map(item => (
-                    <div key={item.id} style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden' }}>
-                        <div 
-                            style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', transition: 'background 0.2s' }}
-                            onClick={() => toggleExpand(item.id)}
-                            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
-                            onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                        >
-                            <h4 style={{ margin: 0, fontSize: '15px', color: '#1e293b', fontWeight: 600 }}>{item.question}</h4>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                                <div style={{ display: 'flex', gap: '4px' }}>
-                                    <button 
-                                        onClick={(e) => { 
-                                            e.stopPropagation(); 
-                                            setEditId(item.id); 
-                                            setNewFAQ({ question: item.question, answer: item.answer, category: activeTab }); 
-                                            setShowModal(true); 
-                                        }}
-                                        style={{ border: 'none', background: 'transparent', color: '#64748b', cursor: 'pointer', padding: '4px' }}
-                                    >
-                                        <Edit2 size={14} />
-                                    </button>
-                                    <button 
-                                        onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
-                                        style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
-                                    >
-                                        <Trash2 size={14} />
-                                    </button>
-                                </div>
-                                {expandedId === item.id ? <ChevronUp size={18} color="#64748b" /> : <ChevronDown size={18} color="#64748b" />}
-                            </div>
-                        </div>
-                        {expandedId === item.id && (
-                            <div style={{ padding: '0 20px 20px 20px', borderTop: '1px solid #f1f5f9', animation: 'slideDown 0.3s ease' }}>
-                                <p style={{ margin: '16px 0 0 0', fontSize: '14px', color: '#475569', lineHeight: '1.6' }}>{item.answer}</p>
+                ) : (
+                    <>
+                        {faqs[activeTab].length === 0 && !showModal && (
+                            <div style={{ padding: '48px', textAlign: 'center', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                                <HelpCircle size={40} color="#94a3b8" style={{ marginBottom: '12px' }} />
+                                <h3 style={{ color: '#475569', margin: 0 }}>No FAQs found</h3>
+                                <p style={{ color: '#64748b', fontSize: '14px' }}>Click the "Add FAQ" button to create one for this category.</p>
                             </div>
                         )}
-                    </div>
-                ))}
+
+                        {faqs[activeTab].map(item => (
+                            <div key={item.id} style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', animation: 'fadeIn 0.3s ease' }}>
+                                <div 
+                                    style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', transition: 'background 0.2s' }}
+                                    onClick={() => toggleExpand(item.id)}
+                                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                >
+                                    <h4 style={{ margin: 0, fontSize: '15px', color: '#1e293b', fontWeight: 600 }}>{item.question}</h4>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                        <div style={{ display: 'flex', gap: '4px' }}>
+                                            <button 
+                                                onClick={(e) => { 
+                                                    e.stopPropagation(); 
+                                                    setEditId(item.id); 
+                                                    setNewFAQ({ question: item.question, answer: item.answer, category: item.category }); 
+                                                    setShowModal(true); 
+                                                }}
+                                                style={{ border: 'none', background: 'transparent', color: '#64748b', cursor: 'pointer', padding: '4px' }}
+                                                title="Edit"
+                                            >
+                                                <Edit2 size={14} />
+                                            </button>
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
+                                                style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
+                                                title="Delete"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                        {expandedId === item.id ? <ChevronUp size={18} color="#64748b" /> : <ChevronDown size={18} color="#64748b" />}
+                                    </div>
+                                </div>
+                                {expandedId === item.id && (
+                                    <div style={{ padding: '0 20px 20px 20px', borderTop: '1px solid #f1f5f9', animation: 'slideDown 0.3s ease' }}>
+                                        <p style={{ margin: '16px 0 0 0', fontSize: '14px', color: '#475569', lineHeight: '1.6' }}>{item.answer}</p>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </>
+                )}
             </div>
 
             {showModal && (
@@ -196,15 +226,17 @@ const FAQ = ({ onShowToast }) => {
                                 className="btn btn-secondary" 
                                 onClick={() => { setShowModal(false); setEditId(null); setNewFAQ({ question: '', answer: '', category: activeTab }); }}
                                 style={{ padding: '8px 20px', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: 'white', color: '#475569', fontWeight: 500, cursor: 'pointer' }}
+                                disabled={isSaving}
                             >
                                 Cancel
                             </button>
                             <button 
                                 className="btn btn-primary" 
                                 onClick={handleSave}
-                                style={{ padding: '8px 24px', borderRadius: '6px', border: 'none', backgroundColor: 'var(--primary-color)', color: 'white', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+                                style={{ padding: '8px 24px', borderRadius: '6px', border: 'none', backgroundColor: 'var(--primary-color)', color: 'white', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', opacity: isSaving ? 0.7 : 1 }}
+                                disabled={isSaving}
                             >
-                                {editId ? 'Update FAQ' : 'Save FAQ'}
+                                {isSaving ? <Loader2 size={16} className="animate-spin" /> : (editId ? 'Update FAQ' : 'Save FAQ')}
                             </button>
                         </div>
                     </div>

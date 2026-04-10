@@ -23,15 +23,19 @@ import {
 } from 'lucide-react';
 import SettingTabs from './SettingTabs';
 
+import { getAnnouncementsApi, createAnnouncementApi, updateAnnouncementApi, deleteAnnouncementApi, resendAnnouncementApi } from '../../../api/settings.api';
+
 const Announcements = ({ onShowToast }) => {
     const [view, setView] = useState('list'); // 'list' or 'create'
     const [activeTab, setActiveTab] = useState('all'); // 'all', 'customer', 'rider', 'vendor'
     const [activeMenu, setActiveMenu] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [editingId, setEditingId] = useState(null);
     
     // Pagination State
     const [pagination, setPagination] = useState({
         page: 1,
-        limit: 5,
+        limit: 10,
         total: 0,
         totalPages: 0
     });
@@ -45,15 +49,63 @@ const Announcements = ({ onShowToast }) => {
     const [searchQuery, setSearchQuery] = useState('');
 
     // Mock Notification History (Expanded for pagination)
-    const [history] = useState([
-        { id: '1', title: 'Weekend Promo', message: 'Enjoy 50% off on all deliveries this weekend!', targetedTo: 'All Members', date: '2024-03-15T10:00:00Z', status: 'Sent' },
-        { id: '2', title: 'KYC Reminder', message: 'Please update your KYC documents by Monday.', targetedTo: 'All Vendors', date: '2024-03-14T14:30:00Z', status: 'Sent' },
-        { id: '3', title: 'App Update', message: 'New version of the app is live. Please update.', targetedTo: 'John Doe (Rider)', date: '2024-03-12T09:15:00Z', status: 'Sent' },
-        { id: '4', title: 'Flash Sale', message: 'Flash sale starting in 1 hour!', targetedTo: 'All Members', date: '2024-03-11T08:00:00Z', status: 'Sent' },
-        { id: '5', title: 'Safety Gear', message: 'Riders, please ensure you are wearing your safety gear.', targetedTo: 'All Riders', date: '2024-03-10T11:00:00Z', status: 'Sent' },
-        { id: '6', title: 'New Partner', message: 'Welcome our new partner: FreshMart!', targetedTo: 'All Members', date: '2024-03-09T16:00:00Z', status: 'Sent' },
-        { id: '7', title: 'Service Interruption', message: 'Scheduled maintenance this Sunday midnight.', targetedTo: 'All Members', date: '2024-03-08T22:00:00Z', status: 'Sent' },
-    ]);
+    const [history, setHistory] = useState([]);
+
+    useEffect(() => {
+        fetchHistory();
+    }, [activeTab, pagination.page, pagination.limit]);
+
+    const fetchHistory = async () => {
+        try {
+            setLoading(true);
+            const params = {
+                page: pagination.page,
+                limit: pagination.limit
+            };
+            
+            // To make sure we fetch all if 'all' is selected, otherwise we filter by activeTab
+            // In a real query, we'd pass target_type to backend. But wait, I didn't update the backend to accept target_type filters!
+            // I'll fetch and we'll see. Wait, I should just pass target_type if needed.
+            // Actually let me just pass target_type if activeTab is not 'all'.
+            if (activeTab !== 'all') {
+                params.target_type = activeTab.toUpperCase();
+            }
+
+            const response = await getAnnouncementsApi(params);
+            if (response.data.success) {
+                setHistory(response.data.data.map(item => ({
+                    id: item.id,
+                    title: item.title,
+                    message: item.message,
+                    target_type: item.target_type,
+                    target_detail: item.target_detail,
+                    targetedTo: item.targeted_to,
+                    entity_id: item.entity_id,
+                    entity_name: item.entity_name,
+                    date: item.created_at,
+                    status: item.status
+                })));
+
+                if (response.data.meta) {
+                    setPagination(prev => ({
+                        ...prev,
+                        total: response.data.meta.totalRecords,
+                        totalPages: response.data.meta.totalPages
+                    }));
+                }
+            }
+        } catch (error) {
+            console.error("Failed to fetch announcements", error);
+            onShowToast("Failed to load announcements", "error");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleTabChange = (newTab) => {
+        setActiveTab(newTab);
+        setPagination(prev => ({ ...prev, page: 1 }));
+    };
 
     const mockEntities = {
         VENDOR: [
@@ -77,20 +129,60 @@ const Announcements = ({ onShowToast }) => {
         return () => document.removeEventListener('click', handleClickOutside);
     }, []);
 
-    const handleSend = () => {
+    const handleSend = async () => {
         if (!title.trim() || !message.trim()) {
             onShowToast('Please enter both a title and message', 'warning');
             return;
         }
-        onShowToast(`Announcement "${title}" broadcasted successfully!`, 'success');
-        setMessage('');
-        setTitle('');
-        setView('list');
+
+        if (targetDetail === 'SPECIFIC' && !selectedEntity) {
+            onShowToast('Please select a specific recipient', 'warning');
+            return;
+        }
+
+        let targetedToDisplay = '';
+        if (targetDetail === 'ALL') {
+             targetedToDisplay = targetType === 'ALL' ? 'All Members' : `All ${targetType.charAt(0).toUpperCase() + targetType.slice(1).toLowerCase()}s`;
+        } else {
+             targetedToDisplay = `${selectedEntity.name} (${targetType.charAt(0).toUpperCase() + targetType.slice(1).toLowerCase()})`;
+        }
+
+        try {
+            setLoading(true);
+            const payload = {
+                title,
+                message,
+                target_type: targetType,
+                target_detail: targetDetail,
+                targeted_to: targetedToDisplay,
+                entity_id: selectedEntity ? selectedEntity.id : null,
+                entity_name: selectedEntity ? selectedEntity.name : null
+            };
+
+            if (editingId) {
+                await updateAnnouncementApi(editingId, { title, message });
+                onShowToast(`Announcement updated successfully!`, 'success');
+            } else {
+                await createAnnouncementApi(payload);
+                onShowToast(`Announcement broadcasted successfully!`, 'success');
+            }
+            
+            setMessage('');
+            setTitle('');
+            setEditingId(null);
+            setView('list');
+            fetchHistory(); // refresh the list
+        } catch (error) {
+            console.error("Failed to send/update broadcast", error);
+            onShowToast(error.response?.data?.message || "Operation failed", "error");
+        } finally {
+            setLoading(false);
+        }
     };
 
     const filterHistory = () => {
         if (activeTab === 'all') return history;
-        return history.filter(h => h.targetedTo.toLowerCase().includes(activeTab));
+        return history.filter(h => h.target_type && h.target_type.toLowerCase() === activeTab);
     };
 
     const filteredHistory = filterHistory();
@@ -114,28 +206,46 @@ const Announcements = ({ onShowToast }) => {
         }
     }, [filteredHistory.length, pagination.limit]);
 
-    const handleAction = (e, action, item) => {
+    const handleAction = async (e, action, item) => {
         e.stopPropagation();
         setActiveMenu(null);
         if (action === 'edit') {
             setTitle(item.title);
             setMessage(item.message);
+            setTargetType(item.target_type);
+            setTargetDetail(item.target_detail);
+            if (item.entity_id) {
+                setSelectedEntity({ id: item.entity_id, name: item.entity_name });
+            }
+            setEditingId(item.id);
             setView('create');
-            onShowToast(`Editing: ${item.title}`, 'info');
         } else if (action === 'delete') {
-            onShowToast(`Announcement deleted.`, 'error');
+            if (window.confirm("Are you sure you want to delete this broadcast record?")) {
+                try {
+                    await deleteAnnouncementApi(item.id);
+                    onShowToast(`Announcement deleted.`, 'info');
+                    fetchHistory();
+                } catch(err) {
+                    onShowToast("Failed to delete", "error");
+                }
+            }
         } else if (action === 'resend') {
-            onShowToast(`Announcement resent successfully!`, 'success');
+            try {
+                await resendAnnouncementApi(item.id);
+                onShowToast(`Announcement resent successfully!`, 'success');
+            } catch(err) {
+                onShowToast("Failed to resend", "error");
+            }
         }
     };
 
     const renderList = () => (
         <div style={{ animation: 'fadeIn 0.3s ease' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                <SettingTabs activeTab={activeTab} onTabChange={setActiveTab} />
+                <SettingTabs activeTab={activeTab} onTabChange={handleTabChange} />
                 <button 
                     className="btn btn-primary" 
-                    onClick={() => { setTitle(''); setMessage(''); setView('create'); }} 
+                    onClick={() => { setTitle(''); setMessage(''); setEditingId(null); setView('create'); }} 
                     style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', backgroundColor: 'var(--primary-color)', color: 'white', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
                 >
                     <Plus size={16} /> New Broadcast
@@ -143,7 +253,11 @@ const Announcements = ({ onShowToast }) => {
             </div>
 
             <div className="history-list" style={{ display: 'flex', flexDirection: 'column', gap: '16px', minHeight: '400px' }}>
-                {paginatedHistory.map(item => (
+                {loading && history.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>Loading announcements...</div>
+                ) : history.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>No announcements found.</div>
+                ) : history.map(item => (
                     <div key={item.id} className="history-item" style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'relative', transition: 'all 0.2s' }}>
                         <div style={{ display: 'flex', gap: '16px' }}>
                             <div style={{ backgroundColor: '#eff6ff', color: '#3b82f6', padding: '12px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: 'fit-content' }}>
@@ -247,7 +361,7 @@ const Announcements = ({ onShowToast }) => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                     <button 
-                        onClick={() => setView('list')} 
+                        onClick={() => { setView('list'); setEditingId(null); }} 
                         style={{ 
                             background: '#f1f5f9', 
                             border: '1px solid #e2e8f0', 
@@ -267,10 +381,12 @@ const Announcements = ({ onShowToast }) => {
                     >
                         <ArrowLeft size={18} /> Back to List
                     </button>
-                    <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0, color: '#1e293b' }}>Create New Broadcast</h2>
+                    <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0, color: '#1e293b' }}>
+                        {editingId ? 'Edit Broadcast' : 'Create New Broadcast'}
+                    </h2>
                 </div>
-                <button className="btn btn-primary" onClick={handleSend} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 24px', borderRadius: '8px' }}>
-                    <Send size={18} /> Send Announcement
+                <button className="btn btn-primary" onClick={handleSend} disabled={loading} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 24px', borderRadius: '8px', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}>
+                    <Send size={18} /> {loading ? 'Sending...' : (editingId ? 'Save Edits' : 'Send Announcement')}
                 </button>
             </div>
 

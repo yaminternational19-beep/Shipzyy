@@ -1,47 +1,77 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Edit2, X, Save, FileText, Link as LinkIcon, Plus, Trash2 } from 'lucide-react';
+import { getSettingsContentApi, createSettingsContentApi, updateSettingsContentApi, deleteSettingsContentApi } from '../../../api/settings.api';
+
+const iconMap = {
+    FileText,
+    LinkIcon
+};
 
 const ManageContent = ({ onShowToast }) => {
-    // Initial content
-    const [formData, setFormData] = useState({
-        aboutUs: 'Shipzzy is your reliable delivery partner ensuring fast and safe deliveries across the country.',
-        termsConditions: 'By using this app, you agree to our standard terms and conditions. Delivery times are estimated.',
-        privacyPolicy: 'We value your privacy. Your data is encrypted and never shared with third parties.',
-        androidAppUrl: 'https://play.google.com/store/apps/details?id=com.shipzzy',
-        iosAppUrl: 'https://apps.apple.com/us/app/shipzzy/id123456789',
-        websiteUrl: 'https://www.shipzzy.com'
-    });
-
-    // Dynamic sections state
-    const [sections, setSections] = useState([
-        { key: 'aboutUs', title: 'About Us', type: 'textarea', icon: FileText, placeholder: 'Enter the About Us text...', deletable: false },
-        { key: 'termsConditions', title: 'Terms and Conditions', type: 'textarea', icon: FileText, placeholder: 'Enter terms and conditions...', deletable: false },
-        { key: 'privacyPolicy', title: 'Privacy Policy', type: 'textarea', icon: FileText, placeholder: 'Enter privacy policy...', deletable: false },
-        { key: 'androidAppUrl', title: 'Android App URL', type: 'url', icon: LinkIcon, placeholder: 'https://play.google.com/...', deletable: false },
-        { key: 'iosAppUrl', title: 'iOS App URL', type: 'url', icon: LinkIcon, placeholder: 'https://apps.apple.com/...', deletable: false },
-        { key: 'websiteUrl', title: 'Website URL', type: 'url', icon: LinkIcon, placeholder: 'https://www.example.com', deletable: false },
-    ]);
-
-    const [activeSection, setActiveSection] = useState(sections[0]);
-    const [editValue, setEditValue] = useState(formData[sections[0].key]);
+    const [sections, setSections] = useState([]);
+    const [activeSection, setActiveSection] = useState(null);
+    const [editValue, setEditValue] = useState('');
+    const [loading, setLoading] = useState(false);
     
     // Modal state
     const [showModal, setShowModal] = useState(false);
     const [newPageTitle, setNewPageTitle] = useState('');
 
-    const handleTabClick = (section) => {
-        setActiveSection(section);
-        setEditValue(formData[section.key] || '');
-    };
+    useEffect(() => {
+        fetchContent();
+    }, []);
 
-    const handleSave = () => {
-        if (activeSection) {
-            setFormData(prev => ({ ...prev, [activeSection.key]: editValue }));
-            onShowToast(`${activeSection.title} updated successfully!`, 'success');
+    const fetchContent = async () => {
+        try {
+            setLoading(true);
+            const response = await getSettingsContentApi();
+            if (response.data.success) {
+                const fetchedSections = response.data.data.map(item => ({
+                    ...item,
+                    icon: iconMap[item.icon] || FileText,
+                    key: item.page_key,
+                    deletable: !!item.is_deletable
+                }));
+                setSections(fetchedSections);
+                
+                if (fetchedSections.length > 0) {
+                    setActiveSection(fetchedSections[0]);
+                    setEditValue(fetchedSections[0].content || '');
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching content:", error);
+            onShowToast("Failed to load content settings", "error");
+        } finally {
+            setLoading(false);
         }
     };
 
-    const handleCreatePage = () => {
+    const handleTabClick = (section) => {
+        setActiveSection(section);
+        setEditValue(section.content || '');
+    };
+
+    const handleSave = async () => {
+        if (!activeSection) return;
+        
+        try {
+            setLoading(true);
+            const response = await updateSettingsContentApi(activeSection.key, { content: editValue });
+            if (response.data.success) {
+                // Update local state
+                setSections(prev => prev.map(s => s.key === activeSection.key ? { ...s, content: editValue } : s));
+                onShowToast(`${activeSection.title} updated successfully!`, 'success');
+            }
+        } catch (error) {
+            console.error("Error updating content:", error);
+            onShowToast(error.response?.data?.message || `Failed to update ${activeSection.title}`, 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleCreatePage = async () => {
         if (!newPageTitle.trim()) {
             onShowToast('Please enter a page title', 'warning');
             return;
@@ -50,56 +80,78 @@ const ManageContent = ({ onShowToast }) => {
         // CamelCase key generation for internal mapping
         const newKey = newPageTitle
             .toLowerCase()
+            .replace(/^[0-9]+/, '') // Don't allow numbers at start
             .split(' ')
             .map((word, index) => index === 0 ? word : word.charAt(0).toUpperCase() + word.slice(1))
             .join('');
 
-        if (formData[newKey]) {
+        if (sections.some(s => s.key === newKey)) {
             onShowToast('A page with this name already exists', 'warning');
             return;
         }
 
-        const newSection = {
-            key: newKey,
-            title: newPageTitle,
-            type: 'textarea',
-            icon: FileText,
-            placeholder: `Enter ${newPageTitle} content...`,
-            deletable: true
-        };
+        try {
+            setLoading(true);
+            const payload = {
+                page_key: newKey,
+                title: newPageTitle,
+                content: '',
+                type: 'html',
+                icon: 'FileText'
+            };
+            
+            const response = await createSettingsContentApi(payload);
+            if (response.data.success) {
+                const newSection = {
+                    ...payload,
+                    key: newKey,
+                    icon: FileText,
+                    deletable: true
+                };
 
-        setSections(prev => [...prev, newSection]);
-        setFormData(prev => ({ ...prev, [newKey]: '' }));
-        
-        onShowToast(`Page "${newPageTitle}" created`, 'success');
-        setNewPageTitle('');
-        setShowModal(false);
-        
-        // Switch to new page
-        setActiveSection(newSection);
-        setEditValue('');
+                setSections(prev => [...prev, newSection]);
+                onShowToast(`Page "${newPageTitle}" created`, 'success');
+                setNewPageTitle('');
+                setShowModal(false);
+                
+                // Switch to new page
+                setActiveSection(newSection);
+                setEditValue('');
+            }
+        } catch (error) {
+            console.error("Error creating page:", error);
+            onShowToast(error.response?.data?.message || 'Failed to create page', 'error');
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleDeletePage = (e, targetSection) => {
+    const handleDeletePage = async (e, targetSection) => {
         e.stopPropagation(); // Don't trigger tab click
         
         if (window.confirm(`Are you sure you want to delete the "${targetSection.title}" page?`)) {
-            const updatedSections = sections.filter(s => s.key !== targetSection.key);
-            setSections(updatedSections);
-            
-            // Clean up data
-            const newFormData = { ...formData };
-            delete newFormData[targetSection.key];
-            setFormData(newFormData);
-
-            // If we deleted the active section, move to first section
-            if (activeSection.key === targetSection.key) {
-                const firstSection = updatedSections[0];
-                setActiveSection(firstSection);
-                setEditValue(newFormData[firstSection.key] || '');
+            try {
+                setLoading(true);
+                const response = await deleteSettingsContentApi(targetSection.key);
+                if (response.data.success) {
+                    const updatedSections = sections.filter(s => s.key !== targetSection.key);
+                    setSections(updatedSections);
+                    
+                    // If we deleted the active section, move to first section
+                    if (activeSection.key === targetSection.key && updatedSections.length > 0) {
+                        const firstSection = updatedSections[0];
+                        setActiveSection(firstSection);
+                        setEditValue(firstSection.content || '');
+                    }
+                    
+                    onShowToast(`Page "${targetSection.title}" deleted`, 'info');
+                }
+            } catch (error) {
+                console.error("Error deleting page:", error);
+                onShowToast(error.response?.data?.message || 'Failed to delete page', 'error');
+            } finally {
+                setLoading(false);
             }
-            
-            onShowToast(`Page "${targetSection.title}" deleted`, 'info');
         }
     };
 
@@ -108,15 +160,15 @@ const ManageContent = ({ onShowToast }) => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
                 <div className="tab-group-pills" style={{ margin: 0, flexWrap: 'wrap', width: 'fit-content', maxWidth: 'calc(100% - 160px)' }}>
                     {sections.map(section => {
-                        const Icon = section.icon;
+                        const IconComponent = section.icon || FileText;
                         return (
                             <button 
                                 key={section.key} 
-                                className={activeSection.key === section.key ? 'active' : ''}
+                                className={activeSection?.key === section.key ? 'active' : ''}
                                 onClick={() => handleTabClick(section)}
                                 style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px', paddingRight: section.deletable ? '32px' : '12px', marginBottom: '4px' }}
                             >
-                                <Icon size={14} />
+                                <IconComponent size={14} />
                                 {section.title}
                                 {section.deletable && (
                                     <span 
@@ -138,6 +190,7 @@ const ManageContent = ({ onShowToast }) => {
                     className="btn btn-primary"
                     onClick={() => setShowModal(true)}
                     style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', backgroundColor: 'var(--primary-color)', color: 'white', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                    disabled={loading}
                 >
                     <Plus size={16} /> Add Page
                 </button>
@@ -179,9 +232,10 @@ const ManageContent = ({ onShowToast }) => {
                             <button 
                                 className="btn btn-primary" 
                                 onClick={handleCreatePage}
-                                style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', backgroundColor: 'var(--primary-color)', color: 'white', fontWeight: 600, cursor: 'pointer' }}
+                                disabled={loading}
+                                style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', backgroundColor: 'var(--primary-color)', color: 'white', fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}
                             >
-                                Create Page
+                                {loading ? 'Creating...' : 'Create Page'}
                             </button>
                         </div>
                     </div>
@@ -189,17 +243,17 @@ const ManageContent = ({ onShowToast }) => {
             )}
 
             {/* Inline Editor Area */}
-            {activeSection && (
+            {activeSection ? (
                 <div style={{ marginTop: '24px', animation: 'fadeIn 0.3s ease' }}>
                     <div className="form-group" style={{ marginBottom: '16px' }}>
                         <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500, color: '#334155' }}>
                             {activeSection.title}
                         </label>
-                        {activeSection.type === 'textarea' ? (
+                        {activeSection.type === 'textarea' || activeSection.type === 'html' ? (
                             <textarea 
                                 value={editValue}
                                 onChange={(e) => setEditValue(e.target.value)}
-                                placeholder={activeSection.placeholder}
+                                placeholder={`Enter ${activeSection.title} content...`}
                                 style={{ 
                                     width: '100%', 
                                     minHeight: '250px', 
@@ -217,7 +271,7 @@ const ManageContent = ({ onShowToast }) => {
                                 type="url"
                                 value={editValue}
                                 onChange={(e) => setEditValue(e.target.value)}
-                                placeholder={activeSection.placeholder}
+                                placeholder="https://..."
                                 style={{ 
                                     width: '100%', 
                                     padding: '12px 16px', 
@@ -234,11 +288,23 @@ const ManageContent = ({ onShowToast }) => {
                         <button 
                             className="btn btn-primary" 
                             onClick={handleSave}
-                            style={{ padding: '8px 24px', borderRadius: '6px', border: 'none', backgroundColor: 'var(--primary-color)', color: 'white', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+                            disabled={loading || editValue === activeSection.content}
+                            style={{ padding: '8px 24px', borderRadius: '6px', border: 'none', backgroundColor: 'var(--primary-color)', color: 'white', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px', cursor: (loading || editValue === activeSection.content) ? 'not-allowed' : 'pointer', opacity: (loading || editValue === activeSection.content) ? 0.7 : 1 }}
                         >
-                            <Save size={16} /> Save Changes
+                            <Save size={16} /> {loading ? 'Saving...' : 'Save Changes'}
                         </button>
                     </div>
+                </div>
+            ) : !loading && sections.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
+                    <FileText size={48} style={{ opacity: 0.5, marginBottom: '16px' }} />
+                    <p>No content pages found. Create one to get started.</p>
+                </div>
+            ) : null}
+            
+            {loading && !activeSection && (
+                <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
+                    <p>Loading content...</p>
                 </div>
             )}
         </div>

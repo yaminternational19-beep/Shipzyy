@@ -117,6 +117,10 @@ import cartRoutes from '../../modules/customers/cart/cart.routes.js';
 import wishlistRoutes from '../../modules/customers/wishlist/wishlist.routes.js';
 import paymentGatewayRoutes from '../../modules/customers/payment_gateway/payment_gateway.routes.js';
 import orderRoutes from '../../modules/customers/orders/orders.routes.js';
+import settingsRoutes from '../../modules/settings/settings.routes.js';
+import helpSupportRoutes from '../../modules/help_support/help_support.routes.js';
+import announcementsRoutes from '../../modules/announcements/announcements.routes.js';
+import faqRoutes from '../../modules/faq/faq.routes.js';
 
 router.use("/customers", customerAuthRoutes);
 router.use("/customers", customerHomeRoutes);
@@ -125,6 +129,10 @@ router.use("/customers", cartRoutes);
 router.use("/customers", wishlistRoutes);
 router.use("/customers", paymentGatewayRoutes);
 router.use("/customers", orderRoutes);
-  
+
+router.use("/settings", settingsRoutes);
+router.use("/help-support", helpSupportRoutes);
+router.use("/announcements", announcementsRoutes);
+router.use("/faqs", faqRoutes);
 
 export default router;

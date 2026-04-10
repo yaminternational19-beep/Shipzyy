@@ -1,0 +1,41 @@
+import db from '../../config/db.js';
+
+export const getContactsService = async (role) => {
+    let query = 'SELECT * FROM help_support_contacts';
+    const values = [];
+    
+    if (role) {
+        query += ' WHERE role = ?';
+        values.push(role);
+    }
+    
+    const [rows] = await db.query(query, values);
+    return rows;
+};
+
+export const updateContactsService = async (role, contacts) => {
+    const connection = await db.getConnection();
+    try {
+        await connection.beginTransaction();
+        
+        // Delete existing ones for this role
+        await connection.query('DELETE FROM help_support_contacts WHERE role = ?', [role]);
+        
+        // Insert new ones
+        if (contacts && contacts.length > 0) {
+            const values = contacts.map(c => [role, c.name, c.email, c.phone, c.workingHours]);
+            await connection.query(
+                'INSERT INTO help_support_contacts (role, name, email, phone, working_hours) VALUES ?',
+                [values]
+            );
+        }
+        
+        await connection.commit();
+        return true;
+    } catch (error) {
+        await connection.rollback();
+        throw error;
+    } finally {
+        connection.release();
+    }
+};
