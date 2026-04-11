@@ -330,6 +330,7 @@ const getAllProducts = async (queryParams) => {
         MAX(discount_value) as max_discount,
         MAX(discount_type) as discount_type,
         MAX(low_stock_alert) as low_stock_alert,
+        MAX(min_order) as min_order,
         MAX(unit) as unit,
         MAX(color) as color,
         MAX(sku) as sku,
@@ -350,6 +351,7 @@ const getAllProducts = async (queryParams) => {
         discount_value: v.max_discount || 0,
         discount_type: v.discount_type || 'Percent',
         low_stock_alert: v.low_stock_alert || 5,
+        min_order: v.min_order || 1,
         unit: v.unit || 'PCS',
         color: v.color || 'N/A',
         sku: v.sku || '',
@@ -369,6 +371,7 @@ const getAllProducts = async (queryParams) => {
           max_discount: v.discount_value || 0,
           discount_type: v.discount_type || 'Percent',
           low_stock_alert: v.low_stock_alert || 5,
+          min_order: v.min_order || 1,
           unit: v.unit || 'PCS',
           color: v.color || 'N/A',
           sku: v.sku || '',
@@ -386,6 +389,7 @@ const getAllProducts = async (queryParams) => {
       p.discount_value = v.discount_value;
       p.discount_type = v.discount_type;
       p.low_stock_alert = v.low_stock_alert;
+      p.min_order = v.min_order;
       p.unit = v.unit;
       p.color = v.color;
       p.sku = v.sku;

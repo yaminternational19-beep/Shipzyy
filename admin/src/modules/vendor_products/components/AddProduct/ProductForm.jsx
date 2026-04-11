@@ -11,6 +11,16 @@ const ProductForm = ({ onSave, showToast, initialData = null }) => {
     // Initialize state dynamically from fields.js
     const getInitialState = () => {
         if (initialData) {
+            // Map specification if it's an object/array
+            let specStr = initialData.specification || '';
+            if (typeof specStr === 'object' && specStr !== null) {
+                if (Array.isArray(specStr.details)) {
+                    specStr = specStr.details.join('\n');
+                } else {
+                    specStr = JSON.stringify(specStr);
+                }
+            }
+
             const mappedImages = (initialData.images || []).map((img, i) => {
                 const url = typeof img === 'string' ? img : (img.image_url || '');
                 return {
@@ -20,7 +30,11 @@ const ProductForm = ({ onSave, showToast, initialData = null }) => {
                     image_url: url
                 };
             });
-            return { ...initialData, images: mappedImages };
+            return { 
+                ...initialData, 
+                specification: specStr,
+                images: mappedImages 
+            };
         }
 
         const state = { images: [] };

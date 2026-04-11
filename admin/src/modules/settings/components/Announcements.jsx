@@ -107,21 +107,6 @@ const Announcements = ({ onShowToast }) => {
         setPagination(prev => ({ ...prev, page: 1 }));
     };
 
-    const mockEntities = {
-        VENDOR: [
-            { id: 'V1', name: 'Global Foods', email: 'v1@example.com' },
-            { id: 'V2', name: 'Fresh Mart', email: 'v2@example.com' },
-        ],
-        RIDER: [
-            { id: 'R1', name: 'John Doe', email: 'john@example.com' },
-            { id: 'R2', name: 'Sarah Smith', email: 'sarah@example.com' },
-        ],
-        CUSTOMER: [
-            { id: 'C1', name: 'Alice Brown', email: 'alice@example.com' },
-            { id: 'C2', name: 'Bob Wilson', email: 'bob@example.com' },
-        ]
-    };
-
     // Close menu when clicking outside
     useEffect(() => {
         const handleClickOutside = () => setActiveMenu(null);
@@ -180,31 +165,7 @@ const Announcements = ({ onShowToast }) => {
         }
     };
 
-    const filterHistory = () => {
-        if (activeTab === 'all') return history;
-        return history.filter(h => h.target_type && h.target_type.toLowerCase() === activeTab);
-    };
-
-    const filteredHistory = filterHistory();
-
-    // Pagination Logic
-    const paginatedHistory = useMemo(() => {
-        const start = (pagination.page - 1) * pagination.limit;
-        const end = start + pagination.limit;
-        return filteredHistory.slice(start, end);
-    }, [filteredHistory, pagination.page, pagination.limit]);
-
-    // Update Pagination Stats
-    useEffect(() => {
-        setPagination(prev => ({
-            ...prev,
-            total: filteredHistory.length,
-            totalPages: Math.ceil(filteredHistory.length / prev.limit)
-        }));
-        if (pagination.page > Math.ceil(filteredHistory.length / pagination.limit) && filteredHistory.length > 0) {
-            setPagination(prev => ({ ...prev, page: 1 }));
-        }
-    }, [filteredHistory.length, pagination.limit]);
+    const filteredHistory = history;
 
     const handleAction = async (e, action, item) => {
         e.stopPropagation();
@@ -443,32 +404,10 @@ const Announcements = ({ onShowToast }) => {
                                 <input type="text" placeholder="Search..." style={{ width: '100%', padding: '10px 10px 10px 36px', border: 'none', fontSize: '13px', outline: 'none' }} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                             </div>
                             <div className="custom-scrollbar" style={{ flex: 1, overflowY: 'auto', maxHeight: '350px' }}>
-                                {(mockEntities[targetType] || []).map(entity => (
-                                    <div 
-                                        key={entity.id} 
-                                        onClick={() => setSelectedEntity(entity)} 
-                                        style={{ 
-                                            padding: '12px', 
-                                            fontSize: '13px', 
-                                            cursor: 'pointer', 
-                                            borderBottom: '1px solid #f8fafc',
-                                            backgroundColor: selectedEntity?.id === entity.id ? '#f0f4ff' : 'transparent',
-                                            transition: 'background 0.2s'
-                                        }}
-                                        onMouseOver={(e) => !selectedEntity || selectedEntity.id !== entity.id ? e.currentTarget.style.backgroundColor = '#f8fafc' : null}
-                                        onMouseOut={(e) => !selectedEntity || selectedEntity.id !== entity.id ? e.currentTarget.style.backgroundColor = 'transparent' : null}
-                                    >
-                                        <div style={{ fontWeight: 600, color: '#1e293b' }}>{entity.name}</div>
-                                        <div style={{ color: '#94a3b8', fontSize: '11px', marginTop: '2px' }}>{entity.id} • {entity.email}</div>
-                                    </div>
-                                ))}
-                                {/* Mocking more items for scroll behavior test */}
-                                {Array.from({ length: 15 }).map((_, i) => (
-                                    <div key={i} style={{ padding: '12px', fontSize: '13px', borderBottom: '1px solid #f8fafc', opacity: 0.5 }}>
-                                        <div style={{ fontWeight: 600 }}>Mock User {i + 4}</div>
-                                        <div style={{ color: '#94a3b8', fontSize: '11px' }}>ID: USER_{100 + i}</div>
-                                    </div>
-                                ))}
+                                <div style={{ padding: '24px', textAlign: 'center', color: '#94a3b8' }}>
+                                    <Search size={32} style={{ marginBottom: '12px', opacity: 0.3 }} />
+                                    <p style={{ fontSize: '13px' }}>Search functionality for specific recipients is being integrated.</p>
+                                </div>
                             </div>
                         </div>
                     )}
