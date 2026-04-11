@@ -179,53 +179,91 @@ const TABLES = [
             );
         `
     },
-    // {
-    //     name: "customers_wallets",
-    //     query: `
-    //         CREATE TABLE IF NOT EXISTS customers_wallets (
-    //             id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    //             customer_id BIGINT NOT NULL,
-    //             balance DECIMAL(12,2) DEFAULT 0.00,
-    //             currency VARCHAR(10) DEFAULT 'INR',
-    //             status ENUM('active','blocked') DEFAULT 'active',
-    //             last_transaction_at DATETIME DEFAULT NULL,
-    //             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    //             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    //             UNIQUE KEY unique_customer_wallet (customer_id),
-    //             INDEX idx_customer (customer_id),
-    //             FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
-    //         );
-    //     `   
-    // },
-    // {
-    //     name: "customers_wallet_transactions",
-    //     query: `
-    //         CREATE TABLE IF NOT EXISTS payments (
-    //             id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    //             customer_id BIGINT NOT NULL,
-    //             gateway VARCHAR(100) NOT NULL,
-    //             gateway_order_id VARCHAR(255) DEFAULT NULL,
-    //             gateway_payment_id VARCHAR(255) DEFAULT NULL,
-    //             gateway_signature VARCHAR(255) DEFAULT NULL,
-    //             amount DECIMAL(12,2) NOT NULL,
-    //             currency VARCHAR(10) DEFAULT 'INR',
-    //             payment_type VARCHAR(100) NOT NULL,
-    //             status ENUM(
-    //                 'created',
-    //                 'pending',
-    //                 'success',
-    //                 'failed'
-    //             ) DEFAULT 'created',
-    //             metadata JSON DEFAULT NULL,
-    //             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    //             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    //             INDEX idx_customer (customer_id),
-    //             INDEX idx_gateway_payment (gateway_payment_id),
-    //             FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
-    //         );
-    //     `
-    // }
-
+    {
+        name: "orders",
+        query: `
+            CREATE TABLE IF NOT EXISTS orders (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                order_number VARCHAR(50) UNIQUE NOT NULL,
+                customer_id BIGINT NOT NULL,
+                address_id BIGINT NOT NULL,
+                
+                subtotal DECIMAL(10, 2) NOT NULL,
+                discount DECIMAL(10, 2) DEFAULT 0.00,
+                delivery_charges DECIMAL(10, 2) DEFAULT 0.00,
+                total_amount DECIMAL(10, 2) NOT NULL,
+                
+                coupon_code VARCHAR(50) NULL,
+                payment_method ENUM('Online', 'COD') DEFAULT 'COD',
+                payment_status ENUM('Pending', 'Paid', 'Failed') DEFAULT 'Pending',
+                order_status ENUM('Pending', 'Confirmed', 'Processing', 'Out for Delivery', 'Delivered', 'Cancelled') DEFAULT 'Pending',
+                
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                
+                INDEX idx_customer_id (customer_id),
+                INDEX idx_order_number (order_number),
+                INDEX idx_order_status (order_status),
+                
+                FOREIGN KEY (customer_id) REFERENCES customers(id),
+                FOREIGN KEY (address_id) REFERENCES customers_addresses(id)
+            );
+        `
+    },
+    {
+        name: "order_items",
+        query: `
+            CREATE TABLE IF NOT EXISTS order_items (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                order_id BIGINT NOT NULL,
+                vendor_id BIGINT NOT NULL,
+                product_id BIGINT NOT NULL,
+                
+                quantity INT NOT NULL DEFAULT 1,
+                price DECIMAL(10, 2) NOT NULL,
+                
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                
+                FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+                FOREIGN KEY (vendor_id) REFERENCES vendors(id),
+                FOREIGN KEY (product_id) REFERENCES products(id),
+                
+                INDEX idx_order_id (order_id),
+                INDEX idx_vendor_id (vendor_id),
+                INDEX idx_product_id (product_id)
+            );
+        `
+    },
+    {
+        name: "payments",
+        query: `
+            CREATE TABLE IF NOT EXISTS payments (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                order_id BIGINT NOT NULL,
+                customer_id BIGINT NOT NULL,
+                
+                gateway VARCHAR(100) NOT NULL,
+                gateway_order_id VARCHAR(255) NULL,
+                transaction_id VARCHAR(255) UNIQUE,
+                
+                amount DECIMAL(12, 2) NOT NULL,
+                currency VARCHAR(10) DEFAULT 'INR',
+                status ENUM('Pending', 'Success', 'Failed', 'Refunded') DEFAULT 'Pending',
+                
+                raw_response JSON NULL,
+                
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                
+                FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+                FOREIGN KEY (customer_id) REFERENCES customers(id),
+                
+                INDEX idx_order_id (order_id),
+                INDEX idx_transaction_id (transaction_id),
+                INDEX idx_status (status)
+            );
+        `
+    }
 ];
 
 const initDatabase = async () => {

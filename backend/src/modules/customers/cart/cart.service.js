@@ -10,16 +10,17 @@ export const getCartItems = async (customerId) => {
   const query = `
     SELECT 
       cc.id AS cart_id,
-      cc.product_id,
+      cc.vendor_id,
+      cc.product_id AS id,
       cc.quantity,
       cc.offer_price AS snapshot_price,
       cc.mrp AS snapshot_mrp,
       cc.price_changed,
       cc.is_available,
-      p.name AS product_name,
-      p.slug AS product_slug,
-      p.description AS product_description,
-      (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) AS primary_image,
+      p.name,
+      p.slug,
+      p.description,
+      (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) AS product_image,
       pv.sale_price AS live_price,
       pv.mrp AS live_mrp,
       pv.stock AS live_stock,
@@ -62,17 +63,18 @@ export const getCartItems = async (customerId) => {
       // Update local object for the final response
       item.offer_price = item.live_price ?? item.snapshot_price;
       item.mrp = item.live_mrp ?? item.snapshot_mrp;
-      item.is_available = isActuallyAvailable ? 1 : 0;
-      item.price_changed = needsPriceUpdate ? 1 : item.price_changed;
+      item.is_available = isActuallyAvailable ? true : false;
+      item.price_changed = !!(needsPriceUpdate ? 1 : item.price_changed);
     } else {
       item.offer_price = item.snapshot_price;
       item.mrp = item.snapshot_mrp;
+      item.is_available = item.is_available === 1;
+      item.price_changed = !!item.price_changed;
     }
 
-    item.current_price = item.live_price;
     item.available_stock = item.live_stock;
 
-    // Remove temporary keys used for comparison
+    // Remove temporary comparison keys
     delete item.snapshot_price;
     delete item.snapshot_mrp;
     delete item.live_price;
@@ -82,6 +84,9 @@ export const getCartItems = async (customerId) => {
     // Format boolean flags
     item.is_liked = !!item.is_liked;
     item.is_in_cart = !!item.is_in_cart;
+    
+    // Add missing standard fields to match home.service.js
+    item.discount_percentage = item.mrp > 0 ? parseFloat(((item.mrp - item.offer_price) / item.mrp * 100).toFixed(0)) : 0;
   }
 
   const result = {

@@ -17,4 +17,10 @@ router.post(
   ordersController.placeOrder
 );
 
+// Order History List
+router.get("/orders-list", customerAuthMiddleware, ordersController.getOrderHistory);
+
+// Single Order Detail
+router.get("/orders-list/:orderId", customerAuthMiddleware, ordersController.getOrderDetails);
+
 export default router;
