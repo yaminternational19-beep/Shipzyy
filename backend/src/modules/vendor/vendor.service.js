@@ -530,11 +530,21 @@ const autoapproval = async (vendorId, status) => {
 
     return { id: vendorId, auto_approve_products: status };
 }
+
+const getVendorById = async (id) => {
+    const [rows] = await db.query(
+        "SELECT * FROM vendors WHERE id = ?",
+        [id]
+    );
+    return rows[0] || null;
+};
+
 export default {
     createVendor,
     getAllVendors,
     updateVendor,
     updateStatus,
     updateKycStatus,
-    autoapproval
+    autoapproval,
+    getVendorById
 };

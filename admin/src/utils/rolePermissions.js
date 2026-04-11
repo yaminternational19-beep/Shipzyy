@@ -30,6 +30,9 @@ export const rolePermissions = {
         "VENDOR_PRODUCTS",
         "REPORTS",
         "STAFF",
-        "VENDOR_SUPPORT"
+        "VENDOR_SUPPORT",
+        "PAYOUTS",
+        "INVOICES",
+        "CUSTOMERS",
     ]
 };

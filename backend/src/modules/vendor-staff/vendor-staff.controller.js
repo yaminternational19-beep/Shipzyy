@@ -3,6 +3,8 @@ import service from './vendor-staff.service.js';
 import { uploadFile, deleteFile } from '../../services/s3Service.js';
 import bcrypt from 'bcryptjs';
 import { isEmailExists } from '../../services/global.service.js';
+import emailService from '../../services/emailService.js';
+import vendorService from '../vendor/vendor.service.js';
 
 /* ===============================
    GET VENDOR STAFF
@@ -52,6 +54,23 @@ export const createVendorStaff = async (req, res) => {
     };
 
     const result = await service.createVendorStaff(payload);
+
+    // Send welcome email
+    if (req.body.email && req.body.password) {
+      try {
+        const vendor = await vendorService.getVendorById(req.user.vendor_id);
+        const vendorName = vendor?.business_name || "your company";
+        
+        await emailService.sendVendorStaffWelcomeMail(
+          req.body.email,
+          req.body.password,
+          req.body.name || "Team Member",
+          vendorName
+        );
+      } catch (emailErr) {
+        console.error("Staff welcome email failed:", emailErr.message);
+      }
+    }
 
     return ApiResponse.success(res, 'Vendor staff created successfully', result, 201);
 

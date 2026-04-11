@@ -148,6 +148,7 @@ const ProductForm = ({ onSave, showToast, initialData = null }) => {
         const newErrors = {};
         const requiredFields = [
             'name', 'description', 
+            'category_id', 'subcategory_id',
             'specification', 'mrp', 'stock', 
             'min_order', 'variant_name'
         ];

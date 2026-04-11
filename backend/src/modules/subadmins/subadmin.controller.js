@@ -5,6 +5,7 @@ import { uploadFile, deleteFile } from '../../services/s3Service.js';
 import bcrypt from 'bcryptjs';
 import asyncHandler from '../../utils/asyncHandler.js';
 import { isEmailExists } from '../../services/global.service.js';
+import emailService from '../../services/emailService.js';
 
 export const getSubAdmins = async (req, res) => {
   try {
@@ -55,6 +56,15 @@ export const createSubAdmin = async (req, res) => {
     }
 
     const result = await service.createSubAdmin(payload);
+
+    // Send welcome email
+    if (req.body.email && req.body.password) {
+      await emailService.sendSubAdminWelcomeMail(
+        req.body.email,
+        req.body.password,
+        req.body.name || "Sub-Admin"
+      );
+    }
 
     return ApiResponse.success(res, "Sub admin created successfully", result, 201);
 

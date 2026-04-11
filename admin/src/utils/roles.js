@@ -46,16 +46,16 @@ export const menuItems = [
     { name: "Riders", key: "RIDERS", icon: Bike, path: "/riders", group: "RIDERS", description: "Live tracking and rider management" },
     { name: "Rider Terminations", key: "RIDER_TERMINATIONS", icon: Bike, path: "/riders", group: "RIDERS", description: "Manage rider terminations" },
 
-    {name : "Customers", key: "CUSTOMERS", icon: Users, path: "/customers", group: "CUSTOMERS", description: "Manage customer accounts" },
+    { name: "Customers", key: "CUSTOMERS", icon: Users, path: "/customers", group: "CUSTOMERS", description: "Manage customer accounts" },
     { name: "Suspended Customers", key: "SUSPENDED_CUSTOMERS", icon: Users, path: "/customers/suspended", group: "CUSTOMERS", description: "Manage suspended customer accounts" },
     { name: "Terminated Customers", key: "TERMINATED_CUSTOMERS", icon: Users, path: "/customers/terminated", group: "CUSTOMERS", description: "Manage terminated customer accounts" },
-    
+
     { name: "Tickets", key: "TICKETS", icon: Ticket, path: "/tickets", group: "SUPPORT", description: "Manage support tickets" },
     { name: "Refunds", key: "REFUNDS", icon: Undo2, path: "/refunds", group: "SUPPORT", description: "Manage customer refunds" },
-    
+
     { name: "Payouts", key: "PAYOUTS", icon: CreditCard, path: "/payouts", group: "FINANCE", description: "Manage vendor payouts" },
     { name: "Invoices", key: "INVOICES", icon: Receipt, path: "/invoices", group: "FINANCE", description: "Manage system invoices" },
-   
+
     { name: "Manage Content", key: "MANAGE_CONTENT", icon: FileText, path: "/settings/manage-content", group: "SETTINGS" },
     { name: "Announcements", key: "ANNOUNCEMENTS", icon: BellRing, path: "/settings/announcements", group: "SETTINGS" },
     { name: "Help & Support", key: "HELP_SUPPORT", icon: HelpCircle, path: "/settings/help-support", group: "SETTINGS" },

@@ -27,7 +27,8 @@ import {
     Navigation
 } from 'lucide-react';
 import { rolePermissions } from '../../utils/rolePermissions';
-import { menuItems, sidebarGroups } from '../../utils/menuConfig';
+import { adminMenuItems, adminSidebarGroups } from '../../utils/adminMenuConfig';
+import { vendorMenuItems, vendorSidebarGroups } from '../../utils/vendorMenuConfig';
 import './Sidebar.css';
 
 const Sidebar = () => {
@@ -43,6 +44,11 @@ const Sidebar = () => {
     const userPermissionsStr = localStorage.getItem('userPermissions');
     const userPermissions = userPermissionsStr ? JSON.parse(userPermissionsStr) : [];
 
+    // Determine which menu configuration to use
+    const isVendor = userRole === "VENDOR_OWNER";
+    const menuConfig = isVendor ? vendorMenuItems : adminMenuItems;
+    const groups = isVendor ? vendorSidebarGroups : adminSidebarGroups;
+
     const hasPermission = (module) => {
         if (userRole === "SUPER_ADMIN" || userRole === "VENDOR_OWNER") {
             return rolePermissions[userRole]?.includes(module) || false;
@@ -52,30 +58,7 @@ const Sidebar = () => {
         return normalizedPermissions.includes(module.toLowerCase());
     };
 
-    const filteredMenu = menuItems
-        .filter(item => hasPermission(item.key))
-        .map(item => {
-            if (userRole === "VENDOR_OWNER") {
-                if (item.key === "STAFF") {
-                    return { ...item, name: "Staff", group: "ADMIN_MANAGEMENT" };
-                }
-                if (item.key === "VENDOR_PRODUCTS") {
-                    return { ...item, name: "Products", group: "PRODUCT MANAGEMENT" };
-                }
-                if (item.key === "VENDOR_ORDERS") {
-                    return { ...item, name: "Orders", group: "PRODUCT MANAGEMENT" };
-                }
-                if (item.key === "VENDOR_SUPPORT") {
-                    return { ...item, name: "Support", group: "SUPPORT" };
-                }
-                if (item.key === "REPORTS") {
-                    return { ...item, group: "PRODUCT MANAGEMENT" };
-                }
-            }
-            return item;
-        });
-
-    const groups = sidebarGroups;
+    const filteredMenu = menuConfig.filter(item => hasPermission(item.key));
 
     const groupedMenu = filteredMenu.reduce((acc, item) => {
         if (!acc[item.group]) acc[item.group] = [];

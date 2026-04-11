@@ -75,8 +75,64 @@ DELIVERY APP Team
 
 };
 
+
+const sendSubAdminWelcomeMail = async (email, password, name) => {
+  // const adminUrl = process.env.ADMIN_URL || 'http://localhost:5173';
+  const subject = "Welcome to DELIVERY APP - Sub-Admin Account Created";
+
+  const text = `
+Dear ${name},
+
+Welcome to the DELIVERY APP team! Your Sub-Admin account has been successfully created by the Super Administrator.
+
+You can now log in to the Admin Dashboard using the following credentials:
+
+Admin Portal: ${adminUrl} Soon
+Email: ${email}
+Temporary Password: ${password}
+
+Please log in and change your password immediately for security purposes.
+
+If you have any questions or need assistance, please contact the system administrator.
+
+Regards,
+DELIVERY APP Team
+`;
+
+  await sendEmail(email, subject, text);
+};
+
+const sendVendorStaffWelcomeMail = async (email, password, name, vendorName) => {
+  // const adminUrl = process.env.ADMIN_URL || 'http://localhost:5173';
+  const subject = `Invitation to join ${vendorName} on DELIVERY APP`;
+
+  const text = `
+Dear ${name},
+
+You have been added as a staff member for ${vendorName} on the DELIVERY APP Vendor Portal.
+
+You can now access your vendor dashboard and manage operations using the credentials below:
+
+Vendor Portal: ${adminUrl} soon
+Email: ${email}
+Temporary Password: ${password}
+
+Please log in and change your password once you access the portal.
+
+If you were not expecting this invitation, please contact your store manager or our support team.
+
+Regards,
+DELIVERY APP Team
+`;
+
+  await sendEmail(email, subject, text);
+};
+
+
 export default {
   sendEmail,
   sendLoginOtp,
-  sendForgotPasswordOtp
+  sendForgotPasswordOtp,
+  sendSubAdminWelcomeMail,
+  sendVendorStaffWelcomeMail
 };

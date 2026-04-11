@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Shield, Check } from 'lucide-react';
-import { menuItems } from '../../../utils/menuConfig';
+import { menuItems } from '../../../utils/vendorroles';
 
 const VendorStaffPermissions = ({ user, onClose, onSave }) => {
     // Generate modules from sidebar menu configuration

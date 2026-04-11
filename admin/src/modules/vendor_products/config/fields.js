@@ -8,13 +8,14 @@ const productFields = {
       name: "category_id",
       label: "Category",
       type: "select",
-      required: false,
+      required: true,
       options: []
     },
     {
       name: "subcategory_id",
       label: "Sub Category",
       type: "select",
+      required: true,
       options: []
     },
     {
