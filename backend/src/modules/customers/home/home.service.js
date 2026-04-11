@@ -48,7 +48,29 @@ export const getHomeData = async (customerId, queryParams = {}) => {
       const categoryIds = categories.map((c) => c.id);
       const placeholders = categoryIds.map(() => "?").join(", ");
 
-      // Fetch subcategories with product_count
+      // Fetch category-level totals (subcategory count and total product count)
+      const [categoryTotals] = await db.query(`
+        SELECT 
+          c.id AS category_id,
+          (SELECT COUNT(*) FROM subcategories sc WHERE sc.category_id = c.id AND sc.status = 'Active') AS subcategory_count,
+          (SELECT COUNT(*) FROM products p 
+           WHERE p.category_id = c.id 
+           AND p.approval_status = 'APPROVED' 
+           AND p.is_live = 1 
+           AND p.is_active = 1) AS total_product_count
+        FROM categories c
+        WHERE c.id IN (${placeholders})
+      `, categoryIds);
+
+      const categoryTotalMap = {};
+      for (const row of categoryTotals) {
+        categoryTotalMap[row.category_id] = {
+          subcategory_count: row.subcategory_count,
+          product_count: row.total_product_count
+        };
+      }
+
+      // Fetch subcategories with their own product_count
       const [subcategories] = await db.query(
         `
         SELECT
@@ -56,112 +78,136 @@ export const getHomeData = async (customerId, queryParams = {}) => {
           sc.name,
           sc.icon AS image,
           sc.category_id,
-          COUNT(p.id) AS product_count
+          (SELECT COUNT(*) FROM products p 
+           WHERE p.subcategory_id = sc.id 
+           AND p.approval_status = 'APPROVED' 
+           AND p.is_live = 1 
+           AND p.is_active = 1) AS product_count
         FROM subcategories sc
-        LEFT JOIN products p
-          ON p.subcategory_id = sc.id
-          AND p.approval_status = 'APPROVED'
-          AND p.is_live = 1
-          AND p.is_active = 1
         WHERE sc.category_id IN (${placeholders})
           AND sc.status = 'Active'
-        GROUP BY sc.id, sc.name, sc.icon, sc.category_id
         ORDER BY sc.created_at ASC
       `,
         categoryIds
       );
 
-      // Fetch top 5 products for each category
-      const [categoryProducts] = await db.query(
+      // Fetch top 5 products per Subcategory (nested list)
+      const [subcategoryProducts] = await db.query(
         `
         SELECT * FROM (
           SELECT 
-            p.id,
-            p.name,
-            p.description,
-            p.category_id,
-            c.name AS category_name,
-            p.subcategory_id,
-            sc.name AS subcategory_name,
-            pi.image_url AS product_image,
-            pv.min_price AS offer_price,
-            pv.max_mrp AS mrp,
-            pv.discount_percentage,
+            p.id, p.name, p.description, p.category_id, c.name AS category_name,
+            p.subcategory_id, sc.name AS subcategory_name,
+            pi.image_url AS product_image, pv.min_price AS offer_price,
+            pv.max_mrp AS mrp, pv.discount_percentage,
             IF(cw.id IS NOT NULL, 1, 0) AS is_liked,
             IF(cc.id IS NOT NULL, 1, 0) AS is_in_cart,
-            ROW_NUMBER() OVER(PARTITION BY p.category_id ORDER BY p.created_at DESC) as rn
+            ROW_NUMBER() OVER(PARTITION BY p.subcategory_id ORDER BY p.created_at DESC) as rn
           FROM products p
           LEFT JOIN categories c ON p.category_id = c.id
           LEFT JOIN subcategories sc ON p.subcategory_id = sc.id
           LEFT JOIN product_images pi ON p.id = pi.product_id AND pi.is_primary = 1
           LEFT JOIN (
-            SELECT product_id, 
-                   MIN(sale_price) AS min_price, 
-                   MAX(mrp) AS max_mrp,
+            SELECT product_id, MIN(sale_price) AS min_price, MAX(mrp) AS max_mrp,
                    MAX(discount_value) AS discount_percentage
-            FROM product_variants 
-            WHERE is_live = 1 
-            GROUP BY product_id
+            FROM product_variants WHERE is_live = 1 GROUP BY product_id
           ) pv ON p.id = pv.product_id
           LEFT JOIN customers_wishlist cw ON cw.customer_id = ? AND cw.product_id = p.id
           LEFT JOIN customers_cart cc ON cc.customer_id = ? AND cc.product_id = p.id
           WHERE p.category_id IN (${placeholders})
-          AND p.approval_status = 'APPROVED'
-          AND p.is_live = 1
-          AND p.is_active = 1
-        ) t
-        WHERE rn <= 5
+          AND p.subcategory_id IS NOT NULL
+          AND p.approval_status = 'APPROVED' AND p.is_live = 1 AND p.is_active = 1
+        ) t WHERE rn <= 5
       `,
         [customerId, customerId, ...categoryIds]
       );
 
-      // Group subcategories by category_id and sum product_count
-      const subMap = {};
-      const countMap = {};
-      for (const sub of subcategories) {
-        if (!subMap[sub.category_id]) {
-          subMap[sub.category_id] = [];
-          countMap[sub.category_id] = 0;
-        }
-        subMap[sub.category_id].push({
-          id: sub.id,
-          name: sub.name,
-          image: sub.image,
-        });
-        countMap[sub.category_id] += Number(sub.product_count);
-      }
-
-      // Group products by category_id
-      const productMap = {};
-      for (const prod of categoryProducts) {
-        if (!productMap[prod.category_id]) {
-          productMap[prod.category_id] = [];
-        }
-        delete prod.rn;
-        productMap[prod.category_id].push({
+      const subProductMap = {};
+      for (const prod of subcategoryProducts) {
+        if (!subProductMap[prod.subcategory_id]) subProductMap[prod.subcategory_id] = [];
+        subProductMap[prod.subcategory_id].push({
           ...prod,
           is_liked: !!prod.is_liked,
           is_in_cart: !!prod.is_in_cart
         });
       }
 
-      // Attach subcategories and products to each category
+      // Group subcategories by category_id
+      const subMap = {};
+      for (const sub of subcategories) {
+        if (!subMap[sub.category_id]) subMap[sub.category_id] = [];
+        subMap[sub.category_id].push({
+          id: sub.id,
+          name: sub.name,
+          image: sub.image,
+          product_count: Number(sub.product_count),
+          products: subProductMap[sub.id] || []
+        });
+      }
+
+      // Final Assembly (No flat products list at category level)
       categoriesWithSubcategories = categories.map((cat) => ({
         ...cat,
-        product_count: countMap[cat.id] || 0,
-        subcategories: subMap[cat.id] || [],
-        products: productMap[cat.id] || [],
+        subcategory_count: categoryTotalMap[cat.id]?.subcategory_count || 0,
+        product_count: categoryTotalMap[cat.id]?.product_count || 0,
+        // Filter out subcategories with 0 products ("ig no sub ignore that")
+        subcategories: (subMap[cat.id] || []).filter(sub => sub.product_count > 0)
       }));
     }
 
-    const pagination = getPaginationMeta(page, limit, totalRecords);
+
+    // Count total diverse products for best_sellers (Top 3 per subcategory)
+    const [bestSellersCountResult] = await db.query(`
+      SELECT COUNT(*) AS total FROM (
+        SELECT id, ROW_NUMBER() OVER(PARTITION BY subcategory_id ORDER BY created_at DESC) as rn
+        FROM products 
+        WHERE approval_status = 'APPROVED' AND is_live = 1 AND is_active = 1
+        AND subcategory_id IS NOT NULL
+      ) t WHERE rn <= 3
+    `);
+    const totalBestSellers = bestSellersCountResult[0].total;
+
+    // Fetch "Best Sellers" (Latest 3 products from each subcategory, with pagination)
+    const [bestSellers] = await db.query(
+      `
+      SELECT * FROM (
+        SELECT 
+          p.id, p.name, p.description, p.category_id, c.name AS category_name,
+          p.subcategory_id, sc.name AS subcategory_name,
+          pi.image_url AS product_image, pv.min_price AS offer_price,
+          pv.max_mrp AS mrp, pv.discount_percentage,
+          IF(cw.id IS NOT NULL, 1, 0) AS is_liked,
+          IF(cc.id IS NOT NULL, 1, 0) AS is_in_cart,
+          ROW_NUMBER() OVER(PARTITION BY p.subcategory_id ORDER BY p.created_at DESC) as rn
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN subcategories sc ON p.subcategory_id = sc.id
+        LEFT JOIN product_images pi ON p.id = pi.product_id AND pi.is_primary = 1
+        LEFT JOIN (
+          SELECT product_id, MIN(sale_price) AS min_price, MAX(mrp) AS max_mrp,
+                 MAX(discount_value) AS discount_percentage
+          FROM product_variants WHERE is_live = 1 GROUP BY product_id
+        ) pv ON p.id = pv.product_id
+        LEFT JOIN customers_wishlist cw ON cw.customer_id = ? AND cw.product_id = p.id
+        LEFT JOIN customers_cart cc ON cc.customer_id = ? AND cc.product_id = p.id
+        WHERE p.approval_status = 'APPROVED' AND p.is_live = 1 AND p.is_active = 1
+        AND p.subcategory_id IS NOT NULL
+      ) t 
+      WHERE rn <= 3
+      ORDER BY id DESC
+      LIMIT ? OFFSET ?
+    `,
+      [customerId, customerId, limit, skip]
+    );
 
     const result = {
       is_logged_in: customerId ? true : false,
       banners,
       categories: categoriesWithSubcategories,
-      recommended_products: [],
-      pagination,
+      best_sellers: {
+        records: bestSellers.map(p => ({ ...p, is_liked: !!p.is_liked, is_in_cart: !!p.is_in_cart, rn: undefined })),
+        pagination: getPaginationMeta(page, limit, totalBestSellers)
+      }
     };
 
     // Cache for 10 minutes (static content)
@@ -386,10 +432,10 @@ const getProductById = async (customerId, productId, queryParams = {}) => {
     // Convert specification array into a clean string
     let specificationStr = "";
     try {
-      const specObj = typeof rawProduct.specification === 'string' 
-        ? JSON.parse(rawProduct.specification) 
+      const specObj = typeof rawProduct.specification === 'string'
+        ? JSON.parse(rawProduct.specification)
         : (rawProduct.specification || {});
-        
+
       if (specObj.details && Array.isArray(specObj.details)) {
         // Join the array and clean up redundant "details:" text
         specificationStr = specObj.details

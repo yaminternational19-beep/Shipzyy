@@ -44,13 +44,36 @@ const Sidebar = () => {
     const userPermissions = userPermissionsStr ? JSON.parse(userPermissionsStr) : [];
 
     const hasPermission = (module) => {
-        if (userRole === "SUPER_ADMIN") return true;
-        if (userRole === "VENDOR_OWNER") return true;
+        if (userRole === "SUPER_ADMIN" || userRole === "VENDOR_OWNER") {
+            return rolePermissions[userRole]?.includes(module) || false;
+        }
+
         const normalizedPermissions = userPermissions?.map(p => p.toLowerCase()) || [];
         return normalizedPermissions.includes(module.toLowerCase());
     };
 
-    const filteredMenu = menuItems.filter(item => hasPermission(item.key));
+    const filteredMenu = menuItems
+        .filter(item => hasPermission(item.key))
+        .map(item => {
+            if (userRole === "VENDOR_OWNER") {
+                if (item.key === "STAFF") {
+                    return { ...item, name: "Staff", group: "ADMIN_MANAGEMENT" };
+                }
+                if (item.key === "VENDOR_PRODUCTS") {
+                    return { ...item, name: "Products", group: "PRODUCT MANAGEMENT" };
+                }
+                if (item.key === "VENDOR_ORDERS") {
+                    return { ...item, name: "Orders", group: "PRODUCT MANAGEMENT" };
+                }
+                if (item.key === "VENDOR_SUPPORT") {
+                    return { ...item, name: "Support", group: "SUPPORT" };
+                }
+                if (item.key === "REPORTS") {
+                    return { ...item, group: "PRODUCT MANAGEMENT" };
+                }
+            }
+            return item;
+        });
 
     const groups = sidebarGroups;
 

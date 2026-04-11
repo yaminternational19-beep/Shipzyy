@@ -10,82 +10,26 @@ export const rolePermissions = {
         "PRODUCTS",
         "RIDERS",
         "CUSTOMERS",
+        "SUSPENDED_CUSTOMERS",
+        "TERMINATED_CUSTOMERS",
         "TICKETS",
         "REFUNDS",
         "SETTINGS",
-        "VENDOR_ORDERS",
-        "VENDOR_PRODUCTS",
-        "VENDOR_SUPPORT",
-        "STAFF",
         "BANNERS",
         "COUPONS",
-        "DELIVERY_CHARGES"
-    ],
-    
-
-    ADMIN: [
-        "DASHBOARD",
-        "ORDERS",
-        "VENDORS",
-        "SUB_ADMINS",
-        "CATEGORIES",
-        "SUBCATEGORIES",
-        "BRANDS",
-        "PRODUCTS",
-        "RIDERS",
-        "CUSTOMERS",
-        "VEHICLES",
-        "VENDOR_ORDERS",
-        "VENDOR_PRODUCTS",
-        "VENDOR_SUPPORT",
-        "STAFF",
-        "BANNERS",
-        "COUPONS",
-        "DELIVERY_CHARGES"
-    ],
-
-    SUB_ADMIN: [
-        "DASHBOARD",
-        "ORDERS",
-        "SUB_ADMINS",
-        "CUSTOMERS",
-        "STAFF"
-    ],
-
-    SUPPORT_AGENT: [
-        "DASHBOARD",
-        "TICKETS",
-        "REFUNDS"
-    ],
-
-    FINANCE_USER: [
-        "DASHBOARD",
+        "DELIVERY_CHARGES",
+        "REPORTS",
         "PAYOUTS",
-        "INVOICES"
+        "INVOICES",
+        "RIDER_TERMINATIONS"
     ],
 
     VENDOR_OWNER: [
         "DASHBOARD",
         "VENDOR_ORDERS",
         "VENDOR_PRODUCTS",
-        "RIDERS",
-        "CUSTOMERS",
-        "PAYOUTS",
-        "INVOICES",
         "REPORTS",
         "STAFF",
-        "TICKETS",
         "VENDOR_SUPPORT"
-    ],
-
-    VENDOR_MANAGER: [
-        "DASHBOARD",
-        "ORDERS",
-        "PRODUCTS"
-    ],
-
-    VENDOR_STAFF: [
-        "ORDERS",
-        "PRODUCTS"
     ]
 };
