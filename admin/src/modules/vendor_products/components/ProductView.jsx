@@ -24,7 +24,19 @@ const ProductView = ({ product, onClose }) => {
         if (field.name === 'brand_id') val = product.brand || val;
 
         if (field.type === 'checkbox') return val ? 'Yes' : 'No';
-        if (!val || val === '--') return 'N/A';
+        if (val === '' || val === null || val === undefined || val === '--') return 'N/A';
+
+        if (Array.isArray(val)) {
+            return val.length > 0 ? val.join(', ') : 'N/A';
+        }
+
+        if (typeof val === 'object') {
+            if (Array.isArray(val.details)) {
+                return val.details.length > 0 ? val.details.join(', ') : 'N/A';
+            }
+            return JSON.stringify(val);
+        }
+
         return val;
     };
 

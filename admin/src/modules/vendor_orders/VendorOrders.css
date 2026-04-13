@@ -59,8 +59,8 @@
     color: var(--text-secondary);
 }
 
-/* --- Unified Table Section --- */
 .vendor-orders-table-section {
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: 0;
@@ -69,6 +69,30 @@
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
     border: 1px solid var(--border-color);
     overflow: hidden;
+}
+
+.table-loader-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    backdrop-filter: blur(2px);
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+    color: var(--primary-color);
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
 .order-filters-container {
@@ -235,6 +259,24 @@
     background-color: #ecfdf5;
     color: #10b981;
     border: 1px solid #d1fae5;
+}
+
+.status-badge.confirmed {
+    background-color: #ecfdf5;
+    color: #059669;
+    border: 1px solid #d1fae5;
+}
+
+.status-badge.processing {
+    background-color: #e0f2fe;
+    color: #0284c7;
+    border: 1px solid #bae6fd;
+}
+
+.status-badge.out-for-delivery {
+    background-color: #fdf2f7;
+    color: #db2777;
+    border: 1px solid #fce7f3;
 }
 
 .status-badge.cancelled {

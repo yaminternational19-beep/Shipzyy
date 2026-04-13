@@ -40,9 +40,7 @@ export const placeOrder = asyncHandler(async (req, res) => {
 
 export const getOrderHistory = asyncHandler(async (req, res) => {
   const customerId = req.user?.id;
-  const { page, limit } = req.query;
-
-  const result = await ordersService.getOrderHistory(customerId, { page, limit });
+  const result = await ordersService.getOrderHistory(customerId, req.query);
 
   return ApiResponse.success(res, "Order history fetched successfully", result);
 });

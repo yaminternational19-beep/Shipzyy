@@ -20,7 +20,7 @@ export const getCartItems = async (customerId) => {
       p.name,
       p.slug,
       p.description,
-      (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) AS product_image,
+      (SELECT image_url FROM product_images WHERE product_id = p.id ORDER BY is_primary DESC LIMIT 1) AS product_image,
       pv.sale_price AS live_price,
       pv.mrp AS live_mrp,
       pv.stock AS live_stock,
@@ -35,7 +35,7 @@ export const getCartItems = async (customerId) => {
     WHERE cc.customer_id = ?
   `;
 
-  const [rows] = await db.execute(query, [customerId]);
+  const [rows] = await db.query(query, [customerId]);
 
   // Sync snapshot prices with live prices if they differ
   for (const item of rows) {

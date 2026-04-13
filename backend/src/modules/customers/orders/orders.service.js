@@ -1,6 +1,7 @@
 import db from "../../../config/db.js";
 import ApiError from "../../../utils/ApiError.js";
 import { getCartItems } from "../cart/cart.service.js";
+import { getPagination, getPaginationMeta } from "../../../utils/pagination.js";
 
 const formatDate = (date) => {
   if (!date) return null;
@@ -284,7 +285,7 @@ export const getCheckoutSummary = async (customerId, options = {}) => {
   if (!customerAddress) {
     throw new ApiError(
       400,
-      "No default address found. Please set a default delivery address",
+      "No address found. Please select a delivery address",
       "NO_DEFAULT_ADDRESS"
     );
   }
@@ -533,14 +534,14 @@ export const placeOrder = async (customerId, payload) => {
 /**
  * Get full order history for a customer
  */
-export const getOrderHistory = async (customerId, { page = 1, limit = 10 } = {}) => {
-  const offset = (page - 1) * limit;
+export const getOrderHistory = async (customerId, queryParams = {}) => {
+  const { page, limit, skip } = getPagination(queryParams);
 
   const [countRows] = await db.query(
     "SELECT COUNT(*) as total FROM orders WHERE customer_id = ?",
     [customerId]
   );
-  const total = countRows[0].total;
+  const totalRecords = countRows[0].total;
 
   const query = `
     SELECT 
@@ -554,7 +555,7 @@ export const getOrderHistory = async (customerId, { page = 1, limit = 10 } = {})
     LIMIT ? OFFSET ?
   `;
 
-  const [orders] = await db.query(query, [customerId, parseInt(limit), offset]);
+  const [orders] = await db.query(query, [customerId, limit, skip]);
 
   // Apply date formatting
   const formattedOrders = orders.map(order => ({
@@ -564,12 +565,7 @@ export const getOrderHistory = async (customerId, { page = 1, limit = 10 } = {})
 
   return {
     orders: formattedOrders,
-    pagination: {
-      total,
-      page: parseInt(page),
-      limit: parseInt(limit),
-      total_pages: Math.ceil(total / limit)
-    }
+    pagination: getPaginationMeta(page, limit, totalRecords)
   };
 };
 

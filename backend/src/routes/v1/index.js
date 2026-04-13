@@ -88,8 +88,10 @@ router.use("/vendors", vendorRoutes);
 
 
 import vendorStaffRoutes from '../../modules/vendor-staff/vendor-staff.routes.js';
+import vendorOrderRoutes from '../../modules/orders/orders.routes.js';
 
 router.use("/vendor-staff", vendorStaffRoutes);
+router.use("/vendor/orders", vendorOrderRoutes);
 
 
 import adminProductsRoutes from '../../modules/admin_products/admin_products.routes.js';
