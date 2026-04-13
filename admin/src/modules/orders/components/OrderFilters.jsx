@@ -11,13 +11,13 @@ const OrderFilters = ({ filters, setFilters, onClear, selectedCount, onExport })
     const hasActiveFilters = Object.values(filters).some(Boolean);
 
     return (
-        <div className="order-filters-container" style={{ minWidth: '1500px' }}>
+        <div className="order-filters-container" style={{ minWidth: '1100px' }}>
             {/* Search */}
-            <div className="o-search">
+            <div className="o-search" style={{ width: '200px' }}>
                 <Search className="search-icon" size={18} />
                 <input
                     type="text"
-                    placeholder="Search by customer, item, brand, or vendor..."
+                    placeholder="Search order, customer…"
                     value={filters.search}
                     onChange={(e) => handleChange('search', e.target.value)}
                 />
@@ -25,52 +25,35 @@ const OrderFilters = ({ filters, setFilters, onClear, selectedCount, onExport })
 
             {/* Filters Group */}
             <div className="filter-group">
+                {/* Order Status */}
                 <div className="input-with-icon">
                     <Filter size={14} className="field-icon" />
                     <select
                         className="filter-select"
-                        value={filters.vendor}
-                        onChange={(e) => handleChange('vendor', e.target.value)}
+                        value={filters.status}
+                        onChange={(e) => handleChange('status', e.target.value)}
                     >
-                        <option value="">All Vendors</option>
-                        <option value="Tech Mart">Tech Mart</option>
-                        <option value="Fashion Ave">Fashion Ave</option>
-                        <option value="Global Electronics">Global Electronics</option>
+                        <option value="">All Statuses</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Confirmed">Confirmed</option>
+                        <option value="Processing">Processing</option>
+                        <option value="Out for Delivery">Out for Delivery</option>
+                        <option value="Delivered">Delivered</option>
+                        <option value="Cancelled">Cancelled</option>
                     </select>
                 </div>
 
+                {/* Payment Status */}
                 <select
                     className="filter-select"
-                    value={filters.category}
-                    onChange={(e) => handleChange('category', e.target.value)}
+                    value={filters.payment_status}
+                    onChange={(e) => handleChange('payment_status', e.target.value)}
                 >
-                    <option value="">All Categories</option>
-                    <option value="Electronics">Electronics</option>
-                    <option value="Fashion">Fashion</option>
-                    <option value="Accessories">Accessories</option>
-                </select>
-
-                <select
-                    className="filter-select"
-                    value={filters.subCategory}
-                    onChange={(e) => handleChange('subCategory', e.target.value)}
-                >
-                    <option value="">All Sub Categories</option>
-                    <option value="Mobile">Mobile</option>
-                    <option value="Laptop">Laptop</option>
-                    <option value="Footwear">Footwear</option>
-                </select>
-
-                <select
-                    className="filter-select"
-                    value={filters.status}
-                    onChange={(e) => handleChange('status', e.target.value)}
-                >
-                    <option value="">All Status</option>
-                    <option value="delivered">Delivered</option>
-                    <option value="on-the-way">On the Way</option>
-                    <option value="pending">Pending</option>
-                    <option value="cancelled">Cancelled</option>
+                    <option value="">All Payments</option>
+                    <option value="Paid">Paid</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Failed">Failed</option>
+                    <option value="Refunded">Refunded</option>
                 </select>
 
                 {/* Date Range */}

@@ -24,7 +24,7 @@ export const vendorMenuItems = [
 
     { name: "Customers", key: "CUSTOMERS", icon: Users, path: "/vendor-customers", group: "CUSTOMERS", description: "Manage customer accounts" },
 
-    { name: "Support", key: "VENDOR_SUPPORT", icon: HelpCircle, path: "/vendor/help-support", group: "SUPPORT", description: "Get support for your store" },
+    { name: "Support", key: "VENDOR_SUPPORT", icon: HelpCircle, path: "/vendor/help-support/raise-query", group: "SUPPORT", description: "Get support for your store" }
 ];
 
 export const vendorSidebarGroups = {

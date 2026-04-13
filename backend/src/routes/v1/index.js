@@ -89,14 +89,18 @@ router.use("/vendors", vendorRoutes);
 
 import vendorStaffRoutes from '../../modules/vendor-staff/vendor-staff.routes.js';
 import vendorOrderRoutes from '../../modules/orders/orders.routes.js';
+import vendorCustomerRoutes from '../../modules/vendor_customers/vendor_customers.routes.js';
 
 router.use("/vendor-staff", vendorStaffRoutes);
 router.use("/vendor/orders", vendorOrderRoutes);
+router.use("/vendor/customers", vendorCustomerRoutes);
 
 
 import adminProductsRoutes from '../../modules/admin_products/admin_products.routes.js';
+import adminOrdersRoutes from '../../modules/admin_orders/admin_orders.routes.js';
 
 router.use("/admin-products", adminProductsRoutes);
+router.use("/admin-orders", adminOrdersRoutes);
 
 import customerAdminRoutes from '../../modules/admin_customers/customers.routes.js';
 

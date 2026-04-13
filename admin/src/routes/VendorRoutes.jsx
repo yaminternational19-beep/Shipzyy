@@ -7,7 +7,7 @@ import VendorProductPage from '../modules/vendor_products/VendorProductsPage';
 import VendorOrdersPage from '../modules/vendor_orders/VendorOrdersPage';
 import { VendorSettingsPage } from '../modules/vendor_settings';
 import { VendorStaffManagement } from '../modules/vendor_staff';
-import { CustomerManagement } from '../modules/customers';
+import VendorCustomersPage from '../modules/vendor_customers/VendorCustomersPage';
 
 // Placeholder for missing modules
 import ComingSoon from '../pages/ComingSoon';
@@ -79,7 +79,7 @@ export const VendorRoutes = [
         path="/vendor-customers"
         element={
             <ProtectedRoute allowedRoles={["VENDOR_OWNER", "VENDOR_STAFF"]}>
-                <CustomerManagement />
+                <VendorCustomersPage />
             </ProtectedRoute>
         }
     />,

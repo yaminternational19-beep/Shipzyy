@@ -1,7 +1,7 @@
 import db from "../../config/db.js";
 import { getPagination, getPaginationMeta } from "../../utils/pagination.js";
+import { getFromCache, setToCache, removeByPattern } from "../../utils/cache.js";
 import ApiError from "../../utils/ApiError.js";
-
 const formatDate = (date) => {
   if (!date) return "-";
   return new Date(date).toLocaleDateString("en-GB", {
@@ -15,6 +15,10 @@ const formatDate = (date) => {
  * Get all orders for a specific vendor with filtering and pagination
  */
 export const getAllOrders = async (vendorId, queryParams = {}) => {
+  const cacheKey = `vendor:orders:list:${vendorId}:${JSON.stringify(queryParams)}`;
+  const cachedData = await getFromCache(cacheKey);
+  if (cachedData) return cachedData;
+
   const { page, limit, skip } = getPagination(queryParams);
 
   let where = ["oi.vendor_id = ?"];
@@ -126,7 +130,7 @@ export const getAllOrders = async (vendorId, queryParams = {}) => {
     order.productImage = items[0]?.image || null;
   }
 
-  return {
+  const result = {
     records: orders,
     pagination: getPaginationMeta(page, limit, totalRecords),
     stats: {
@@ -139,6 +143,9 @@ export const getAllOrders = async (vendorId, queryParams = {}) => {
       cancelled: await getStatusCount(vendorId, 'Cancelled')
     }
   };
+
+  await setToCache(cacheKey, result, 120); // 2 minutes
+  return result;
 };
 
 const getStatusCount = async (vendorId, status) => {
@@ -168,6 +175,12 @@ export const updateOrderStatus = async (vendorId, orderId, status) => {
   await db.query(`
         UPDATE orders SET order_status = ?, updated_at = NOW() WHERE id = ?
     `, [status, orderId]);
+
+  // 3. Clear relevant caches
+  await removeByPattern(`vendor:orders:list:${vendorId}:*`);
+  await removeByPattern(`admin:orders:list:*`);
+  await removeByPattern(`admin:order:detail:${orderId}`);
+  // If customer caching also existed, we would remove customer order cache here
 
   return { success: true, message: `Order status updated to ${status}` };
 };
