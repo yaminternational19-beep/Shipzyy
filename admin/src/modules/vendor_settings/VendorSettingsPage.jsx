@@ -3,6 +3,7 @@ import Toast from '../../components/common/Toast/Toast';
 import RaiseQueryForm from './components/RaiseQueryForm';
 import QueryList from './components/QueryList';
 import FAQSection from './components/FAQSection';
+
 import VendorSettingTabs from './components/VendorSettingTabs';
 import { mockQueries, faqs } from './data/mockVendorSupport';
 import './VendorSettings.css';

@@ -1,16 +1,12 @@
-import React, { useState } from 'react';
-import { Send, Users, User, Mail, Phone, ChevronRight } from 'lucide-react';
+
+import React, { useEffect, useState } from 'react';
+import { Send } from 'lucide-react';
 import '../VendorSettings.css';
+import { getVendorSupportApi } from '../../../api/vendor_support.api';
 
 const RaiseQueryForm = ({ onAddQuery }) => {
-  const recipients = [
-    { name: 'Admin Panel', email: 'admin@delivery.com', phone: '+91 33333 44444' },
-    { name: 'Support Team A', email: 'support@delivery.com', phone: '+91 11111 22222' },
-    { name: 'Finance Dept', email: 'finance@delivery.com', phone: '+91 55555 66666' },
-    { name: 'Menu Management', email: 'menu@delivery.com', phone: '+91 77777 88888' },
-    { name: 'Tech Support', email: 'tech@delivery.com', phone: '+91 99999 00000' },
-    { name: 'Account Manager', email: 'am@delivery.com', phone: '+91 22222 33333' }
-  ];
+  const [recipients, setRecipients] = useState([]);
+  const [loadingRecipients, setLoadingRecipients] = useState(true);
 
   const [formData, setFormData] = useState({
     recipientIndex: 0,
@@ -32,26 +28,45 @@ const RaiseQueryForm = ({ onAddQuery }) => {
     "Other Support Issue"
   ];
 
+  // 🔹 Fetch support contacts (replaces static array)
+  useEffect(() => {
+    const loadContacts = async () => {
+      try {
+        const res = await getVendorSupportApi();
+        const data =
+          res.data?.records ||
+          res.data?.data?.records ||
+          res.data?.data ||
+          [];
+
+        setRecipients(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error('Failed to load vendor support contacts:', error);
+      } finally {
+        setLoadingRecipients(false);
+      }
+    };
+
+    loadContacts();
+  }, []);
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!formData.subject || !formData.message) return;
+    if (!formData.subject || !formData.message || recipients.length === 0) return;
 
     setLoading(true);
 
     const selectedRecipient = recipients[formData.recipientIndex];
 
-    // Simulate small delay for better UX
     setTimeout(() => {
       const newQuery = {
         id: `TKT-${Math.floor(1000 + Math.random() * 9000)}`,
         ...formData,
-        // Current Vendor Metadata (System expected fields)
         userName: 'Burger King',
         userId: 'VND-301',
         userType: 'VENDOR',
         userPhone: '+91 12345 67890',
         userEmail: 'bk@vendor.com',
-        // Recipient Metadata
         recipientName: selectedRecipient.name,
         recipientContact: `${selectedRecipient.phone} | ${selectedRecipient.email}`,
         status: 'Open',
@@ -60,11 +75,13 @@ const RaiseQueryForm = ({ onAddQuery }) => {
       };
 
       onAddQuery(newQuery);
+
       setFormData({
         recipientIndex: 0,
         subject: '',
         message: ''
       });
+
       setLoading(false);
     }, 500);
   };
@@ -84,19 +101,28 @@ const RaiseQueryForm = ({ onAddQuery }) => {
       <form onSubmit={handleSubmit} className="support-form">
         <div className="form-group">
           <label>Select Recipient Department</label>
+
           <div className="recipient-grid">
-            {recipients.map((dept, index) => (
-              <div 
-                key={dept.name}
-                onClick={() => setFormData(prev => ({ ...prev, recipientIndex: index }))}
-                className={`recipient-item ${formData.recipientIndex === index ? 'active' : ''}`}
-              >
-                <span className="dept-name">
-                  {dept.name}
-                </span>
-                <span className="dept-email">{dept.email}</span>
-              </div>
-            ))}
+            {loadingRecipients ? (
+              <p>Loading departments...</p>
+            ) : (
+              recipients.map((dept, index) => (
+                <div
+                  key={dept.id || dept.name}
+                  onClick={() =>
+                    setFormData(prev => ({ ...prev, recipientIndex: index }))
+                  }
+                  className={`recipient-item ${
+                    formData.recipientIndex === index ? 'active' : ''
+                  }`}
+                >
+                  <span className="dept-name">{dept.name}</span>
+                  <span className="dept-email">{dept.email}</span>
+                  <span className="dept-phone">{dept.phone}</span>
+                  <span className="dept-working">{dept.working_hours}</span>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
@@ -111,7 +137,9 @@ const RaiseQueryForm = ({ onAddQuery }) => {
           >
             <option value="" disabled>Select a scenario...</option>
             {vendorScenarios.map(scenario => (
-              <option key={scenario} value={scenario}>{scenario}</option>
+              <option key={scenario} value={scenario}>
+                {scenario}
+              </option>
             ))}
           </select>
         </div>
@@ -135,10 +163,11 @@ const RaiseQueryForm = ({ onAddQuery }) => {
           className="support-submit-btn"
         >
           {loading ? (
-             'Sending Ticket...'
+            'Sending Ticket...'
           ) : (
             <>
-              Send Query to {recipients[formData.recipientIndex].name} <Send size={18} style={{ marginLeft: '8px' }} />
+              Send Query to {recipients[formData.recipientIndex]?.name || ''}
+              <Send size={18} style={{ marginLeft: '8px' }} />
             </>
           )}
         </button>

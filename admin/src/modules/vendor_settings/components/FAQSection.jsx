@@ -1,12 +1,33 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ChevronDown, ChevronUp, HelpCircle } from 'lucide-react';
+import { getVendorFaqsApi } from '../../../api/vendor_support.api';
 
-const FAQSection = ({ faqs }) => {
+const FAQSection = ({ faqs = [] }) => {
   const [openId, setOpenId] = useState(null);
+  const [faqList, setFaqList] = useState(faqs);
+  const [loading, setLoading] = useState(false);
 
   const toggleFAQ = (id) => {
     setOpenId(openId === id ? null : id);
   };
+
+  useEffect(() => {
+    const loadFaqs = async () => {
+      setLoading(true);
+      try {
+        const response = await getVendorFaqsApi({ category: 'vendor', status: 'Active' });
+        const data = response.data?.records || response.data?.data?.records || response.data?.data || [];
+        setFaqList(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error('Failed to load vendor FAQs:', error);
+        setFaqList(faqs);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadFaqs();
+  }, [faqs]);
 
   return (
     <div style={styles.container}>
@@ -16,7 +37,15 @@ const FAQSection = ({ faqs }) => {
       </div>
 
       <div style={styles.faqList}>
-        {faqs.map((faq) => {
+        {loading ? (
+          <div style={{ padding: '16px 20px', color: 'var(--text-secondary, #64748b)' }}>
+            Loading FAQs...
+          </div>
+        ) : faqList.length === 0 ? (
+          <div style={{ padding: '16px 20px', color: 'var(--text-secondary, #64748b)' }}>
+            No FAQs available at the moment.
+          </div>
+        ) : faqList.map((faq) => {
           const isOpen = openId === faq.id;
           return (
             <div key={faq.id} style={styles.faqItem}>
