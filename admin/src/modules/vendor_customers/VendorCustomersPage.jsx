@@ -282,7 +282,7 @@ const VendorCustomersPage = () => {
                                 <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '16px', marginTop: '8px' }}>
                                     <div style={{ background: '#ecfdf5', border: '1px solid #10b981', padding: '20px', borderRadius: '16px' }}>
                                         <div style={{ color: '#065f46', fontSize: '0.85rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>
-                                            Orders (Yours)
+                                            Orders
                                         </div>
                                         <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#047857' }}>
                                             {selectedCustomer.orders_count}

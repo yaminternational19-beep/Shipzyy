@@ -139,43 +139,61 @@
     cursor: not-allowed;
 }
 
-/* Table Controls & Filters (Matched with official Tickets module) */
-.support-controls {
-    padding: 20px 24px;
-    background: #ffffff;
-    border-bottom: 1px solid #eef2f6;
+/* --- Global Table Alignment (Matched with Vendor Products) --- */
+.products-table-section {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
+    gap: 0;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    margin-top: 10px;
+}
+
+.product-filters-container {
+    padding: 10px 20px;
+    background: white;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    gap: 12px;
     align-items: center;
-    gap: 16px;
-    flex-wrap: wrap;
-    margin-bottom: 0;
+    flex-wrap: nowrap !important;
 }
 
-.support-controls .search-wrapper {
+.filter-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+}
+
+.p-search {
     position: relative;
-    width: 320px;
+    width: 280px;
+    flex-shrink: 0;
 }
 
-.support-controls .search-wrapper input {
+.p-search input {
     width: 100%;
-    padding: 11px 16px 11px 40px;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
+    padding: 10px 16px 10px 42px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
     font-size: 0.9rem;
-    background: #f8fafc;
-    color: #1e293b;
     transition: all 0.2s;
+    background-color: #f8fafc;
 }
 
-.support-controls .search-wrapper input:focus {
+.p-search input:focus {
     border-color: var(--primary-color);
-    background: #ffffff;
-    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.08);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    background-color: white;
     outline: none;
 }
 
-.support-controls .search-icon {
+.p-search .search-icon {
     position: absolute;
     left: 14px;
     top: 50%;
@@ -183,31 +201,64 @@
     color: #94a3b8;
 }
 
-.filter-pill-group {
-    display: flex;
-    gap: 6px;
-    background: #f1f5f9;
-    padding: 5px;
-    border-radius: 14px;
-    border: 1px solid #e2e8f0;
-}
-
-.filter-pill {
-    padding: 8px 20px;
+.filter-select {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
     border-radius: 10px;
     font-size: 0.85rem;
-    font-weight: 700;
-    color: #64748b;
-    background: transparent;
+    color: var(--text-primary);
+    background-color: #ffffff;
     cursor: pointer;
+    min-width: 120px;
     transition: all 0.2s;
-    border: none;
 }
 
-.filter-pill.active {
-    background-color: #ffffff;
-    color: #1e293b;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+.filter-select:hover {
+    border-color: #cbd5e1;
+}
+
+.filter-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.filter-actions {
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.btn-export {
+    transition: all 0.2s;
+}
+
+.btn-export:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.p-table-container {
+    overflow-x: auto;
+    background: white;
+}
+
+.c-pagination-btns {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Status Badge Overrides for consistent global look */
+.status-badge.approved {
+    background-color: #ecfdf5 !important;
+    color: #10b981 !important;
+    border-color: #d1fae5 !important;
+}
+
+.status-badge.rejected {
+    background-color: #fef2f2 !important;
+    color: #ef4444 !important;
+    border-color: #fee2e2 !important;
 }
 
 /* Dashboard Table Standard Styles */

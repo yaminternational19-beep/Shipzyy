@@ -13,6 +13,8 @@ const TABLES = [
               message TEXT NOT NULL,
               admin_reply TEXT NULL,
               status ENUM('Open', 'Closed') DEFAULT 'Open',
+              created_by_id BIGINT NOT NULL,
+              created_by_type ENUM('VENDOR', 'VENDOR_STAFF') NOT NULL DEFAULT 'VENDOR',
               created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
               updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
               FOREIGN KEY (vendor_id) REFERENCES vendors(id) ON DELETE CASCADE,

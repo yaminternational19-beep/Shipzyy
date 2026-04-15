@@ -41,7 +41,7 @@ const CustomerList = ({ customers, onAction, selectedRows, onSelectRow, onSelect
                         <th>EMAIL</th>
                         <th>PHONE</th>
                         <th>JOINED DATE</th>
-                        <th style={{ textAlign: 'center' }}>ORDERS (Yours)</th>
+                        <th style={{ textAlign: 'center' }}>ORDERS</th>
                         <th>SPENT (Yours)</th>
                         <th style={{ textAlign: 'center' }}>STATUS</th>
                         <th style={{ textAlign: 'right', paddingRight: '24px' }}>ACTIONS</th>

@@ -11,6 +11,7 @@ router.use(authorize("VENDOR_OWNER", "VENDOR_STAFF"));
 router.get("/", controller.getFaqs);
 router.get("/help", controller.getHelp);
 router.post("/tickets", controller.createTicket);
+router.get("/tickets", controller.listTickets);
 
 
 export default router;

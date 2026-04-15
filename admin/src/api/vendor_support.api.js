@@ -8,3 +8,6 @@ export const getVendorSupportApi = (data) =>
 
 export const submitVendorQueryApi = (data) =>
     api.post("/vendor/support/tickets", data);
+
+export const getVendorQueriesApi = (params) =>
+    api.get("/vendor/support/tickets", { params });

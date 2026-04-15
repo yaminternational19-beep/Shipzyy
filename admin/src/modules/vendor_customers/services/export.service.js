@@ -53,7 +53,7 @@ export const exportCustomersToExcel = (customers) => {
         "Name": customer.name || "-",
         "Phone": customer.phone || "-",
         "Email": customer.email || "-",
-        "Total Orders (Yours)": customer.orders || 0,
+        "Total Orders": customer.orders || 0,
         "Total Spent (Yours, INR)": customer.total_spent || 0,
         "Status": customer.status ? customer.status.toUpperCase() : "ACTIVE",
         "Joined Date": new Date(customer.created_at).toLocaleDateString('en-GB')
