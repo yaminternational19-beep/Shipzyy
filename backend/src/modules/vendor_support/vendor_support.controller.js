@@ -15,5 +15,11 @@ const getHelp = asyncHandler(async (req, res) => {
   return ApiResponse.success(res, "Vendor help contacts fetched successfully", result);
 });
 
+const createTicket = asyncHandler(async (req, res) => {
+  const vendorId = req.user.vendor_id;
+  const { subject, message } = req.body;
+  const result = await service.createTicket(vendorId, subject, message);
+  return ApiResponse.success(res, "Support ticket created successfully", result);
+});
 
-export default { getFaqs, getHelp };
+export default { getFaqs, getHelp, createTicket };

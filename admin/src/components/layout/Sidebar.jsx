@@ -94,7 +94,7 @@ const Sidebar = () => {
                 }}
             >
                 <img
-                    src="/logo.png"
+                    src={`${import.meta.env.BASE_URL}logo.png`}
                     alt="Shipzzy Logo"
                     style={{
                         width: "26px",

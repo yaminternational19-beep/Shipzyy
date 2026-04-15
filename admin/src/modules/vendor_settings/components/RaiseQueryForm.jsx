@@ -118,7 +118,7 @@ const RaiseQueryForm = ({ onAddQuery }) => {
                 >
                   <span className="dept-name">{dept.name}</span>
                   <span className="dept-email">{dept.email}</span>
-                  <span className="dept-phone">{dept.phone}</span>
+                  <span className="dept-phone">{dept.country_code} {dept.phone_number}</span>
                   <span className="dept-working">{dept.working_hours}</span>
                 </div>
               ))

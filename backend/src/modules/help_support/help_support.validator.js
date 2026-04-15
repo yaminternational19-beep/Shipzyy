@@ -5,8 +5,9 @@ const updateContactsSchema = Joi.object({
     Joi.object({
       name: Joi.string().required(),
       email: Joi.string().email().required(),
-      phone: Joi.string().required(),
-      workingHours: Joi.string().allow("").optional()
+      country_code: Joi.string().required(),
+      phone_number: Joi.string().required(),
+      working_hours: Joi.string().allow("").required()
     })
   ).required()
 });

@@ -25,7 +25,8 @@ const TABLES = [
         role ENUM('customer', 'rider', 'vendor') NOT NULL,
         name VARCHAR(255) NOT NULL,
         email VARCHAR(255) NOT NULL,
-        phone VARCHAR(50) NOT NULL,
+        country_code VARCHAR(10) NOT NULL,
+        phone_number VARCHAR(20) NOT NULL,
         working_hours VARCHAR(255) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -76,9 +77,9 @@ const DEFAULT_PAGES = [
 ];
 
 const DEFAULT_CONTACTS = [
-  { role: 'customer', name: 'Customer Support', email: 'support@shipzzy.com', phone: '+1-800-555-0199', working_hours: 'Mon-Sat, 9:00 AM - 6:00 PM EST' },
-  { role: 'rider', name: 'Rider Support', email: 'riders@shipzzy.com', phone: '+1-800-555-0200', working_hours: '24/7 Priority Support' },
-  { role: 'vendor', name: 'Vendor Support', email: 'partners@shipzzy.com', phone: '+1-800-555-0300', working_hours: 'Mon-Fri, 10:00 AM - 7:00 PM EST' }
+  { role: 'customer', name: 'Customer Support', email: 'support@shipzzy.com', country_code: '+1', phone_number: '8005550199', working_hours: 'Mon-Sat, 9:00 AM - 6:00 PM' }, 
+  { role: 'rider', name: 'Rider Support', email: 'riders@shipzzy.com', country_code: '+1', phone_number: '8005550200', working_hours: '24/7 Priority Support' }, 
+  { role: 'vendor', name: 'Vendor Support', email: 'partners@shipzzy.com', country_code: '+1', phone_number: '8005550300', working_hours: 'Mon-Fri, 10:00 AM - 7:00 PM' }
 ];
 
 const DEFAULT_ANNOUNCEMENTS = [
@@ -125,9 +126,9 @@ const initDatabase = async () => {
           console.log('Seeding default contacts...');
           for (const contact of DEFAULT_CONTACTS) {
             await db.query(
-              `INSERT INTO help_support_contacts (role, name, email, phone, working_hours) 
-               VALUES (?, ?, ?, ?, ?)`,
-              [contact.role, contact.name, contact.email, contact.phone, contact.working_hours]
+              `INSERT INTO help_support_contacts (role, name, email, country_code, phone_number, working_hours) 
+               VALUES (?, ?, ?, ?, ?, ?)`,
+              [contact.role, contact.name, contact.email, contact.country_code, contact.phone_number, contact.working_hours]
             );
           }
         }

@@ -19,19 +19,33 @@ export const updateContactsService = async (role, contacts) => {
         await connection.beginTransaction();
         
         // Delete existing ones for this role
-        await connection.query('DELETE FROM help_support_contacts WHERE role = ?', [role]);
+        await connection.query(
+            'DELETE FROM help_support_contacts WHERE role = ?', 
+            [role]
+        );
         
         // Insert new ones
         if (contacts && contacts.length > 0) {
-            const values = contacts.map(c => [role, c.name, c.email, c.phone, c.workingHours]);
+            const values = contacts.map(c => [
+                role,
+                c.name,
+                c.email,
+                c.country_code,     // ✅ NEW
+                c.phone_number,     // ✅ NEW
+                c.working_hours   
+            ]);
+
             await connection.query(
-                'INSERT INTO help_support_contacts (role, name, email, phone, working_hours) VALUES ?',
+                `INSERT INTO help_support_contacts 
+                (role, name, email, country_code, phone_number, working_hours) 
+                VALUES ?`,
                 [values]
             );
         }
         
         await connection.commit();
         return true;
+
     } catch (error) {
         await connection.rollback();
         throw error;

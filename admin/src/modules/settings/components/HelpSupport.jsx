@@ -27,14 +27,14 @@ const HelpSupport = ({ onShowToast }) => {
             if (response.data.success) {
                 const fetchedData = response.data.data;
                 const newSupportData = {
-                    customer: fetchedData.filter(d => d.role === 'customer').map(d => ({ name: d.name, email: d.email, phone: d.phone, workingHours: d.working_hours })),
-                    rider: fetchedData.filter(d => d.role === 'rider').map(d => ({ name: d.name, email: d.email, phone: d.phone, workingHours: d.working_hours })),
-                    vendor: fetchedData.filter(d => d.role === 'vendor').map(d => ({ name: d.name, email: d.email, phone: d.phone, workingHours: d.working_hours }))
+                    customer: fetchedData.filter(d => d.role === 'customer').map(d => ({ name: d.name, email: d.email, country_code: d.country_code, phone_number: d.phone_number, working_hours: d.working_hours })),
+                    rider: fetchedData.filter(d => d.role === 'rider').map(d => ({ name: d.name, email: d.email, country_code: d.country_code, phone_number: d.phone_number, working_hours: d.working_hours })),
+                    vendor: fetchedData.filter(d => d.role === 'vendor').map(d => ({ name: d.name, email: d.email, country_code: d.country_code, phone_number: d.phone_number, working_hours: d.working_hours }))
                 };
                 // Fallback to defaults if fully empty
-                if (newSupportData.customer.length === 0) newSupportData.customer.push({ name: '', email: '', phone: '', workingHours: '' });
-                if (newSupportData.rider.length === 0) newSupportData.rider.push({ name: '', email: '', phone: '', workingHours: '' });
-                if (newSupportData.vendor.length === 0) newSupportData.vendor.push({ name: '', email: '', phone: '', workingHours: '' });
+                if (newSupportData.customer.length === 0) newSupportData.customer.push({ name: '', email: '', country_code: '', phone_number: '', working_hours: '' });
+                if (newSupportData.rider.length === 0) newSupportData.rider.push({ name: '', email: '', country_code: '', phone_number: '', working_hours: '' });
+                if (newSupportData.vendor.length === 0) newSupportData.vendor.push({ name: '', email: '', country_code: '', phone_number: '', working_hours: '' });
                 setSupportData(newSupportData);
             }
         } catch (error) {
@@ -59,7 +59,7 @@ const HelpSupport = ({ onShowToast }) => {
             ...prev,
             [activeTab]: [
                 ...prev[activeTab],
-                { name: '', email: '', phone: '', workingHours: '' }
+                { name: '', email: '', country_code: '', phone_number: '', working_hours: '' }
             ]
         }));
     };
@@ -172,8 +172,14 @@ const HelpSupport = ({ onShowToast }) => {
     
                                     <PhoneInput
                                         country={'in'}
-                                        value={entry.phone}
-                                        onChange={(value) => handleChange(idx, 'phone', value)}
+                                        value={(entry.country_code?.replace('+', '') || '') + (entry.phone_number || '')}
+                                        onChange={(value, data) => {
+                                            const countryCode = "+" + data.dialCode;
+                                            const number = value.slice(data.dialCode.length);
+
+                                            handleChange(idx, 'country_code', countryCode);
+                                            handleChange(idx, 'phone_number', number);
+                                        }}
                                         enableSearch={true}
                                         containerClass="mobile-phone-input"
                                         inputClass="phone-field"
@@ -194,8 +200,8 @@ const HelpSupport = ({ onShowToast }) => {
                                     </label>
                                     <input 
                                         type="text"
-                                        value={entry.workingHours}
-                                        onChange={e => handleChange(idx, 'workingHours', e.target.value)}
+                                        value={entry.working_hours}
+                                        onChange={e => handleChange(idx, 'working_hours', e.target.value)}
                                         className="form-control"
                                         placeholder="e.g. 24/7 or specific hours"
                                         style={{ padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}

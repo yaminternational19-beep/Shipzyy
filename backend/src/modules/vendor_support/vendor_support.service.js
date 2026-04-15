@@ -17,7 +17,7 @@ const getFaqs = async () => {
 
 const getHelp = async () => {
   const [rows] = await db.query(
-    `SELECT id, name, email, phone, working_hours, created_at
+    `SELECT id, name, email, country_code, phone_number, working_hours, created_at
      FROM help_support_contacts
      WHERE role = ?
      ORDER BY created_at DESC`,
@@ -29,6 +29,13 @@ const getHelp = async () => {
   };
 };
 
+const createTicket = async (vendorId, subject, message) => {
+  const [result] = await db.query(
+    `INSERT INTO support_tickets (vendor_id, subject, message, status)
+     VALUES (?, ?, ?, ?)`,
+    [vendorId, subject, message, 'Open']
+  );  
+}
 
 
-export default { getFaqs, getHelp };
+export default { getFaqs, getHelp, createTicket  };

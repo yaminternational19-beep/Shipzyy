@@ -71,12 +71,12 @@ const DashboardPage = () => {
                     </p>
                 </div>
                 <div className="dashboard-actions">
-                    {userRole === 'SUPER_ADMIN' && (
+                    {/* {userRole === 'SUPER_ADMIN' && (
                         <button className={`btn ${isVendorView ? 'btn-secondary' : 'btn-primary'}`} onClick={toggleView}>
                             {isVendorView ? <ExternalLink size={16} /> : <Store size={16} />}
                             {isVendorView ? 'Return to Admin View' : 'Switch to Vendor View'}
                         </button>
-                    )}
+                    )} */}
                     <button className="btn btn-secondary" onClick={handleexportClick}>
                         <ExternalLink size={16} /> Export Report
                     </button>
