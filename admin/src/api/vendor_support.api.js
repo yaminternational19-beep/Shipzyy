@@ -5,3 +5,6 @@ export const getVendorFaqsApi = (params) =>
 
 export const getVendorSupportApi = (data) =>
     api.get("/vendor/support/help", data);
+
+export const submitVendorQueryApi = (data) =>
+    api.post("/vendor/support/tickets", data);

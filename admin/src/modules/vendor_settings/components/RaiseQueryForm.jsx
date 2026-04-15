@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Send } from 'lucide-react';
 import '../VendorSettings.css';
-import { getVendorSupportApi } from '../../../api/vendor_support.api';
+import { getVendorSupportApi, submitVendorQueryApi } from '../../../api/vendor_support.api';
 
 const RaiseQueryForm = ({ onAddQuery }) => {
   const [recipients, setRecipients] = useState([]);
@@ -50,41 +50,43 @@ const RaiseQueryForm = ({ onAddQuery }) => {
     loadContacts();
   }, []);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!formData.subject || !formData.message || recipients.length === 0) return;
+  const handleSubmit = async (e) => {
+      e.preventDefault();
 
-    setLoading(true);
+      if (!formData.subject || !formData.message || recipients.length === 0) return;
 
-    const selectedRecipient = recipients[formData.recipientIndex];
+      setLoading(true);
 
-    setTimeout(() => {
-      const newQuery = {
-        id: `TKT-${Math.floor(1000 + Math.random() * 9000)}`,
-        ...formData,
-        userName: 'Burger King',
-        userId: 'VND-301',
-        userType: 'VENDOR',
-        userPhone: '+91 12345 67890',
-        userEmail: 'bk@vendor.com',
-        recipientName: selectedRecipient.name,
-        recipientContact: `${selectedRecipient.phone} | ${selectedRecipient.email}`,
-        status: 'Open',
-        admin_reply: null,
-        created_at: new Date().toISOString()
+      const selectedRecipient = recipients[formData.recipientIndex];
+
+      const payload = {
+        subject: formData.subject,
+        message: formData.message,
+        supportContactId: selectedRecipient.id
       };
 
-      onAddQuery(newQuery);
+      try {
+        await submitVendorQueryApi(payload);
 
-      setFormData({
-        recipientIndex: 0,
-        subject: '',
-        message: ''
-      });
+        onAddQuery({
+          ...payload,
+          recipientName: selectedRecipient.name,
+          status: 'Open',
+          created_at: new Date().toISOString()
+        });
 
-      setLoading(false);
-    }, 500);
-  };
+        setFormData({
+          recipientIndex: 0,
+          subject: '',
+          message: ''
+        });
+
+      } catch (error) {
+        console.error("Failed to create ticket:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -159,14 +161,14 @@ const RaiseQueryForm = ({ onAddQuery }) => {
 
         <button
           type="submit"
-          disabled={loading || !formData.subject}
+          disabled={loading || !formData.subject || recipients.length === 0}
           className="support-submit-btn"
         >
           {loading ? (
             'Sending Ticket...'
           ) : (
             <>
-              Send Query to {recipients[formData.recipientIndex]?.name || ''}
+              Send Query to {recipients[formData.recipientIndex]?.name || 'support'}
               <Send size={18} style={{ marginLeft: '8px' }} />
             </>
           )}
@@ -177,3 +179,4 @@ const RaiseQueryForm = ({ onAddQuery }) => {
 };
 
 export default RaiseQueryForm;
+
