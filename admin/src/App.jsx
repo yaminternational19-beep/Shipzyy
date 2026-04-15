@@ -4,7 +4,7 @@ import GlobalRoutes from './routes';
 
 function App() {
   return (
-    <Router>
+    <Router basename={import.meta.env.BASE_URL || '/admin'}>
       <GlobalRoutes />
     </Router>
   );
