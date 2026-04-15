@@ -4,14 +4,15 @@ const TABLES = [
     {
         name : "vendor_support_tickets",
         query : `CREATE TABLE vendor_support_tickets (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            vendor_id INT NOT NULL,
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            vendor_id BIGINT NOT NULL,
             subject VARCHAR(255) NOT NULL,
             message TEXT NOT NULL,
-            status ENUM('Open', 'Closed', 'In Progress') DEFAULT 'Open',
+            status ENUM('Open', 'Closed') DEFAULT 'Open',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             FOREIGN KEY (vendor_id) REFERENCES vendors(id) ON DELETE CASCADE
+
         )`
     }
 ];

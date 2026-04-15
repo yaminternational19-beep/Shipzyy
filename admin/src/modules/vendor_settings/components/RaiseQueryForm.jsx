@@ -25,7 +25,7 @@ const RaiseQueryForm = ({ onAddQuery }) => {
     "Missing Reward Points",
     "Product List Update",
     "Order Payment Issue",
-    "Other Support Issue"
+    "Other Issue"
   ];
 
   // 🔹 Fetch support contacts (replaces static array)

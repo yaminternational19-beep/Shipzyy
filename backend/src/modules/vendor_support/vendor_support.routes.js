@@ -10,7 +10,6 @@ router.use(authorize("VENDOR_OWNER", "VENDOR_STAFF"));
 
 router.get("/", controller.getFaqs);
 router.get("/help", controller.getHelp);
-router.post("/tickets", controller.createTicket);
 
 
 export default router;

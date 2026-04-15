@@ -29,13 +29,7 @@ const getHelp = async () => {
   };
 };
 
-const createTicket = async (vendorId, subject, message) => {
-  const [result] = await db.query(
-    `INSERT INTO support_tickets (vendor_id, subject, message, status)
-     VALUES (?, ?, ?, ?)`,
-    [vendorId, subject, message, 'Open']
-  );  
-}
 
 
-export default { getFaqs, getHelp, createTicket  };
+
+export default { getFaqs, getHelp };

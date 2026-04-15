@@ -44,13 +44,13 @@
 
 .recipient-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
     gap: 10px;
     margin-top: 4px;
 }
 
 .recipient-item {
-    padding: 12px;
+    padding: 14px;
     border-radius: 10px;
     border: 1px solid #e2e8f0;
     background-color: #fff;
@@ -58,7 +58,7 @@
     transition: all 0.2s;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 5px;
 }
 
 .recipient-item.active {
@@ -66,9 +66,11 @@
     background-color: #eff6ff;
 }
 
+/* ── Even-size group: name, email, phone ── */
 .recipient-item .dept-name {
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     font-weight: 700;
+    color: #1e293b;
 }
 
 .recipient-item.active .dept-name {
@@ -76,8 +78,24 @@
 }
 
 .recipient-item .dept-email {
-    font-size: 0.7rem;
-    color: #64748b;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: #475569;
+}
+
+.recipient-item .dept-phone {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: #475569;
+}
+
+/* ── Working hours: visually distinct / secondary ── */
+.recipient-item .dept-working {
+    font-size: 0.72rem;
+    font-weight: 400;
+    color: #94a3b8;
+    font-style: italic;
+    margin-top: 2px;
 }
 
 .support-select, .support-textarea, .support-input {
