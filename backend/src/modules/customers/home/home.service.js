@@ -379,7 +379,7 @@ const getProducts = async (customerId, queryParams = {}) => {
 };
 
 const getProductById = async (customerId, productId, queryParams = {}) => {
-  const cacheKey = `customer:product:${customerId || 'guest'}:${productId}`;
+  const cacheKey = `customer:product:v2:${customerId || 'guest'}:${productId}`;
   const cachedData = await getFromCache(cacheKey);
   if (cachedData) return cachedData;
 
@@ -397,7 +397,7 @@ const getProductById = async (customerId, productId, queryParams = {}) => {
         p.vendor_id, v.business_name AS vendor_name,
         p.brand_id, p.custom_brand, COALESCE(b.name, p.custom_brand) AS brand_name,
         pi.image_url AS primary_image,
-        pv.min_price, pv.max_mrp, pv.total_stock, pv.unit, pv.discount_percentage,
+        pv.min_price, pv.max_mrp, pv.total_stock, pv.variant_name, pv.unit, pv.discount_percentage,
         IF(cw.id IS NOT NULL, 1, 0) AS is_liked,
         IF(cc.id IS NOT NULL, 1, 0) AS is_in_cart
       FROM products p
@@ -411,6 +411,7 @@ const getProductById = async (customerId, productId, queryParams = {}) => {
                MIN(sale_price) AS min_price, 
                MAX(mrp) AS max_mrp,
                SUM(stock) AS total_stock,
+               MAX(variant_name) AS variant_name,
                MAX(unit) AS unit,
                MAX(discount_value) AS discount_percentage
         FROM product_variants 
@@ -528,6 +529,7 @@ const getProductById = async (customerId, productId, queryParams = {}) => {
         mrp: rawProduct.max_mrp,
         discount_percentage: rawProduct.discount_percentage,
         stock_available: stockAvailable,
+        variant_name: rawProduct.variant_name || null,
         unit: rawProduct.unit || "N/A",
         category_id: rawProduct.category_id,
         category_name: rawProduct.category_name,

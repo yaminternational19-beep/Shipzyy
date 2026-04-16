@@ -94,6 +94,7 @@ import cartRoutes from '../../modules/customers/cart/cart.routes.js';
 import wishlistRoutes from '../../modules/customers/wishlist/wishlist.routes.js';
 import paymentGatewayRoutes from '../../modules/customers/payment_gateway/payment_gateway.routes.js';
 import orderRoutes from '../../modules/customers/orders/orders.routes.js';
+import customerSupportRoutes from '../../modules/customers/support/support.routes.js';
 
 router.use("/customers", customerAuthRoutes);
 router.use("/customers", customerProfileRoutes);
@@ -102,6 +103,7 @@ router.use("/customers", cartRoutes);
 router.use("/customers", wishlistRoutes);
 router.use("/customers", paymentGatewayRoutes);
 router.use("/customers", orderRoutes);
+router.use("/customers", customerSupportRoutes);
 
 
 // ==========================================
