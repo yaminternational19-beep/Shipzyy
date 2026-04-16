@@ -7,7 +7,13 @@ import {
     CreditCard,
     Receipt,
     HelpCircle,
-    Users
+    Users,
+    Info,
+    FileText,
+    ShieldCheck,
+    Headphones,
+    Smartphone,
+    Megaphone
 } from 'lucide-react';
 
 export const vendorMenuItems = [
@@ -19,12 +25,17 @@ export const vendorMenuItems = [
     { name: "Orders", key: "VENDOR_ORDERS", icon: ShoppingBag, path: "/vendor-orders", group: "MANAGEMENT", description: "Manage your orders" },
     // { name: "Reports", key: "REPORTS", icon: BarChart3, path: "/vendor-reports", group: "MANAGEMENT", description: "View your sales reports" },
 
-    { name: "Payouts", key: "PAYOUTS", icon: CreditCard, path: "/vendor-payouts", group: "FINANCE", description: "Manage your payouts" },
+    // { name: "Payouts", key: "PAYOUTS", icon: CreditCard, path: "/vendor-payouts", group: "FINANCE", description: "Manage your payouts" },
     { name: "Invoices", key: "INVOICES", icon: Receipt, path: "/vendor-invoices", group: "FINANCE", description: "View your invoices" },
 
     { name: "Customers", key: "CUSTOMERS", icon: Users, path: "/vendor-customers", group: "CUSTOMERS", description: "Manage customer accounts" },
 
-    { name: "Support", key: "VENDOR_SUPPORT", icon: HelpCircle, path: "/vendor/help-support/raise-query", group: "SUPPORT", description: "Get support for your store" }
+    { name: "Support", key: "VENDOR_SUPPORT", icon: Headphones, path: "/vendor/help-support/raise-query", group: "SUPPORT", description: "Get support for your store" },
+    { name: "Announcements", key: "ANNOUNCEMENTS", icon: Megaphone, path: "/vendor/announcements", group: "SUPPORT", description: "View latest platform updates" },
+    { name: "About-US", key: "ABOUT_US", icon: Info, path: "/vendor/about-us", group: "SUPPORT", description: "Learn more about us" },
+    { name: "Terms-and-Conditions", key: "TERMS_AND_CONDITIONS", icon: FileText, path: "/vendor/Terms-and-Conditions", group: "SUPPORT", description: "View our terms and conditions" },
+    { name: "Privacy-Policy", key: "PRIVACY_POLICY", icon: ShieldCheck, path: "/vendor/privacy-policy", group: "SUPPORT", description: "View our privacy policy" },
+    { name: "App-Links", key: "PLATFORM_LINKS", icon: Smartphone, path: "/vendor/app-links", group: "SUPPORT", description: "Quick access to platform links" },
 ];
 
 export const vendorSidebarGroups = {

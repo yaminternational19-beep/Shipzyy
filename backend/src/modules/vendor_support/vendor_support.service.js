@@ -9,8 +9,8 @@ const getFaqs = async () => {
             FROM faqs
             WHERE category = ? AND status = ?
             ORDER BY created_at DESC`,
-            ['vendor', 'Active']
-        );
+    ['vendor', 'Active']
+  );
 
   return {
     records: rows
@@ -33,7 +33,10 @@ const getHelp = async () => {
 
 const createTicket = async (vendorId, subject, message, supportContactId, createdByType, createdById) => {
   const random = Math.floor(1000 + Math.random() * 9000);
-  const date = new Date().toISOString().slice(2,10).replace(/-/g, '');
+  // Use Asia/Kolkata date for ticket ID generation to avoid crossover issues
+  const date = new Intl.DateTimeFormat('en-GB', {
+    year: '2-digit', month: '2-digit', day: '2-digit', timeZone: 'Asia/Kolkata'
+  }).format(new Date()).split('/').reverse().join('');
   const support_ticket_id = `TICKET-${date}-${random}`;
 
   // ✅ Validate support contact
@@ -48,9 +51,9 @@ const createTicket = async (vendorId, subject, message, supportContactId, create
 
   await db.query(
     `INSERT INTO vendor_support_tickets 
-     (support_ticket_id, vendor_id, subject, message, support_contact_id, created_by_type, created_by_id)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [support_ticket_id, vendorId, subject, message, supportContactId, createdByType, createdById]
+     (support_ticket_id, vendor_id, subject, message, support_contact_id, created_by_type, created_by_id, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [support_ticket_id, vendorId, subject, message, supportContactId, createdByType, createdById, new Date()]
   );
 };
 
@@ -174,7 +177,8 @@ export const listTickets = async (vendorId, queryParams) => {
 
   const formattedRows = rows.map((row) => ({
     ...row,
-    created_at: formatDate(row.created_at)
+    created_at: formatDate(row.created_at),
+    raw_created_at: row.created_at
   }));
 
   return {

@@ -5,8 +5,9 @@ import ProtectedRoute from './ProtectedRoute';
 // Vendor Imports
 import VendorProductPage from '../modules/vendor_products/VendorProductsPage';
 import VendorOrdersPage from '../modules/vendor_orders/VendorOrdersPage';
-import { VendorSettingsPage } from '../modules/vendor_settings';
+import { VendorSupportPage } from '../modules/vendor_support';
 import { VendorStaffManagement } from '../modules/vendor_staff';
+import VendorSettingsPage from '../modules/vendor_settings/VendorSettingsPage';
 import VendorCustomersPage from '../modules/vendor_customers/VendorCustomersPage';
 
 // Placeholder for missing modules
@@ -90,7 +91,7 @@ export const VendorRoutes = [
         path="/vendor/help-support/raise-query"
         element={
             <ProtectedRoute allowedRoles={["VENDOR_OWNER", "VENDOR_STAFF"]}>
-                <VendorSettingsPage activeTab="raise-query" />
+                <VendorSupportPage activeTab="raise-query" />
             </ProtectedRoute>
         }
     />,
@@ -99,7 +100,7 @@ export const VendorRoutes = [
         path="/vendor/help-support/history"
         element={
             <ProtectedRoute allowedRoles={["VENDOR_OWNER", "VENDOR_STAFF"]}>
-                <VendorSettingsPage activeTab="history" />
+                <VendorSupportPage activeTab="history" />
             </ProtectedRoute>
         }
     />,
@@ -108,8 +109,60 @@ export const VendorRoutes = [
         path="/vendor/help-support/faq"
         element={
             <ProtectedRoute allowedRoles={["VENDOR_OWNER", "VENDOR_STAFF"]}>
-                <VendorSettingsPage activeTab="faq" />
+                <VendorSupportPage activeTab="faq" />
             </ProtectedRoute>
         }
-    />
+    />,
+
+    <Route
+        key="vendor-announcements"
+        path="/vendor/announcements"
+        element={
+            <ProtectedRoute allowedRoles={["VENDOR_OWNER", "VENDOR_STAFF"]}>
+                <VendorSettingsPage type="announcements" />
+            </ProtectedRoute>
+        }
+    />,
+
+    <Route
+        key="vendor-about-us"
+        path="/vendor/about-us"
+        element={
+            <ProtectedRoute allowedRoles={["VENDOR_OWNER", "VENDOR_STAFF"]}>
+                <VendorSettingsPage type="about-us" />
+            </ProtectedRoute>
+        }
+    /> ,
+
+    <Route
+        key="vendor-app-links"
+        path="/vendor/app-links"
+        element={
+            <ProtectedRoute allowedRoles={["VENDOR_OWNER", "VENDOR_STAFF"]}>
+                <VendorSettingsPage type="platform-links" />
+            </ProtectedRoute>
+        }
+    />,
+
+    <Route
+        key="vendor-terms-and-conditions"
+        path="/vendor/Terms-and-Conditions"
+        element={
+            <ProtectedRoute allowedRoles={["VENDOR_OWNER", "VENDOR_STAFF"]}>
+                <VendorSettingsPage type="terms" />
+            </ProtectedRoute>
+        }
+    />,
+
+    <Route
+        key="vendor-privacy-policy"
+        path="/vendor/privacy-policy"
+        element={
+            <ProtectedRoute allowedRoles={["VENDOR_OWNER", "VENDOR_STAFF"]}>
+                <VendorSettingsPage type="privacy" />
+            </ProtectedRoute>
+        }
+    />,
+
+
 ];

@@ -14,6 +14,8 @@ const pool = mysql.createPool({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   port: process.env.DB_PORT,
+  // Use UTC for storage to avoid double-conversion issues
+  timezone: 'Z',
 });
 
 export default pool;

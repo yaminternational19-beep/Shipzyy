@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Send } from 'lucide-react';
-import '../VendorSettings.css';
+import '../VendorSupport.css';
 import { getVendorSupportApi, submitVendorQueryApi } from '../../../api/vendor_support.api';
 
 const RaiseQueryForm = ({ onAddQuery }) => {

@@ -27,7 +27,7 @@ const FAQSection = ({ faqs = [] }) => {
     };
 
     loadFaqs();
-  }, [faqs]);
+  }, []);
 
   return (
     <div style={styles.container}>

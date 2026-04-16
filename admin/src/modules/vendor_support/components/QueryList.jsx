@@ -1,22 +1,61 @@
-import React, { useState, useMemo, useEffect, use } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Clock, CheckCircle, MessageSquare, AlertTriangle, ChevronLeft, ChevronRight, Eye, Hash, Search, X, User, Square, CheckSquare, Calendar, Filter } from 'lucide-react';
-import '../VendorSettings.css';
+import '../VendorSupport.css';
 import { getVendorQueriesApi } from '../../../api/vendor_support.api';
+import * as exportService from '../services/query_export.service';
+import Toast from '../../../components/common/Toast/Toast';
 
 
 
 
 
 
-const QueryList = ({ queries = [] }) => {
+const QueryList = ({ queries: initialQueries = [] }) => {
+  const [queries, setQueries] = useState(initialQueries);
   const [filter, setFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 8
+    limit: 10
   });
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
+  };
+
+  const handleExportPDF = () => {
+    try {
+      if (selectedIds.length === 0) {
+        showToast("Please select at least one ticket to export", "error");
+        return;
+      }
+      const dataToExport = queries.filter(q => selectedIds.includes(q.id));
+      exportService.exportQueriesToPDF(dataToExport);
+      showToast(`Exported ${selectedIds.length} tickets to PDF successfully!`);
+    } catch (error) {
+      showToast("Failed to export PDF", "error");
+    }
+  };
+
+  const handleExportExcel = () => {
+    try {
+      if (selectedIds.length === 0) {
+        showToast("Please select at least one ticket to export", "error");
+        return;
+      }
+      const dataToExport = queries.filter(q => selectedIds.includes(q.id));
+      exportService.exportQueriesToExcel(dataToExport);
+      showToast(`Exported ${selectedIds.length} tickets to Excel successfully!`);
+    } catch (error) {
+      showToast("Failed to export Excel", "error");
+    }
+  };
 
   // Filter queries based on status and search query
   const filteredQueries = useMemo(() => {
@@ -31,16 +70,26 @@ const QueryList = ({ queries = [] }) => {
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(ticket =>
-        ticket.id?.toLowerCase().includes(q) ||
-        ticket.userName?.toLowerCase().includes(q) ||
-        ticket.userId?.toLowerCase().includes(q) ||
-        ticket.subject?.toLowerCase().includes(q) ||
-        ticket.message?.toLowerCase().includes(q)
+        String(ticket.support_ticket_id || '').toLowerCase().includes(q) ||
+        String(ticket.userName || '').toLowerCase().includes(q) ||
+        String(ticket.subject || '').toLowerCase().includes(q) ||
+        String(ticket.message || '').toLowerCase().includes(q)
       );
     }
 
+    // Date Range Filter
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      result = result.filter(q => {
+        const ticketDate = new Date(q.raw_created_at || q.created_at);
+        return ticketDate >= start && ticketDate <= end;
+      });
+    }
+
     return result;
-  }, [queries, filter, searchQuery]);
+  }, [queries, filter, searchQuery, startDate, endDate]);
 
   // Paginate filtered results
   const paginatedQueries = useMemo(() => {
@@ -70,12 +119,34 @@ const QueryList = ({ queries = [] }) => {
     fetchQueries();
   }, []);
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return {
-      date: date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }),
-      time: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
+  const formatDate = (dateValue, rawDate) => {
+    // Prioritize raw_created_at for accurate local timezone formatting
+    const source = rawDate || (typeof dateValue !== 'object' ? dateValue : null);
+    
+    if (source) {
+      const date = new Date(source);
+      if (!isNaN(date.getTime())) {
+        return {
+          date: date.toLocaleDateString('en-GB', { 
+            day: '2-digit', 
+            month: 'short', 
+            year: '2-digit' 
+          }),
+          time: date.toLocaleTimeString([], { 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            hour12: true 
+          })
+        };
+      }
+    }
+
+    // Fallback to pre-formatted object from backend if raw is missing
+    if (dateValue && typeof dateValue === 'object' && dateValue.date) {
+      return dateValue;
+    }
+    
+    return { date: '--', time: '--' };
   };
 
   // Selection Logic (Matching TicketTable.jsx logic)
@@ -102,64 +173,84 @@ const QueryList = ({ queries = [] }) => {
       <div className="products-table-section">
         {/* Reformatted Filter Bar to match global structure */}
         <div className="product-filters-container">
-          <div className="p-search">
+          <div className="p-search" style={{ width: '240px' }}>
             <Search className="search-icon" size={18} />
             <input
               type="text"
-              placeholder="Search by ticket id, subject, message..."
+              placeholder="Search tickets..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
 
-          <div className="filter-group">
+          <div className="filter-group" style={{ gap: '10px' }}>
             <select
               className="filter-select"
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
+              style={{ width: '130px' }}
             >
               <option value="All">All Status</option>
               <option value="Open">Open</option>
               <option value="Closed">Closed</option>
             </select>
 
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <Calendar size={16} style={{ position: 'absolute', left: '12px', color: '#94a3b8' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <input
-                type="text"
-                placeholder="dd-mm-yyyy"
+                type="date"
                 className="filter-select"
-                style={{ paddingLeft: '36px', width: '135px' }}
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                style={{ width: '145px', padding: '7px 10px' }}
+              />
+              <span style={{ color: '#cbd5e1', fontWeight: 700 }}>—</span>
+              <input
+                type="date"
+                className="filter-select"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                style={{ width: '145px', padding: '7px 10px' }}
               />
             </div>
 
-            <span style={{ color: '#cbd5e1' }}>—</span>
-
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <Calendar size={16} style={{ position: 'absolute', left: '12px', color: '#94a3b8' }} />
-              <input
-                type="text"
-                placeholder="dd-mm-yyyy"
-                className="filter-select"
-                style={{ paddingLeft: '36px', width: '135px' }}
-              />
-            </div>
+            {(filter !== 'All' || searchQuery || startDate || endDate) && (
+              <button 
+                onClick={() => {
+                  setFilter('All');
+                  setSearchQuery('');
+                  setStartDate('');
+                  setEndDate('');
+                }}
+                style={{ 
+                  background: '#f1f5f9',
+                  color: '#64748b',
+                  border: '1px solid #e2e8f0',
+                  padding: '8px 14px',
+                  borderRadius: '10px',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <X size={14} /> Reset
+              </button>
+            )}
           </div>
 
           <div className="filter-actions" style={{ marginLeft: 'auto' }}>
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              {selectedIds.length > 0 && (
-                <span style={{ fontSize: '13px', color: 'var(--primary-color)', fontWeight: 700, marginRight: '8px' }}>
-                  {selectedIds.length} Selected
-                </span>
-              )}
               <button
+                onClick={handleExportPDF}
                 className="btn-export"
                 style={{ backgroundColor: '#fff1f2', color: '#e11d48', border: '1px solid #fecdd3', padding: '8px 14px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
               >
                 Export PDF
               </button>
               <button
+                onClick={handleExportExcel}
                 className="btn-export"
                 style={{ backgroundColor: '#f0fdf4', color: '#166534', border: '1px solid #dcfce7', padding: '8px 14px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
               >
@@ -185,7 +276,7 @@ const QueryList = ({ queries = [] }) => {
                     </div>
                   </th>
                   <th style={{ width: '100px' }}>TICKET ID</th>
-                  <th style={{ width: '180px' }}>USER NAME / ID</th>
+                  <th style={{ width: '180px' }}>USER NAME</th>
                   <th style={{ width: '100px' }}>USER TYPE</th>
                   <th style={{ width: '200px' }}>USER CONTACT</th>
                   <th style={{ width: '180px' }}>RECIPIENT</th>
@@ -210,7 +301,7 @@ const QueryList = ({ queries = [] }) => {
                   </tr>
                 ) : (
                   paginatedQueries.map((query) => {
-                    const dateInfo = formatDate(query.created_at);
+                    const dateInfo = formatDate(query.created_at, query.raw_created_at);
                     const isSelected = selectedIds.includes(query.id);
                     return (
                       <tr key={query.id} className={isSelected ? 'selected-row' : ''}>
@@ -224,11 +315,24 @@ const QueryList = ({ queries = [] }) => {
                           </div>
                         </td>
                         <td>
-                          <span style={{ fontWeight: 700, color: '#1e293b', fontSize: '13px' }}>{query.id}</span>
+                          <div style={{ lineHeight: '1.4' }}>
+                            <div style={{ fontWeight: 700, color: '#64748b', fontSize: '10px' }}></div>
+                            <div style={{ fontWeight: 800, color: 'var(--primary-color)', fontSize: '12px', letterSpacing: '0.3px' }}>
+                              {query.support_ticket_id}
+                            </div>
+                          </div>
                         </td>
                         <td>
-                          <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9rem' }}>{query.userName}</div>
-                          <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600, marginTop: '2px' }}>{query.userId}</div>
+                          <div style={{ 
+                            fontWeight: 700, 
+                            color: 'var(--text-primary)', 
+                            fontSize: '0.9rem',
+                            maxWidth: '180px',
+                            lineHeight: '1.3',
+                            wordBreak: 'break-word'
+                          }}>
+                            {query.userName || 'N/A'}
+                          </div>
                         </td>
                         <td>
                           <span style={{
@@ -325,7 +429,7 @@ const QueryList = ({ queries = [] }) => {
             <div className="ticket-modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <Hash size={20} color="var(--primary-color)" />
-                <h2 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0 }}>Ticket Details: {selectedTicket.id}</h2>
+                <h2 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0 }}>Ticket Details: {selectedTicket.support_ticket_id || selectedTicket.id}</h2>
               </div>
               <button className="modal-close-btn" onClick={() => setSelectedTicket(null)}>
                 <X size={20} />
@@ -341,7 +445,12 @@ const QueryList = ({ queries = [] }) => {
                   </div>
                   <div className="ticket-detail-col ticket-detail-item">
                     <label>Date Raised</label>
-                    <div className="value">{new Date(selectedTicket.created_at).toLocaleString()}</div>
+                    <div className="value">
+                      {(() => {
+                        const info = formatDate(selectedTicket.created_at, selectedTicket.raw_created_at);
+                        return `${info.date} ${info.time}`;
+                      })()}
+                    </div>
                   </div>
                 </div>
 
@@ -371,6 +480,13 @@ const QueryList = ({ queries = [] }) => {
             </div>
           </div>
         </div>
+      )}
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast({ ...toast, show: false })}
+        />
       )}
     </div>
   );

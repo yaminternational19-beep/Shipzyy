@@ -34,5 +34,10 @@ export const rolePermissions = {
         "PAYOUTS",
         "INVOICES",
         "CUSTOMERS",
+        "ANNOUNCEMENTS",
+        "ABOUT_US",
+        "TERMS_AND_CONDITIONS",
+        "PRIVACY_POLICY",
+        "PLATFORM_LINKS",
     ]
 };

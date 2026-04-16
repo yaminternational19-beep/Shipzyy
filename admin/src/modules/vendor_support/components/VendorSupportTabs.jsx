@@ -2,7 +2,7 @@ import React from 'react';
 import { PlusCircle, History, HelpCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const VendorSettingTabs = ({ activeTab }) => {
+const VendorSupportTabs = ({ activeTab }) => {
     const navigate = useNavigate();
     
     const tabs = [
@@ -42,4 +42,4 @@ const VendorSettingTabs = ({ activeTab }) => {
     );
 };
 
-export default VendorSettingTabs;
+export default VendorSupportTabs;
