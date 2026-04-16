@@ -1,0 +1,153 @@
+.management-module {
+    padding: 24px;
+}
+
+.reviews-filter-bar {
+    display: flex;
+    align-items: center;
+    background: white;
+    padding: 16px 20px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    gap: 16px;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.filter-select {
+    padding: 8px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    outline: none;
+    font-size: 0.9rem;
+    color: #1e293b;
+}
+
+.product-cell {
+    display: flex;
+    flex-direction: column;
+}
+
+.product-name {
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.vendor-badge {
+    background: #f1f5f9;
+    color: #475569;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.rating-stars {
+    display: flex;
+    gap: 2px;
+}
+
+.star-icon {
+    color: #e2e8f0;
+}
+
+.star-icon.filled {
+    color: #f59e0b;
+    fill: #f59e0b;
+}
+
+.review-text-cell {
+    max-width: 300px;
+}
+
+.review-content p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #475569;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.review-thumb-list {
+    display: flex;
+    gap: 8px;
+    marginTop: 8px;
+}
+
+.review-thumb {
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    object-fit: cover;
+    border: 1px solid #e2e8f0;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.icon-btn {
+    padding: 8px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.icon-btn.delete {
+    color: #ef4444;
+}
+
+.icon-btn.delete:hover {
+    background: #fef2f2;
+}
+
+.icon-btn.report {
+    color: #f59e0b;
+}
+
+.icon-btn.report:hover {
+    background: #fffbeb;
+}
+
+.common-table-container {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.common-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.common-table th {
+    text-align: left;
+    padding: 16px 20px;
+    background: #f8fafc;
+    color: #64748b;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.common-table td {
+    padding: 16px 20px;
+    border-top: 1px solid #f1f5f9;
+    color: #1e293b;
+    font-size: 0.95rem;
+}

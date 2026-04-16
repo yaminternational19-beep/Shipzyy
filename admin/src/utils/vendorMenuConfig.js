@@ -13,7 +13,8 @@ import {
     ShieldCheck,
     Headphones,
     Smartphone,
-    Megaphone
+    Megaphone,
+    MessageSquare
 } from 'lucide-react';
 
 export const vendorMenuItems = [
@@ -22,6 +23,7 @@ export const vendorMenuItems = [
     { name: "Staff", key: "STAFF", icon: Users2, path: "/staff", group: "ADMIN_CONTROL", description: "Manage your staff members" },
 
     { name: "Products", key: "VENDOR_PRODUCTS", icon: Package, path: "/vendor-products", group: "MANAGEMENT", description: "Manage your products" },
+    { name: "Product Reviews", key: "VENDOR_REVIEWS", icon: MessageSquare, path: "/vendor-reviews", group: "MANAGEMENT", description: "View and manage feedback for your products" },
     { name: "Orders", key: "VENDOR_ORDERS", icon: ShoppingBag, path: "/vendor-orders", group: "MANAGEMENT", description: "Manage your orders" },
     // { name: "Reports", key: "REPORTS", icon: BarChart3, path: "/vendor-reports", group: "MANAGEMENT", description: "View your sales reports" },
 

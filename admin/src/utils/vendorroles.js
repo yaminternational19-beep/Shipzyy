@@ -17,7 +17,7 @@ export const menuItems = [
     { name: "Orders", key: "VENDOR_ORDERS", icon: ShoppingBag, path: "/vendor-orders", group: "PRODUCT MANAGEMENT", description: "Track and manage orders" },
 
     { name: "Customers", key: "CUSTOMERS", icon: Users, path: "/vendor-customers", group: "CUSTOMERS", description: "Manage customer accounts" },
-
+    
     { name: "Staff", key: "STAFF", icon: Users2, path: "/staff", group: "MANAGEMENT", description: "Manage staff members" },
 
     { name: "Support", key: "VENDOR_SUPPORT", icon: HelpCircle, path: "/vendor/help-support", group: "SUPPORT", description: "Get support for vendor related queries" },

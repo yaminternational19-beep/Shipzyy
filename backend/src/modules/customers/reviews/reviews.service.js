@@ -76,5 +76,64 @@ const createReview = async (customerId, reviewData, files = []) => {
     };
 };
 
+/**
+ * List reviews with optional filters (admin and vendor use)
+ */
+const listReviews = async (queryParams, vendorId = null) => {
+    const { page, limit, skip } = getPagination(queryParams);
 
-export default { createReview };
+    const where = [];
+    const params = [];
+
+    if (vendorId) {
+        where.push(`r.vendor_id = ?`);
+        params.push(vendorId);
+    }
+
+    if (queryParams.product_id) {
+        where.push(`r.product_id = ?`);
+        params.push(queryParams.product_id);
+    }
+
+    if (queryParams.rating) {
+        where.push(`r.rating = ?`);
+        params.push(queryParams.rating);
+    }
+
+    const whereClause = where.length > 0 ? `WHERE ${where.join(' AND ')}` : '';
+
+    const [rows] = await db.query(
+        `SELECT 
+            r.*, 
+            c.name as customer_name, c.profile_image, c.mobile as customer_phone, c.country_code as customer_country_code,
+            p.name as product_name, p.slug as product_slug,
+            v.business_name as vendor_name, v.email as vendor_email, v.country_code as vendor_country_code, v.mobile as vendor_phone,
+            o.order_number,
+            pi.image_url as product_image
+         FROM customer_reviews r
+         JOIN customers c ON r.customer_id = c.id
+         JOIN products p ON r.product_id = p.id
+         LEFT JOIN product_images pi ON p.id = pi.product_id AND pi.is_primary = 1
+         JOIN vendors v ON r.vendor_id = v.id
+         JOIN orders o ON r.order_id = o.id
+         ${whereClause}
+         ORDER BY r.id DESC
+         LIMIT ? OFFSET ?`,
+        [...params, limit, skip]
+    );
+
+    const [[{ totalRecords }]] = await db.query(
+        `SELECT COUNT(*) as totalRecords FROM customer_reviews r ${whereClause}`,
+        params
+    );
+
+    return {
+        records: formatCustomerDates(rows.map(r => ({
+            ...r,
+            images: r.images ? (typeof r.images === 'string' ? JSON.parse(r.images) : r.images) : []
+        }))),
+        pagination: getPaginationMeta(page, limit, totalRecords)
+    };
+};
+
+export default { createReview, listReviews };

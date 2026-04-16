@@ -20,6 +20,7 @@ import BannersPage from '../modules/banners/BannersPage';
 import { CouponsPage } from '../modules/coupons';
 import { DeliveryChargesPage } from '../modules/delivery_charges';
 import VendorOwnerDashboard from '../modules/dashboard/dashboards/VendorOwnerDashboard';
+import ReviewsPage from '../modules/reviews/ReviewsPage';
 import ComingSoon from '../pages/ComingSoon';
 
 export const AdminRoutes = [
@@ -106,6 +107,15 @@ export const AdminRoutes = [
         element={
             <ProtectedRoute allowedRoles={["SUPER_ADMIN", "SUB_ADMIN"]}>
                 <ProductsPage />
+            </ProtectedRoute>
+        }
+    />,
+    <Route
+        key="reviews"
+        path="/reviews"
+        element={
+            <ProtectedRoute allowedRoles={["SUPER_ADMIN", "SUB_ADMIN"]}>
+                <ReviewsPage />
             </ProtectedRoute>
         }
     />,

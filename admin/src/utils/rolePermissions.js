@@ -21,7 +21,8 @@ export const rolePermissions = {
         "REPORTS",
         "PAYOUTS",
         "INVOICES",
-        "RIDER_TERMINATIONS"
+        "RIDER_TERMINATIONS",
+        "REVIEWS"
     ],
 
     VENDOR_OWNER: [
@@ -39,5 +40,6 @@ export const rolePermissions = {
         "TERMS_AND_CONDITIONS",
         "PRIVACY_POLICY",
         "PLATFORM_LINKS",
+        "VENDOR_REVIEWS"
     ]
 };

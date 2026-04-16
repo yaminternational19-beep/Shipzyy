@@ -17,7 +17,8 @@ import {
     BellRing,
     HelpCircle,
     UserCheck,
-    Image as ImageIcon
+    Image as ImageIcon,
+    MessageSquare
 } from 'lucide-react';
 
 export const adminMenuItems = [
@@ -34,6 +35,7 @@ export const adminMenuItems = [
     { name: "Delivery Charges", key: "DELIVERY_CHARGES", icon: Truck, path: "/delivery-charges", group: "CATALOG_MANAGEMENT", description: "Manage delivery fees" },
 
     { name: "Products", key: "PRODUCTS", icon: Package, path: "/products", group: "PRODUCT_MANAGEMENT", description: "Manage catalogue and item stock" },
+    { name: "Reviews", key: "REVIEWS", icon: MessageSquare, path: "/reviews", group: "PRODUCT_MANAGEMENT", description: "Manage customer reviews and feedback" },
     { name: "Orders", key: "ORDERS", icon: ShoppingBag, path: "/orders", group: "PRODUCT_MANAGEMENT", description: "Track and manage customer orders" },
     // { name: "Reports", key: "REPORTS", icon: BarChart3, path: "/reports", group: "PRODUCT_MANAGEMENT", description: "View system reports" },
 

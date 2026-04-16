@@ -53,6 +53,7 @@ import adminOrdersRoutes from '../../modules/admin_orders/admin_orders.routes.js
 import customerAdminRoutes from '../../modules/admin_customers/customers.routes.js';
 import couponRoutes from '../../modules/coupons/coupons.routes.js';
 import deliveryChargeRoutes from '../../modules/delivery_charges/delivery_charges.routes.js';
+import adminReviewsRoutes from '../../modules/admin_reviews/admin_reviews.routes.js';
 
 router.use("/subadmin", subadmins);
 router.use("/categories", categoryRoutes);
@@ -66,6 +67,7 @@ router.use("/admin-orders", adminOrdersRoutes);
 router.use("/admin-customers", customerAdminRoutes);
 router.use("/coupons", couponRoutes);
 router.use("/delivery-charges", deliveryChargeRoutes);
+router.use("/admin-reviews", adminReviewsRoutes);
 
 
 // ==========================================
@@ -76,12 +78,14 @@ import vendorStaffRoutes from '../../modules/vendor-staff/vendor-staff.routes.js
 import vendorOrderRoutes from '../../modules/orders/orders.routes.js';
 import vendorCustomerRoutes from '../../modules/vendor_customers/vendor_customers.routes.js';
 import vendorSupportRoutes from '../../modules/vendor_support/vendor_support.routes.js';
+import vendorReviewsRoutes from '../../modules/vendor_reviews/vendor_reviews.routes.js';
   
 router.use("/products", productRoutes);
 router.use("/vendor-staff", vendorStaffRoutes);
 router.use("/vendor/orders", vendorOrderRoutes);
 router.use("/vendor/customers", vendorCustomerRoutes);
 router.use("/vendor/support", vendorSupportRoutes);
+router.use("/vendor/reviews", vendorReviewsRoutes);
 
 
 // ==========================================
