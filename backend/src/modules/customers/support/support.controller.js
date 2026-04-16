@@ -21,37 +21,35 @@ const getContentByKey = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Page not found");
     }
 
-    const htmlContent = `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>${contentData.title}</title>
-            <style>
-                body {
-                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-                    line-height: 1.6;
-                    color: #333;
-                    max-width: 800px;
-                    margin: 0 auto;
-                    padding: 24px;
-                }
-                h1 { color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; }
-                .content { margin-top: 24px; }
-            </style>
-        </head>
-        <body>
-            <h1>${contentData.title}</h1>
-            <div class="content">
-                ${contentData.content || "<p>No content available.</p>"}
-            </div>
-        </body>
-        </html>
-    `;
-
-    res.setHeader('Content-Type', 'text/html');
-    return res.status(200).send(htmlContent);
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    return res.status(200).send(contentData.content || "");
 });
 
-export default { getHelpSupport, getContent, getContentByKey };
+
+const createTicket = asyncHandler(async (req, res) => {
+    // Check if user is logged in
+    if (!req.user || !req.user.id) {
+        throw new ApiError(401, "Please log in to create a support ticket. For general inquiries, you can reach us by phone or email.");
+    }
+
+    const result = await supportService.createTicket(req.user.id, req.body);
+    return ApiResponse.success(res, "Support ticket created successfully", result);
+});
+
+const getFaqs = asyncHandler(async (req, res) => {
+    const result = await supportService.getFaqs();
+    return ApiResponse.success(res, "FAQs fetched successfully", result);
+});
+
+const getAnnouncements = asyncHandler(async (req, res) => {
+    if (!req.user || !req.user.id) {
+        throw new ApiError(401, "Please log in to view announcements.");
+    }
+    const result = await supportService.getAnnouncements(req.user.id, req.query);
+
+    return ApiResponse.success(res, "Announcements fetched successfully", result);
+});
+
+
+
+export default { getHelpSupport, getContent, getContentByKey, createTicket, getFaqs, getAnnouncements };

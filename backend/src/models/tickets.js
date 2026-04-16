@@ -20,6 +20,26 @@ const TABLES = [
               FOREIGN KEY (vendor_id) REFERENCES vendors(id) ON DELETE CASCADE,
               FOREIGN KEY (support_contact_id) REFERENCES help_support_contacts(id) ON DELETE SET NULL
           )`
+    },
+    {
+        name: "customer_support_tickets",
+        query: `
+          CREATE TABLE IF NOT EXISTS customer_support_tickets (
+              id BIGINT AUTO_INCREMENT PRIMARY KEY,
+              support_ticket_id VARCHAR(100) UNIQUE NOT NULL,
+              customer_id BIGINT NOT NULL,
+              support_contact_id INT NULL,
+              subject VARCHAR(255) NOT NULL,
+              message TEXT NOT NULL,
+              admin_reply TEXT NULL,
+              status ENUM('Open', 'Closed') DEFAULT 'Open',
+              created_by_id BIGINT NOT NULL,
+              created_by_type ENUM('CUSTOMER') NOT NULL DEFAULT 'CUSTOMER',
+              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+              updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+              FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE,
+              FOREIGN KEY (support_contact_id) REFERENCES help_support_contacts(id) ON DELETE SET NULL
+          )`
     }
 ];
 
