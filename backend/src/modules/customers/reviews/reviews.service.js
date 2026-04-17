@@ -7,6 +7,7 @@ import formatCustomerDates from "../../../utils/formatCustomerDates.js";
 /**
  * Submit a product review
  */
+
 const createReview = async (customerId, reviewData, files = []) => {
     const { order_id, product_id, rating, review } = reviewData;
 
@@ -79,6 +80,7 @@ const createReview = async (customerId, reviewData, files = []) => {
 /**
  * List reviews with optional filters (admin and vendor use)
  */
+
 const listReviews = async (queryParams, vendorId = null) => {
     const { page, limit, skip } = getPagination(queryParams);
 
@@ -136,4 +138,6 @@ const listReviews = async (queryParams, vendorId = null) => {
     };
 };
 
+
 export default { createReview, listReviews };
+

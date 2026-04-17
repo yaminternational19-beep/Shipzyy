@@ -14,7 +14,10 @@ const router = Router();
 router.post(
   "/reviews",
   customerAuth,
-  upload.array("images", 5), // Allow up to 5 images
+  upload.fields([
+    { name: "images", maxCount: 5 },
+    { name: "imageUrls", maxCount: 5 }
+  ]),
   validate(createReviewSchema),
   reviewsController.createReview
 );

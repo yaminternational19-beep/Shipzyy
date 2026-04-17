@@ -15,8 +15,20 @@ const createReview = asyncHandler(async (req, res) => {
     const customerId = req.user.id;
     const reviewData = req.body;
     
-    // Support single or multiple image uploads
-    const files = req.files || (req.file ? [req.file] : []);
+    // Support single or multiple image uploads from either field name
+    let files = [];
+    if (req.files) {
+        if (Array.isArray(req.files)) {
+            files = req.files;
+        } else {
+            files = [
+                ...(req.files.images || []),
+                ...(req.files.imageUrls || [])
+            ];
+        }
+    } else if (req.file) {
+        files = [req.file];
+    }
 
     const result = await reviewsService.createReview(customerId, reviewData, files);
     

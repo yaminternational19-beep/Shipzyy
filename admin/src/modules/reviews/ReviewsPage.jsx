@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Star, MessageSquare, Filter, Search, Calendar, X, Trash2, CheckSquare, Square, Download, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import Toast from '../../components/common/Toast/Toast';
 import ExportActions from '../../components/common/ExportActions';
+import { exportReviewsToPDF, exportReviewsToExcel } from './services/review_export.service';
 import * as adminReviewsService from './services/admin_reviews.service';
 import { getVendorsApi } from '../../api/vendor.api';
 import './Reviews.css';
@@ -86,7 +87,23 @@ const ReviewsPage = () => {
     };
 
     const handleExport = (type) => {
-        showToast(`Exporting ${selectedRows.length} reviews to ${type.toUpperCase()}...`);
+        const dataToExport = reviews.filter(r => selectedRows.includes(r.id));
+        
+        if (dataToExport.length === 0) {
+            showToast('Please select at least one record to export', 'warning');
+            return;
+        }
+
+        try {
+            if (type === 'pdf') {
+                exportReviewsToPDF(dataToExport);
+            } else if (type === 'excel') {
+                exportReviewsToExcel(dataToExport);
+            }
+            showToast(`${type.toUpperCase()} exported successfully!`, 'success');
+        } catch (error) {
+            showToast('Failed to generate export file', 'error');
+        }
     };
 
     const handleDelete = (id) => {
