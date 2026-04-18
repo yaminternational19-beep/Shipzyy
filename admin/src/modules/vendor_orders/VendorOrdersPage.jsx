@@ -23,7 +23,7 @@ const VendorOrdersPage = () => {
             setStats({
                 total: data.stats.total || 0,
                 pending: data.stats.pending || 0,
-                assigned: (data.stats.confirmed || 0) + (data.stats.processing || 0) + (data.stats.out_for_delivery || 0),
+                assigned: (data.stats.confirmed || 0) + (data.stats.shipped || 0) + (data.stats.out_for_delivery || 0),
                 delivered: data.stats.delivered || 0
             });
         }

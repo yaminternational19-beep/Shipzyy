@@ -128,13 +128,13 @@ const VendorOrderList = ({ onAssignRider, onUpdateStatus, onFetchSuccess, showTo
         return <span className={`status-badge ${s}`}>{status}</span>;
     };
 
-    const STATUS_OPTIONS = ['Pending', 'Confirmed', 'Processing', 'Out for Delivery', 'Delivered', 'Cancelled'];
+    const STATUS_OPTIONS = ['Pending', 'Confirmed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled'];
 
     const getNextStatuses = (currentStatus) => {
         switch (currentStatus) {
             case 'Pending': return ['Confirmed', 'Cancelled'];
-            case 'Confirmed': return ['Processing', 'Cancelled'];
-            case 'Processing': return ['Out for Delivery', 'Cancelled'];
+            case 'Confirmed': return ['Shipped', 'Cancelled'];
+            case 'Shipped': return ['Out for Delivery', 'Cancelled'];
             case 'Out for Delivery': return ['Delivered', 'Cancelled'];
             default: return [];
         }
@@ -193,7 +193,7 @@ const VendorOrderList = ({ onAssignRider, onUpdateStatus, onFetchSuccess, showTo
                         <option value="">All Status</option>
                         <option value="Pending">Pending</option>
                         <option value="Confirmed">Confirmed</option>
-                        <option value="Processing">Processing</option>
+                        <option value="Shipped">Shipped</option>
                         <option value="Out for Delivery">Out for Delivery</option>
                         <option value="Delivered">Delivered</option>
                         <option value="Cancelled">Cancelled</option>
@@ -264,7 +264,7 @@ const VendorOrderList = ({ onAssignRider, onUpdateStatus, onFetchSuccess, showTo
                         <th style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>RIDER</th>
                         <th style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>ADDRESS</th>
                         <th style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>PLACED</th>
-                        <th style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>DELIVERED</th>
+                        <th style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', whiteSpace: 'nowrap' }}>STATUS DATE</th>
                         <th style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>ACTIONS</th>
                     </tr>
                 </thead>
@@ -344,7 +344,7 @@ const VendorOrderList = ({ onAssignRider, onUpdateStatus, onFetchSuccess, showTo
                                 {order.createdDate}
                             </td>
                             <td style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.8rem', color: '#64748b' }}>
-                                {order.deliveredDate || '-'}
+                                {order.statusDate || '-'}
                             </td>
                             <td style={{ padding: '16px 12px', textAlign: 'center' }}>
                                 <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', alignItems: 'center' }}>

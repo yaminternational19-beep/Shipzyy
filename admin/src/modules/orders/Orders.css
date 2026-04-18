@@ -263,7 +263,7 @@
     border: 1px solid #a7f3d0;
 }
 
-.status-badge.processing {
+.status-badge.shipped {
     background: #eff6ff;
     color: #2563eb;
     border: 1px solid #bfdbfe;

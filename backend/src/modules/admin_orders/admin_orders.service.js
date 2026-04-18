@@ -53,6 +53,11 @@ const getOrders = async (queryParams) => {
         values.push(queryParams.toDate + " 23:59:59");
     }
 
+    if (queryParams.vendor) {
+        where.push("EXISTS (SELECT 1 FROM order_items oi2 WHERE oi2.order_id = o.id AND oi2.vendor_id = ?)");
+        values.push(queryParams.vendor);
+    }
+
     const baseJoin = `
         FROM orders o
         JOIN customers c ON c.id = o.customer_id
@@ -73,7 +78,7 @@ const getOrders = async (queryParams) => {
             COUNT(DISTINCT o.id)                                                              AS totalCount,
             SUM(CASE WHEN o.order_status = 'Pending'          THEN 1 ELSE 0 END)             AS pendingCount,
             SUM(CASE WHEN o.order_status = 'Confirmed'        THEN 1 ELSE 0 END)             AS confirmedCount,
-            SUM(CASE WHEN o.order_status = 'Processing'       THEN 1 ELSE 0 END)             AS processingCount,
+            SUM(CASE WHEN o.order_status = 'Shipped'          THEN 1 ELSE 0 END)             AS shippedCount,
             SUM(CASE WHEN o.order_status = 'Out for Delivery' THEN 1 ELSE 0 END)             AS outForDeliveryCount,
             SUM(CASE WHEN o.order_status = 'Delivered'        THEN 1 ELSE 0 END)             AS deliveredCount,
             SUM(CASE WHEN o.order_status = 'Cancelled'        THEN 1 ELSE 0 END)             AS cancelledCount
@@ -85,7 +90,7 @@ const getOrders = async (queryParams) => {
         total:          statsResult[0].totalCount,
         pending:        statsResult[0].pendingCount,
         confirmed:      statsResult[0].confirmedCount,
-        processing:     statsResult[0].processingCount,
+        shipped:        statsResult[0].shippedCount,
         outForDelivery: statsResult[0].outForDeliveryCount,
         delivered:      statsResult[0].deliveredCount,
         cancelled:      statsResult[0].cancelledCount

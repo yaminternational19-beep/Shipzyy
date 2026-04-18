@@ -196,7 +196,7 @@ const TABLES = [
                 coupon_code VARCHAR(50) NULL,
                 payment_method ENUM('Online', 'COD') DEFAULT 'COD',
                 payment_status ENUM('Pending', 'Paid', 'Failed') DEFAULT 'Pending',
-                order_status ENUM('Pending', 'Confirmed', 'Processing', 'Out for Delivery', 'Delivered', 'Cancelled') DEFAULT 'Pending',
+                order_status ENUM('Pending', 'Confirmed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled') DEFAULT 'Pending',
                 
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -286,6 +286,34 @@ const TABLES = [
                 INDEX idx_customer_id (customer_id),
                 INDEX idx_vendor_id (vendor_id),
                 INDEX idx_product_id (product_id)
+            );
+        `
+    },
+    {
+        name: "order_status_logs",
+        query: `
+            CREATE TABLE IF NOT EXISTS order_status_logs (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                order_id BIGINT NOT NULL,
+                
+                status ENUM(
+                    'Pending',
+                    'Confirmed',
+                    'Shipped',
+                    'Out for Delivery',
+                    'Delivered',
+                    'Cancelled'
+                ) NOT NULL,
+
+                display_title VARCHAR(100) NOT NULL,
+
+                changed_by_role ENUM('admin', 'vendor', 'system') DEFAULT 'system',
+                changed_by_id BIGINT NULL,
+
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+                FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+                INDEX idx_order_id (order_id)
             );
         `
     }

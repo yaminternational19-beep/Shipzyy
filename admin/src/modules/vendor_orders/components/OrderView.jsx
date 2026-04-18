@@ -12,7 +12,7 @@ const OrderView = ({ order, onClose }) => {
         const map = {
             Pending: { bg: '#fffbeb', color: '#b45309' },
             Confirmed: { bg: '#ecfdf5', color: '#059669' },
-            Processing: { bg: '#e0f2fe', color: '#0284c7' },
+            Shipped: { bg: '#e0f2fe', color: '#0284c7' },
             'Out for Delivery': { bg: '#fdf2f7', color: '#db2777' },
             Delivered: { bg: '#ecfdf5', color: '#10b981' },
             Cancelled: { bg: '#fef2f2', color: '#ef4444' },
@@ -125,8 +125,8 @@ const OrderView = ({ order, onClose }) => {
                                     <span className="info-value">{order.createdDate || '—'}</span>
                                 </div>
                                 <div className="view-info-item">
-                                    <label>Delivered Date</label>
-                                    <span className="info-value">{order.deliveredDate || '—'}</span>
+                                    <label>Status Date</label>
+                                    <span className="info-value">{order.statusDate || '—'}</span>
                                 </div>
                                 <div className="view-info-item">
                                     <label>Assigned Rider</label>

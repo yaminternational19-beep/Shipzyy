@@ -2,7 +2,7 @@ import React from 'react';
 import { Search, Filter, Calendar, X } from 'lucide-react';
 import ExportActions from '../../../components/common/ExportActions';
 
-const OrderFilters = ({ filters, setFilters, onClear, selectedCount, onExport }) => {
+const OrderFilters = ({ filters, setFilters, vendorOptions = [], onClear, selectedCount, onExport }) => {
 
     const handleChange = (key, value) => {
         setFilters(prev => ({ ...prev, [key]: value }));
@@ -36,12 +36,26 @@ const OrderFilters = ({ filters, setFilters, onClear, selectedCount, onExport })
                         <option value="">All Statuses</option>
                         <option value="Pending">Pending</option>
                         <option value="Confirmed">Confirmed</option>
-                        <option value="Processing">Processing</option>
+                        <option value="Shipped">Shipped</option>
                         <option value="Out for Delivery">Out for Delivery</option>
                         <option value="Delivered">Delivered</option>
                         <option value="Cancelled">Cancelled</option>
                     </select>
                 </div>
+
+                {/* Vendor Company Name */}
+                <select
+                    className="filter-select"
+                    value={filters.vendor || ''}
+                    onChange={(e) => handleChange('vendor', e.target.value)}
+                >
+                    <option value="">All Companies</option>
+                    {vendorOptions.map(v => (
+                        <option key={v.id} value={v.id}>
+                            {v.business_name || v.owner_name}
+                        </option>
+                    ))}
+                </select>
 
                 {/* Payment Status */}
                 <select

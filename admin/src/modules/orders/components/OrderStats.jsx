@@ -47,7 +47,7 @@ const OrderStats = ({ stats }) => {
                 </div>
                 <div className="stat-o-info">
                     <h3>{data.pending}</h3>
-                    <p>Pending / Processing</p>
+                    <p>Pending / Shipped</p>
                 </div>
             </div>
         </div>

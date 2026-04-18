@@ -73,6 +73,7 @@ export const getAllOrders = async (vendorId, queryParams = {}) => {
       o.payment_status,
       o.order_status as status,
       o.created_at,
+      o.updated_at,
       c.name as customerName,
       c.id as customerId,
       c.mobile as customerPhone,
@@ -110,7 +111,7 @@ export const getAllOrders = async (vendorId, queryParams = {}) => {
     status: row.status,
     deliveryAddress: `${row.address_line_1}, ${row.address_line_2 ? row.address_line_2 + ', ' : ''}${row.city}, ${row.state} - ${row.pincode}`,
     createdDate: formatDate(row.created_at),
-    deliveredDate: row.status === 'Delivered' ? formatDate(row.updated_at) : "-"
+    statusDate: formatDate(row.updated_at)
   }));
 
   // Fetch items for each order
@@ -137,7 +138,7 @@ export const getAllOrders = async (vendorId, queryParams = {}) => {
       total: totalRecords,
       pending: await getStatusCount(vendorId, 'Pending'),
       confirmed: await getStatusCount(vendorId, 'Confirmed'),
-      processing: await getStatusCount(vendorId, 'Processing'),
+      shipped: await getStatusCount(vendorId, 'Shipped'),
       out_for_delivery: await getStatusCount(vendorId, 'Out for Delivery'),
       delivered: await getStatusCount(vendorId, 'Delivered'),
       cancelled: await getStatusCount(vendorId, 'Cancelled')
@@ -175,6 +176,22 @@ export const updateOrderStatus = async (vendorId, orderId, status) => {
   await db.query(`
         UPDATE orders SET order_status = ?, updated_at = NOW() WHERE id = ?
     `, [status, orderId]);
+
+  // 2.1 Log the status update
+  const displayTitles = {
+      'Pending': 'Order Pending',
+      'Confirmed': 'Order Confirmed',
+      'Shipped': 'Order Shipped',
+      'Out for Delivery': 'Out for Delivery',
+      'Delivered': 'Order Delivered',
+      'Cancelled': 'Order Cancelled'
+  };
+  const displayTitle = displayTitles[status] || `Order ${status}`;
+
+  await db.query(`
+      INSERT INTO order_status_logs (order_id, status, display_title, changed_by_role, changed_by_id)
+      VALUES (?, ?, ?, 'vendor', ?)
+  `, [orderId, status, displayTitle, vendorId]);
 
   // 3. Clear relevant caches
   await removeByPattern(`vendor:orders:list:${vendorId}:*`);

@@ -5,6 +5,7 @@ import OrderFilters from './components/OrderFilters';
 import OrderList from './components/OrderList';
 import Toast from '../../components/common/Toast/Toast';
 import { getAdminOrdersApi, getAdminOrderByIdApi } from '../../api/admin_orders.api';
+import { getVendorsApi } from '../../api/vendor.api';
 import './Orders.css';
 
 const OrdersPage = () => {
@@ -18,6 +19,7 @@ const OrdersPage = () => {
         search: '',
         status: '',
         payment_status: '',
+        vendor: '',
         fromDate: '',
         toDate: ''
     });
@@ -28,6 +30,7 @@ const OrdersPage = () => {
         totalPages: 0
     });
     const [selectedRows, setSelectedRows] = useState([]);
+    const [vendorOptions, setVendorOptions] = useState([]);
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
     // View modal state
@@ -51,6 +54,7 @@ const OrdersPage = () => {
                 search: filters.search || undefined,
                 status: filters.status || undefined,
                 payment_status: filters.payment_status || undefined,
+                vendor: filters.vendor || undefined,
                 fromDate: filters.fromDate || undefined,
                 toDate: filters.toDate || undefined
             };
@@ -84,6 +88,20 @@ const OrdersPage = () => {
     useEffect(() => {
         fetchOrders();
     }, [fetchOrders]);
+
+    useEffect(() => {
+        const fetchVendors = async () => {
+            try {
+                const response = await getVendorsApi({ limit: 1000 });
+                if (response.data && response.data.data) {
+                    setVendorOptions(response.data.data.records || response.data.data);
+                }
+            } catch (error) {
+                console.error("Failed to load vendors for filter:", error);
+            }
+        };
+        fetchVendors();
+    }, []);
 
     // ─── View order detail ────────────────────────────────────────
     const handleAction = async (action, order) => {
@@ -160,10 +178,11 @@ const OrdersPage = () => {
                     <OrderFilters
                         filters={filters}
                         setFilters={handleFilterChange}
+                        vendorOptions={vendorOptions}
                         selectedCount={selectedRows.length}
                         onExport={handleExport}
                         onClear={() => handleFilterChange({
-                            search: '', status: '', payment_status: '', fromDate: '', toDate: ''
+                            search: '', status: '', payment_status: '', vendor: '', fromDate: '', toDate: ''
                         })}
                     />
 
