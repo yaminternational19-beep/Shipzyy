@@ -49,8 +49,9 @@ export const adminMenuItems = [
     { name: "Tickets", key: "TICKETS", icon: Ticket, path: "/tickets", group: "SUPPORT", description: "Manage support tickets" },
     { name: "Refunds", key: "REFUNDS", icon: Undo2, path: "/refunds", group: "SUPPORT", description: "Manage customer refunds" },
     
-    { name: "Payouts", key: "PAYOUTS", icon: CreditCard, path: "/payouts", group: "FINANCE", description: "Manage vendor payouts" },
-    { name: "Invoices", key: "INVOICES", icon: Receipt, path: "/invoices", group: "FINANCE", description: "Manage system invoices" },
+    // { name: "Payouts", key: "PAYOUTS", icon: CreditCard, path: "/payouts", group: "FINANCE", description: "Manage vendor payouts" },
+    { name: "Vendor Invoices", key: "VENDOR_INVOICES", icon: Receipt, path: "/invoices/vendor", group: "INVOICES", description: "Manage vendor invoices" },
+    { name: "Customer Invoices", key: "CUSTOMER_INVOICES", icon: Receipt, path: "/invoices/customer", group: "INVOICES", description: "Manage customer invoices" },
    
     { name: "Manage Content", key: "SETTINGS", icon: FileText, path: "/settings/manage-content", group: "SETTINGS" },
     { name: "Announcements", key: "SETTINGS", icon: BellRing, path: "/settings/announcements", group: "SETTINGS" },
@@ -65,6 +66,6 @@ export const adminSidebarGroups = {
     CUSTOMERS: "Customers",
     RIDERS: "Riders",
     SUPPORT: "Support",
-    FINANCE: "Finance",
+    INVOICES: "Invoices",
     SETTINGS: "Settings"
 };

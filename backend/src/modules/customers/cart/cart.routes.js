@@ -16,4 +16,7 @@ router.post("/cart", optionalCustomerAuth, validate(addToCartSchema), cartContro
 // Remove items from cart (Using optional auth to return custom login message in controller)
 router.delete("/cart", optionalCustomerAuth, validate(removeFromCartSchema), cartController.removeItemFromCart);
 
+// Clear all cart items
+router.delete("/cart/all", optionalCustomerAuth, cartController.clearCart);
+
 export default router;

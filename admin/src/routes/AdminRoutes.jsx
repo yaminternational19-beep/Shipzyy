@@ -22,6 +22,9 @@ import { DeliveryChargesPage } from '../modules/delivery_charges';
 import VendorOwnerDashboard from '../modules/dashboard/dashboards/VendorOwnerDashboard';
 import ReviewsPage from '../modules/reviews/ReviewsPage';
 import ComingSoon from '../pages/ComingSoon';
+import VendorInvoices from '../modules/invoices/VendorInvoices';
+import CustomerInvoices from '../modules/invoices/CustomerInvoices';
+import CustomerInvoiceHistory from '../modules/invoices/CustomerInvoiceHistory';
 
 export const AdminRoutes = [
     // ADMIN CONTROL
@@ -208,21 +211,39 @@ export const AdminRoutes = [
     />,
 
     // FINANCE
+    // <Route
+    //     key="admin-payouts"
+    //     path="/payouts"
+    //     element={
+    //         <ProtectedRoute allowedRoles={["SUPER_ADMIN", "SUB_ADMIN"]}>
+    //             <ComingSoon title="Admin Payouts" />
+    //         </ProtectedRoute>
+    //     }
+    // />,
     <Route
-        key="admin-payouts"
-        path="/payouts"
+        key="admin-vendor-invoices"
+        path="/invoices/vendor"
         element={
             <ProtectedRoute allowedRoles={["SUPER_ADMIN", "SUB_ADMIN"]}>
-                <ComingSoon title="Admin Payouts" />
+                <VendorInvoices />
             </ProtectedRoute>
         }
     />,
     <Route
-        key="admin-invoices"
-        path="/invoices"
+        key="admin-customer-invoices"
+        path="/invoices/customer"
         element={
             <ProtectedRoute allowedRoles={["SUPER_ADMIN", "SUB_ADMIN"]}>
-                <ComingSoon title="Admin Invoices" />
+                <CustomerInvoices />
+            </ProtectedRoute>
+        }
+    />,
+    <Route
+        key="admin-customer-invoice-history"
+        path="/invoices/customer/:customerId/history"
+        element={
+            <ProtectedRoute allowedRoles={["SUPER_ADMIN", "SUB_ADMIN"]}>
+                <CustomerInvoiceHistory />
             </ProtectedRoute>
         }
     />,

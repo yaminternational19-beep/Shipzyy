@@ -10,8 +10,7 @@ import { VendorStaffManagement } from '../modules/vendor_staff';
 import VendorSettingsPage from '../modules/vendor_settings/VendorSettingsPage';
 import VendorCustomersPage from '../modules/vendor_customers/VendorCustomersPage';
 import VendorReviewsPage from '../modules/vendor_reviews/VendorReviewsPage';
-
-// Placeholder for missing modules
+import VendorInvoices from '../modules/vendor_invoices/VendorInvoices';
 import ComingSoon from '../pages/ComingSoon';
 
 export const VendorRoutes = [
@@ -65,21 +64,24 @@ export const VendorRoutes = [
     />,
 
     // FINANCE
-    <Route
-        key="vendor-payouts"
-        path="/vendor-payouts"
-        element={
-            <ProtectedRoute allowedRoles={["VENDOR_OWNER", "VENDOR_STAFF"]}>
-                <ComingSoon title="Vendor Payouts" />
-            </ProtectedRoute>
-        }
-    />,
+    // NOTE: Payouts feature is inactive - commented out until payment gateway is ready
+    // <Route
+    //     key="vendor-payouts"
+    //     path="/vendor-payouts"
+    //     element={
+    //         <ProtectedRoute allowedRoles={["VENDOR_OWNER", "VENDOR_STAFF"]}>
+    //             <ComingSoon title="Vendor Payouts" />
+    //         </ProtectedRoute>
+    //     }
+    // />,
+
+    // Vendor Invoice: Shows only THIS vendor's own order-based invoices
     <Route
         key="vendor-invoices"
         path="/vendor-invoices"
         element={
             <ProtectedRoute allowedRoles={["VENDOR_OWNER", "VENDOR_STAFF"]}>
-                <ComingSoon title="Vendor Invoices" />
+                <VendorInvoices />
             </ProtectedRoute>
         }
     />,

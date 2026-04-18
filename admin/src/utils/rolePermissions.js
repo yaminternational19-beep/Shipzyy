@@ -8,7 +8,8 @@ export const rolePermissions = {
         "SUBCATEGORIES",
         "BRANDS",
         "PRODUCTS",
-        "RIDERS",
+        // "RIDERS",
+        // "RIDER_TERMINATIONS",
         "CUSTOMERS",
         "SUSPENDED_CUSTOMERS",
         "TERMINATED_CUSTOMERS",
@@ -19,9 +20,9 @@ export const rolePermissions = {
         "COUPONS",
         "DELIVERY_CHARGES",
         "REPORTS",
-        "PAYOUTS",
-        "INVOICES",
-        "RIDER_TERMINATIONS",
+        "VENDOR_INVOICES",
+        "CUSTOMER_INVOICES",
+        
         "REVIEWS"
     ],
 
@@ -29,11 +30,11 @@ export const rolePermissions = {
         "DASHBOARD",
         "VENDOR_ORDERS",
         "VENDOR_PRODUCTS",
-        "REPORTS",
+        "VENDOR_REVIEWS",
         "STAFF",
         "VENDOR_SUPPORT",
-        "PAYOUTS",
-        "INVOICES",
+        // "PAYOUTS",  // Payout feature is inactive - commented out
+        "INVOICES",   // Matches vendorMenuConfig.js key → path: /vendor-invoices
         "CUSTOMERS",
         "ANNOUNCEMENTS",
         "ABOUT_US",

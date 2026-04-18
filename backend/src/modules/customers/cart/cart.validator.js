@@ -12,8 +12,15 @@ export const addToCartSchema = Joi.object({
 
 
 export const removeFromCartSchema = Joi.object({
+  cart_id: Joi.number().integer().messages({
+    "number.base": "Cart ID must be a number",
+  }),
+  product_id: Joi.number().integer().messages({
+    "number.base": "Product ID must be a number",
+  }),
+  quantity: Joi.number().integer().min(1).default(1),
   cart_ids: Joi.array().items(Joi.number().integer()).messages({
     "array.base": "Cart IDs must be an array",
   }),
   clear_all: Joi.boolean(),
-}).or('cart_ids', 'clear_all'); // Ensures at least one of these is provided
+}).or('cart_id', 'product_id', 'cart_ids', 'clear_all'); // Ensures at least one of these is provided

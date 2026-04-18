@@ -102,10 +102,30 @@ const getWishlist = async (customerId) => {
     // 3. Store the result in Redis for future requests (TTL: 1 hour)
     await setToCache(cacheKey, result, 3600);
 
-    return result;
+}
+
+
+
+/**
+ * Remove all products from the customer's wishlist
+ */
+const clearWishlist = async (customerId) => {
+    await db.query(
+        "DELETE FROM customers_wishlist WHERE customer_id = ?",
+        [customerId]
+    );
+
+    // Invalidate Redis cache for this customer's wishlist
+    await removeFromCache(`customer:wishlist:${customerId}`);
+
+    return { 
+        status: "success",
+        message: "All products removed from wishlist"
+    };
 };
 
 export default {
     toggleWishlist,
-    getWishlist
+    getWishlist,
+    clearWishlist
 };

@@ -155,19 +155,58 @@ export const addToCart = async (customerId, { product_id, quantity }) => {
 };
 
 
-export const removeFromCart = async (customerId, { cart_ids, clear_all }) => {
+export const removeFromCart = async (customerId, { cart_id, product_id, quantity, cart_ids, clear_all }) => {
   const cacheKey = `customer:cart:${customerId}`;
+
+  // 1. Handle Clear All
   if (clear_all === true || clear_all === "true") {
-    await db.execute(`DELETE FROM customers_cart WHERE customer_id = ?`, [customerId]);
-    await removeFromCache(cacheKey);
-    return { message: "All items removed from cart" };
+    return await clearCart(customerId);
   }
 
+  // 2. Handle Decrement by Cart ID or Product ID
+  if (cart_id || product_id) {
+    const decQty = parseInt(quantity) || 1;
+    
+    // Check if item exists
+    let existingQuery, queryParams;
+    if (cart_id) {
+        existingQuery = `SELECT id, quantity FROM customers_cart WHERE customer_id = ? AND id = ?`;
+        queryParams = [customerId, cart_id];
+    } else {
+        existingQuery = `SELECT id, quantity FROM customers_cart WHERE customer_id = ? AND product_id = ?`;
+        queryParams = [customerId, product_id];
+    }
+
+    const [existing] = await db.execute(existingQuery, queryParams);
+
+    if (existing.length === 0) {
+      throw new ApiError(404, "Item not found in your cart");
+    }
+
+    const currentQty = existing[0].quantity;
+    const targetCartId = existing[0].id;
+
+    if (currentQty <= decQty) {
+      // Remove completely if decrementing results in 0 or less
+      await db.execute(`DELETE FROM customers_cart WHERE id = ?`, [targetCartId]);
+      await removeFromCache(cacheKey);
+      return { message: "Item removed from cart", status: "removed" };
+    } else {
+      // Reduce quantity
+      await db.execute(
+        `UPDATE customers_cart SET quantity = quantity - ? WHERE id = ?`,
+        [decQty, targetCartId]
+      );
+      await removeFromCache(cacheKey);
+      return { message: "Cart quantity reduced", status: "reduced", quantity: currentQty - decQty };
+    }
+  }
+
+  // 3. Handle Remove by Cart IDs (Bulk remove)
   if (!cart_ids || !Array.isArray(cart_ids) || cart_ids.length === 0) {
-    throw new ApiError(400, "Please provide cart item IDs to remove");
+    throw new ApiError(400, "Please provide cart_id, product_id, or cart_ids array");
   }
 
-  // Delete specific IDs
   const placeholders = cart_ids.map(() => "?").join(",");
   const [result] = await db.execute(
     `DELETE FROM customers_cart WHERE customer_id = ? AND id IN (${placeholders})`,
@@ -180,3 +219,14 @@ export const removeFromCart = async (customerId, { cart_ids, clear_all }) => {
     removedCount: result.affectedRows 
   };
 };
+
+/**
+ * Remove all items from the customer's cart
+ */
+export const clearCart = async (customerId) => {
+  const cacheKey = `customer:cart:${customerId}`;
+  await db.execute(`DELETE FROM customers_cart WHERE customer_id = ?`, [customerId]);
+  await removeFromCache(cacheKey);
+  return { status: "success", message: "All items removed from cart" };
+};
+

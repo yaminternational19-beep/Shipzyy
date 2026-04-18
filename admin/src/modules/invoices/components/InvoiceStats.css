@@ -1,0 +1,55 @@
+/* ============================================
+   InvoiceStats.css — Stat card grid styles
+   ============================================ */
+
+.inv-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+}
+
+.inv-stat-card {
+    background: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e2e8f0;
+}
+
+.inv-stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.inv-stat-icon.primary  { background: #e0e7ff; color: #4f46e5; }
+.inv-stat-icon.success  { background: #dcfce7; color: #16a34a; }
+.inv-stat-icon.warning  { background: #fef9c3; color: #ca8a04; }
+.inv-stat-icon.error    { background: #fee2e2; color: #dc2626; }
+
+.inv-stat-label {
+    margin: 0;
+    color: #64748b;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.inv-stat-value {
+    margin: 4px 0 0 0;
+    color: #1e293b;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.inv-stat-sub {
+    margin: 4px 0 0 0;
+    color: #94a3b8;
+    font-size: 0.75rem;
+}

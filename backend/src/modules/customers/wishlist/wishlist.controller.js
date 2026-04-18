@@ -27,7 +27,24 @@ export const getWishlist = asyncHandler(async (req, res) => {
     return ApiResponse.success(res, message, items);
 });
 
+
+
+/**
+ * Clear all products from the authenticated customer's wishlist
+ */
+const clearWishlist = asyncHandler(async (req, res) => {
+    const customerId = req.user?.id;
+    
+    if (!customerId) {
+        return ApiResponse.error(res, "Please login first to clear your wishlist", 401);
+    }
+
+    const result = await wishlistService.clearWishlist(customerId);
+    return ApiResponse.success(res, result.message, result);
+});
+
 export default {
     toggleWishlist,
-    getWishlist
+    getWishlist,
+    clearWishlist
 };

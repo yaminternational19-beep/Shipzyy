@@ -39,10 +39,13 @@ export const removeItemFromCart = asyncHandler(async (req, res) => {
     return ApiResponse.error(res, "Please login first to remove items from cart", 401);
   }
 
-  const { cart_ids, clear_all } = req.body;
+  const { cart_id, cart_ids, product_id, quantity, clear_all } = req.body;
 
   const result = await cartService.removeFromCart(customerId, {
+    cart_id,
     cart_ids,
+    product_id,
+    quantity,
     clear_all: clear_all === true || clear_all === "true"
   });
 
@@ -50,9 +53,24 @@ export const removeItemFromCart = asyncHandler(async (req, res) => {
 });
 
 
+/**
+ * Clear all products from the authenticated customer's cart
+ */
+export const clearCart = asyncHandler(async (req, res) => {
+  const customerId = req.user?.id;
+  
+  if (!customerId) {
+    return ApiResponse.error(res, "Please login first to clear your cart", 401);
+  }
+
+  const result = await cartService.clearCart(customerId);
+  return ApiResponse.success(res, result.message, result);
+});
+
 
 export default {
     getCart,
     addItemToCart,
-    removeItemFromCart
+    removeItemFromCart,
+    clearCart
 };
