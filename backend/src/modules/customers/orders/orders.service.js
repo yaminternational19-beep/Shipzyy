@@ -497,7 +497,30 @@ export const placeOrder = async (customerId, payload) => {
       );
     }
 
-    // 8. If Coupon changed/used, update logic (Note: we don't increment used_count here if same order update)
+    // 8. Stock Management: Reduce stock and increment sold_count
+    for (const item of cartItems) {
+        // Find the variant for this product and reduce its stock
+        const [stockUpdate] = await connection.query(
+            `UPDATE product_variants 
+             SET stock = GREATEST(0, stock - ?), updated_at = NOW()
+             WHERE product_id = ? AND stock >= ?
+             LIMIT 1`,
+            [item.quantity, item.product_id, item.quantity]
+        );
+
+        if (stockUpdate.affectedRows === 0) {
+            // If stock was enough during cart check but not now (race condition)
+            throw new ApiError(400, `Sorry, one or more items just went out of stock.`);
+        }
+
+        // Increment product's global sold_count
+        await connection.query(
+            `UPDATE products SET sold_count = sold_count + ?, updated_at = NOW() WHERE id = ?`,
+            [item.quantity, item.product_id]
+        );
+    }
+
+    // 9. If Coupon changed/used, update logic (Note: we don't increment used_count here if same order update)
     // For simplicity, we assume usage count is based on 'Placed/Completed' orders.
     // If you want strict usage count on placement:
     if (coupon_code && summary.coupon_applied) {
@@ -532,9 +555,11 @@ export const placeOrder = async (customerId, payload) => {
   }
 };
 
+
 /**
  * Get full order history for a customer
  */
+
 export const getOrderHistory = async (customerId, queryParams = {}) => {
   const { page, limit, skip } = getPagination(queryParams);
 
@@ -570,9 +595,11 @@ export const getOrderHistory = async (customerId, queryParams = {}) => {
   };
 };
 
+
 /**
  * Get granular details for one specific order
  */
+
 export const getOrderDetails = async (customerId, orderId) => {
   const orderQuery = `
     SELECT 
@@ -626,7 +653,4 @@ export const getOrderDetails = async (customerId, orderId) => {
     }))
   };
 };
-
-
-
 

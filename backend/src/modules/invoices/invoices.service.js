@@ -116,10 +116,10 @@ export const createInvoicesForOrder = async (orderId) => {
         }
 
         await connection.commit();
-        console.log(`✅ Invoices generated for order ${orderId}`);
+        // console.log(`✅ Invoices generated for order ${orderId}`);
     } catch (error) {
         await connection.rollback();
-        console.error(`❌ Invoice generation failed: ${error.message}`);
+        // console.error(`❌ Invoice generation failed: ${error.message}`);
         throw error;
     } finally {
         connection.release();
