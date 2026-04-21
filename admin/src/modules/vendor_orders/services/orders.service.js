@@ -1,4 +1,4 @@
-import { getVendorOrdersApi, updateVendorOrderStatusApi } from "../../../api/vendor_orders.api";
+import { getVendorOrdersApi, updateVendorOrderStatusApi, updateVendorOrderPaymentStatusApi } from "../../../api/vendor_orders.api";
 
 export const fetchOrders = async (params) => {
     try {
@@ -20,6 +20,20 @@ export const updateOrderStatus = async (orderId, newStatus) => {
             return response.data;
         }
         throw new Error(response.data.message || "Failed to update order status");
+    } catch (error) {
+        console.error("Orders Service Error:", error);
+        throw error;
+    }
+};
+
+export const updatePaymentStatus = async (orderId, newStatus) => {
+    try {
+        // This will call the backend API we just prepared
+        const response = await updateVendorOrderPaymentStatusApi(orderId, newStatus);
+        if (response.data.success) {
+            return response.data;
+        }
+        throw new Error(response.data.message || "Failed to update payment status");
     } catch (error) {
         console.error("Orders Service Error:", error);
         throw error;

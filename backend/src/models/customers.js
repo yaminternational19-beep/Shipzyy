@@ -195,7 +195,7 @@ const TABLES = [
                 
                 coupon_code VARCHAR(50) NULL,
                 payment_method ENUM('Online', 'COD') DEFAULT 'COD',
-                payment_status ENUM('Pending', 'Paid', 'Failed') DEFAULT 'Pending',
+                payment_status ENUM('Pending', 'Paid', 'Failed', 'Refunded') DEFAULT 'Pending',
                 order_status ENUM('Pending', 'Confirmed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled') DEFAULT 'Pending',
                 
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

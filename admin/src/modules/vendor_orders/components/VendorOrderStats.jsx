@@ -7,14 +7,17 @@ const VendorOrderStats = ({ stats }) => {
         total: 0,
         pending: 0,
         assigned: 0,
-        delivered: 0
+        delivered: 0,
+        paid: 0,
+        unpaid: 0
     };
 
     const config = [
         { label: 'Total Orders', value: data.total, icon: <ShoppingBag size={24} />, bg: '#e0e7ff', color: '#4f46e5' },
         { label: 'Pending', value: data.pending, icon: <Clock size={24} />, bg: '#fffbeb', color: '#b45309' },
-        { label: 'Assigned', value: data.assigned, icon: <Truck size={24} />, bg: '#eff6ff', color: '#1d4ed8' },
-        { label: 'Completed', value: data.delivered, icon: <CheckCircle size={24} />, bg: '#dcfce7', color: '#15803d' }
+        { label: 'Completed', value: data.delivered, icon: <CheckCircle size={24} />, bg: '#dcfce7', color: '#15803d' },
+        { label: 'Paid', value: data.paid, icon: <CheckCircle size={24} />, bg: '#ecfdf5', color: '#10b981' },
+        // { label: 'Unpaid', value: data.unpaid, icon: <Clock size={24} />, bg: '#fff7ed', color: '#f97316' }
     ];
 
     return (

@@ -24,7 +24,9 @@ const VendorOrdersPage = () => {
                 total: data.stats.total || 0,
                 pending: data.stats.pending || 0,
                 assigned: (data.stats.confirmed || 0) + (data.stats.shipped || 0) + (data.stats.out_for_delivery || 0),
-                delivered: data.stats.delivered || 0
+                delivered: data.stats.delivered || 0,
+                paid: data.stats.paid || 0,
+                unpaid: data.stats.unpaid || 0
             });
         }
     };
@@ -36,6 +38,16 @@ const VendorOrdersPage = () => {
             setRefreshKey(prev => prev + 1);
         } catch (error) {
             showToast(error.message || "Failed to update status", "error");
+        }
+    };
+
+    const handleUpdatePaymentStatus = async (orderId, newStatus) => {
+        try {
+            const response = await ordersService.updatePaymentStatus(orderId, newStatus);
+            showToast(response.message);
+            setRefreshKey(prev => prev + 1);
+        } catch (error) {
+            showToast(error.message || "Failed to update payment status", "error");
         }
     };
 
@@ -69,6 +81,7 @@ const VendorOrdersPage = () => {
                     key={refreshKey}
                     onAssignRider={setAssigningOrder}
                     onUpdateStatus={handleUpdateStatus}
+                    onUpdatePaymentStatus={handleUpdatePaymentStatus}
                     onFetchSuccess={handleFetchSuccess}
                     showToast={showToast}
                 />

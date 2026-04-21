@@ -310,7 +310,7 @@ const VendorProductsPage = () => {
         XLSX.utils.book_append_sheet(workbook, worksheet, "Bulk Import Template");
         
         // Final Download
-        XLSX.writeFile(workbook, "Shipzzy_Bulk_Product_Template.xlsx");
+        XLSX.writeFile(workbook, "shipzyy_Bulk_Product_Template.xlsx");
         showToast("Bulk Excel Template Downloaded!", "success");
     };
 

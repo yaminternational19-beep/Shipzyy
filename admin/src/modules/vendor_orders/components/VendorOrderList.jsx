@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, UserCheck, AlertCircle, FileText, Search, Filter, CheckSquare, Square, ChevronLeft, ChevronRight, Loader2, Calendar, X } from 'lucide-react';
+import { Eye, UserCheck, AlertCircle, FileText, Search, Filter, CheckSquare, Square, ChevronLeft, ChevronRight, Loader2, Calendar, X, Package, CreditCard } from 'lucide-react';
 import ExportActions from '../../../components/common/ExportActions';
 import { exportOrdersToPDF, exportOrdersToExcel } from '../services/order_export.service';
 import * as ordersService from '../services/orders.service';
 import OrderView from './OrderView';
 
-const VendorOrderList = ({ onAssignRider, onUpdateStatus, onFetchSuccess, showToast }) => {
+const VendorOrderList = ({ onAssignRider, onUpdateStatus, onUpdatePaymentStatus, onFetchSuccess, showToast }) => {
     const [orders, setOrders] = useState([]);
     const [selectedRows, setSelectedRows] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -82,8 +82,8 @@ const VendorOrderList = ({ onAssignRider, onUpdateStatus, onFetchSuccess, showTo
     };
 
     const handleExportDownload = (type, singleOrder = null) => {
-        const dataToExport = singleOrder 
-            ? [singleOrder] 
+        const dataToExport = singleOrder
+            ? [singleOrder]
             : orders.filter(o => selectedRows.includes(o.id));
 
         if (dataToExport.length === 0) {
@@ -233,10 +233,10 @@ const VendorOrderList = ({ onAssignRider, onUpdateStatus, onFetchSuccess, showTo
                 </div>
 
                 <div className="filter-actions" style={{ marginLeft: 'auto' }}>
-                    <ExportActions 
-                        selectedCount={selectedRows.length} 
-                        onExport={showToast} 
-                        onDownload={handleExportDownload} 
+                    <ExportActions
+                        selectedCount={selectedRows.length}
+                        onExport={showToast}
+                        onDownload={handleExportDownload}
                     />
                 </div>
             </div>
@@ -253,133 +253,143 @@ const VendorOrderList = ({ onAssignRider, onUpdateStatus, onFetchSuccess, showTo
                                     }
                                 </div>
                             </th>
-                        <th style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>IMAGE</th>
-                        <th style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>ORDER & PRODUCT</th>
-                        <th style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>CUSTOMER</th>
-                        <th style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>CONTACT</th>
-                        <th style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>QTY</th>
-                        <th style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>TOTAL</th>
-                        <th style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>PAYMENT</th>
-                        <th style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>STATUS</th>
-                        <th style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>RIDER</th>
-                        <th style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>ADDRESS</th>
-                        <th style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>PLACED</th>
-                        <th style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', whiteSpace: 'nowrap' }}>STATUS DATE</th>
-                        <th style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>ACTIONS</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {orders.map((order) => (
-                        <tr key={order.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.2s' }} className="table-row-hover">
-                            <td style={{ padding: '16px 12px' }}>
-                                <div onClick={() => handleSelectOne(order.id)} style={{ cursor: 'pointer' }}>
-                                    {selectedRows.includes(order.id)
-                                        ? <CheckSquare size={17} color="var(--primary-color)" />
-                                        : <Square size={17} color="#94a3b8" />
-                                    }
-                                </div>
-                            </td>
-                            <td style={{ padding: '16px 12px', textAlign: 'center' }}>
-                                <img
-                                    src={order.productImage || order.items[0]?.image}
-                                    alt="Product"
-                                    style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover', background: '#f1f5f9' }}
-                                />
-                            </td>
-                            <td style={{ padding: '16px 12px', textAlign: 'center' }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
-                                    <span style={{ fontWeight: 700, color: '#4f46e5', fontSize: '0.8rem' }}>
-                                        #{order.orderNumber}
-                                    </span>
-                                    <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.9rem', lineHeight: 1.2 }}>
-                                        {order.items[0]?.name}
-                                    </span>
-                                    {order.items.length > 1 && (
-                                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#6366f1' }}>
-                                            (+{order.items.length - 1} more items)
-                                        </span>
-                                    )}
-                                </div>
-                            </td>
-                            <td style={{ padding: '16px 12px', textAlign: 'center' }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                    <span style={{ fontWeight: 600, color: '#334155' }}>{order.customerName}</span>
-                                    <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{order.customerId || 'ID: N/A'}</span>
-                                </div>
-                            </td>
-                            <td style={{ padding: '16px 12px', textAlign: 'center' }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                    <span style={{ fontSize: '0.85rem', color: '#334155', fontWeight: 500 }}>{order.customerPhone}</span>
-                                    <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{order.customerEmail || 'No Email'}</span>
-                                </div>
-                            </td>
-                            <td style={{ padding: '16px 12px', textAlign: 'center', fontWeight: 600 }}>{order.productsCount}</td>
-                            <td style={{ padding: '16px 12px', textAlign: 'center', fontWeight: 700, color: '#4f46e5' }}>{formatCurrency(order.totalAmount)}</td>
-                            <td style={{ padding: '16px 12px', textAlign: 'center' }}>
-                                {getPaymentStatusBadge(order.paymentStatus)}
-                            </td>
-                            <td style={{ padding: '16px 12px', textAlign: 'center' }}>
-                                {getStatusBadge(order.status)}
-                            </td>
-                            <td style={{ padding: '16px 12px', textAlign: 'center' }}>
-                                {order.assignedRider ? (
-                                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'center' }}>
-                                        <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#f59e0b', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 700 }}>
-                                            {order.assignedRider.charAt(0)}
-                                        </div>
-                                        <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
-                                            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#334155' }}>{order.assignedRider}</span>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic' }}>Unassigned</span>
-                                )}
-                            </td>
-                            <td style={{ padding: '16px 12px', textAlign: 'center' }}>
-                                <span style={{ fontSize: '0.85rem', color: '#64748b', display: 'block', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: '0 auto' }} title={order.deliveryAddress}>
-                                    {order.deliveryAddress}
-                                </span>
-                            </td>
-                            <td style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.8rem', color: '#64748b' }}>
-                                {order.createdDate}
-                            </td>
-                            <td style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.8rem', color: '#64748b' }}>
-                                {order.statusDate || '-'}
-                            </td>
-                            <td style={{ padding: '16px 12px', textAlign: 'center' }}>
-                                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', alignItems: 'center' }}>
-                                    {order.status !== 'Delivered' && order.status !== 'Cancelled' && (
-                                        <select
-                                            onChange={(e) => onUpdateStatus(order.id, e.target.value)}
-                                            value=""
-                                            style={{
-                                                padding: '6px',
-                                                borderRadius: '8px',
-                                                border: '1px solid #cbd5e1',
-                                                fontSize: '0.75rem',
-                                                cursor: 'pointer',
-                                                outline: 'none',
-                                                background: '#f8fafc'
-                                            }}
-                                        >
-                                            <option value="" disabled>Update Status</option>
-                                            {getNextStatuses(order.status).map(status => (
-                                                <option key={status} value={status}>{status}</option>
-                                            ))}
-                                        </select>
-                                    )}
-                                    <button
-                                        onClick={() => setViewingOrder(order)}
-                                        style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white', color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                                        title="View Details"
-                                    >
-                                        <Eye size={16} />
-                                    </button>
-                                </div>
-                            </td>
+                            <th style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>IMAGE</th>
+                            <th style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>ORDER & PRODUCT</th>
+                            <th style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>CUSTOMER</th>
+                            <th style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>CONTACT</th>
+                            <th style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>QTY</th>
+                            <th style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>TOTAL</th>
+                            <th style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>PAYMENT</th>
+                            <th style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>STATUS</th>
+                            <th style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>RIDER</th>
+                            <th style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>ADDRESS</th>
+                            <th style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>PLACED</th>
+                            <th style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', whiteSpace: 'nowrap' }}>STATUS DATE</th>
+                            <th style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>ACTIONS</th>
                         </tr>
-                    ))}
-                </tbody>
+                    </thead>
+                    <tbody>
+                        {orders.map((order) => (
+                            <tr key={order.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.2s' }} className="table-row-hover">
+                                <td style={{ padding: '16px 12px' }}>
+                                    <div onClick={() => handleSelectOne(order.id)} style={{ cursor: 'pointer' }}>
+                                        {selectedRows.includes(order.id)
+                                            ? <CheckSquare size={17} color="var(--primary-color)" />
+                                            : <Square size={17} color="#94a3b8" />
+                                        }
+                                    </div>
+                                </td>
+                                <td style={{ padding: '16px 12px', textAlign: 'center' }}>
+                                    <img
+                                        src={order.productImage || order.items[0]?.image}
+                                        alt="Product"
+                                        style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover', background: '#f1f5f9' }}
+                                    />
+                                </td>
+                                <td style={{ padding: '16px 12px', textAlign: 'center' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
+                                        <span style={{ fontWeight: 700, color: '#4f46e5', fontSize: '0.8rem' }}>
+                                            #{order.orderNumber}
+                                        </span>
+                                        <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.9rem', lineHeight: 1.2 }}>
+                                            {order.items[0]?.name}
+                                        </span>
+                                        {order.items.length > 1 && (
+                                            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#6366f1' }}>
+                                                (+{order.items.length - 1} more items)
+                                            </span>
+                                        )}
+                                    </div>
+                                </td>
+                                <td style={{ padding: '16px 12px', textAlign: 'center' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                        <span style={{ fontWeight: 600, color: '#334155' }}>{order.customerName}</span>
+                                        <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{order.customerId || 'ID: N/A'}</span>
+                                    </div>
+                                </td>
+                                <td style={{ padding: '16px 12px', textAlign: 'center' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                        <span style={{ fontSize: '0.85rem', color: '#334155', fontWeight: 500 }}>{order.customerPhone}</span>
+                                        <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{order.customerEmail || 'No Email'}</span>
+                                    </div>
+                                </td>
+                                <td style={{ padding: '16px 12px', textAlign: 'center', fontWeight: 600 }}>{order.productsCount}</td>
+                                <td style={{ padding: '16px 12px', textAlign: 'center', fontWeight: 700, color: '#4f46e5' }}>{formatCurrency(order.totalAmount)}</td>
+                                <td style={{ padding: '16px 12px', textAlign: 'center' }}>
+                                    {getPaymentStatusBadge(order.paymentStatus)}
+                                </td>
+                                <td style={{ padding: '16px 12px', textAlign: 'center' }}>
+                                    {getStatusBadge(order.status)}
+                                </td>
+                                <td style={{ padding: '16px 12px', textAlign: 'center' }}>
+                                    {order.assignedRider ? (
+                                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'center' }}>
+                                            <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#f59e0b', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 700 }}>
+                                                {order.assignedRider.charAt(0)}
+                                            </div>
+                                            <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
+                                                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#334155' }}>{order.assignedRider}</span>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic' }}>Unassigned</span>
+                                    )}
+                                </td>
+                                <td style={{ padding: '16px 12px', textAlign: 'center' }}>
+                                    <span style={{ fontSize: '0.85rem', color: '#64748b', display: 'block', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: '0 auto' }} title={order.deliveryAddress}>
+                                        {order.deliveryAddress}
+                                    </span>
+                                </td>
+                                <td style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.8rem', color: '#64748b' }}>
+                                    {order.createdDate}
+                                </td>
+                                <td style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.8rem', color: '#64748b' }}>
+                                    {order.statusDate || '-'}
+                                </td>
+                                <td style={{ padding: '16px 12px', textAlign: 'center' }}>
+                                        <div className="action-buttons-group">
+                                            <div className="action-select-wrapper status-update">
+                                                <Package size={14} className="select-icon" />
+                                                <select
+                                                    onChange={(e) => onUpdateStatus(order.id, e.target.value)}
+                                                    value={order.status}
+                                                    className="premium-select"
+                                                >
+                                                    <option value="Pending">Pending</option>
+                                                    <option value="Confirmed">Confirmed</option>
+                                                    <option value="Shipped">Shipped</option>
+                                                    <option value="Out for Delivery">Out for Delivery</option>
+                                                    <option value="Delivered">Delivered</option>
+                                                    <option value="Cancelled">Cancelled</option>
+                                                </select>
+                                            </div>
+
+                                            <div className="action-select-wrapper payment-update">
+                                                <CreditCard size={14} className="select-icon" />
+                                                <select
+                                                    onChange={(e) => onUpdatePaymentStatus(order.id, e.target.value)}
+                                                    className={`premium-select payment ${order.paymentStatus === 'Paid' ? 'is-paid' : ''}`}
+                                                    value={order.paymentStatus || 'Pending'}
+                                                >
+                                                    <option value="Pending">Pending</option>
+                                                    <option value="Paid">Mark as Paid</option>
+                                                    <option value="Failed">Mark as Failed</option>
+                                                    <option value="Refunded">Refunded</option>
+                                                </select>
+                                            </div>
+
+                                            <button
+                                                onClick={() => setViewingOrder(order)}
+                                                className="action-view-btn"
+                                                title="View Details"
+                                            >
+                                                <Eye size={16} />
+                                            </button>
+                                        </div>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
                 </table>
             </div>
 
@@ -412,6 +422,87 @@ const VendorOrderList = ({ onAssignRider, onUpdateStatus, onFetchSuccess, showTo
             <style>{`
                 .table-row-hover:hover { background: #f8fafc; }
                 .o-table-wrapper { background: white; border-radius: 16px; overflow: hidden; }
+                
+                .action-buttons-group {
+                    display: flex;
+                    gap: 8px;
+                    justify-content: center;
+                    align-items: center;
+                }
+
+                .action-select-wrapper {
+                    position: relative;
+                    display: flex;
+                    align-items: center;
+                }
+
+                .select-icon {
+                    position: absolute;
+                    left: 10px;
+                    pointer-events: none;
+                    color: #64748b;
+                }
+
+                .premium-select {
+                    padding: 8px 12px 8px 30px;
+                    border-radius: 8px;
+                    border: 1px solid #e2e8f0;
+                    font-size: 0.75rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    outline: none;
+                    background: #f8fafc;
+                    color: #334155;
+                    transition: all 0.2s;
+                    appearance: none;
+                    -webkit-appearance: none;
+                    min-width: 130px;
+                }
+
+                .premium-select:hover {
+                    border-color: #cbd5e1;
+                    background: white;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                }
+
+                .premium-select.payment {
+                    color: #10b981;
+                    border-color: #d1fae5;
+                    background: #f0fdf4;
+                }
+
+                .premium-select.payment:hover {
+                    border-color: #10b981;
+                    background: white;
+                }
+
+                .premium-select.payment.is-paid {
+                    background-color: #dcfce7;
+                    border-color: #86efac;
+                    color: #15803d;
+                }
+
+                .action-view-btn {
+                    width: 36px;
+                    height: 36px;
+                    border-radius: 8px;
+                    border: 1px solid #e2e8f0;
+                    background: white;
+                    color: #6366f1;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+
+                .action-view-btn:hover {
+                    background: #f5f3ff;
+                    color: #4f46e5;
+                    border-color: #c7d2fe;
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                }
             `}</style>
 
             {viewingOrder && (
@@ -422,3 +513,4 @@ const VendorOrderList = ({ onAssignRider, onUpdateStatus, onFetchSuccess, showTo
 };
 
 export default VendorOrderList;
+

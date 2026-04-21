@@ -30,6 +30,7 @@
     "multer-s3": "^3.0.1",
     "mysql2": "^3.19.0",
     "nodemailer": "^8.0.1",
+    "puppeteer": "^24.42.0",
     "razorpay": "^2.9.6",
     "redis": "^5.11.0",
     "slugify": "^1.6.8"

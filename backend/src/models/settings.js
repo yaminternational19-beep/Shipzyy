@@ -68,18 +68,18 @@ const TABLES = [
 ];
 
 const DEFAULT_PAGES = [
-  { page_key: 'aboutUs', title: 'About Us', content: 'Shipzzy is your reliable delivery partner ensuring fast and safe deliveries across the country.', type: 'html', icon: 'FileText', is_deletable: false },
+  { page_key: 'aboutUs', title: 'About Us', content: 'shipzyy is your reliable delivery partner ensuring fast and safe deliveries across the country.', type: 'html', icon: 'FileText', is_deletable: false },
   { page_key: 'termsConditions', title: 'Terms and Conditions', content: 'By using this app, you agree to our standard terms and conditions. Delivery times are estimated.', type: 'html', icon: 'FileText', is_deletable: false },
   { page_key: 'privacyPolicy', title: 'Privacy Policy', content: 'We value your privacy. Your data is encrypted and never shared with third parties.', type: 'html', icon: 'FileText', is_deletable: false },
-  { page_key: 'androidAppUrl', title: 'Android App URL', content: 'https://play.google.com/store/apps/details?id=com.shipzzy', type: 'url', icon: 'LinkIcon', is_deletable: false },
-  { page_key: 'iosAppUrl', title: 'iOS App URL', content: 'https://apps.apple.com/us/app/shipzzy/id123456789', type: 'url', icon: 'LinkIcon', is_deletable: false },
-  { page_key: 'websiteUrl', title: 'Website URL', content: 'https://www.shipzzy.com', type: 'url', icon: 'LinkIcon', is_deletable: false }
+  { page_key: 'androidAppUrl', title: 'Android App URL', content: 'https://play.google.com/store/apps/details?id=com.shipzyy', type: 'url', icon: 'LinkIcon', is_deletable: false },
+  { page_key: 'iosAppUrl', title: 'iOS App URL', content: 'https://apps.apple.com/us/app/shipzyy/id123456789', type: 'url', icon: 'LinkIcon', is_deletable: false },
+  { page_key: 'websiteUrl', title: 'Website URL', content: 'https://www.shipzyy.com', type: 'url', icon: 'LinkIcon', is_deletable: false }
 ];
 
 const DEFAULT_CONTACTS = [
-  { role: 'customer', name: 'Customer Support', email: 'support@shipzzy.com', country_code: '+1', phone_number: '8005550199', working_hours: 'Mon-Sat, 9:00 AM - 6:00 PM' }, 
-  { role: 'rider', name: 'Rider Support', email: 'riders@shipzzy.com', country_code: '+1', phone_number: '8005550200', working_hours: '24/7 Priority Support' }, 
-  { role: 'vendor', name: 'Vendor Support', email: 'partners@shipzzy.com', country_code: '+1', phone_number: '8005550300', working_hours: 'Mon-Fri, 10:00 AM - 7:00 PM' }
+  { role: 'customer', name: 'Customer Support', email: 'support@shipzyy.com', country_code: '+1', phone_number: '8005550199', working_hours: 'Mon-Sat, 9:00 AM - 6:00 PM' }, 
+  { role: 'rider', name: 'Rider Support', email: 'riders@shipzyy.com', country_code: '+1', phone_number: '8005550200', working_hours: '24/7 Priority Support' }, 
+  { role: 'vendor', name: 'Vendor Support', email: 'partners@shipzyy.com', country_code: '+1', phone_number: '8005550300', working_hours: 'Mon-Fri, 10:00 AM - 7:00 PM' }
 ];
 
 const DEFAULT_ANNOUNCEMENTS = [

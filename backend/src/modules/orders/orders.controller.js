@@ -29,3 +29,21 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
     const result = await ordersService.updateOrderStatus(vendorId, orderId, status);
     return ApiResponse.success(res, result.message, result);
 });
+
+export const updatePaymentStatus = asyncHandler(async (req, res) => {
+    // Admin or Vendor can update payment status
+    const userId = req.user?.id;
+    const { orderId } = req.params;
+    const { payment_status } = req.body;
+
+    if (!userId) {
+        throw new ApiError(401, "Authentication required");
+    }
+
+    if (!payment_status) {
+        throw new ApiError(400, "Payment status is required");
+    }
+
+    const result = await ordersService.updatePaymentStatus(userId, orderId, payment_status);
+    return ApiResponse.success(res, result.message, result);
+});

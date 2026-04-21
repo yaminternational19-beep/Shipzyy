@@ -2,6 +2,7 @@ import db from "../../config/db.js";
 import { getPagination, getPaginationMeta } from "../../utils/pagination.js";
 import { getFromCache, setToCache, removeByPattern } from "../../utils/cache.js";
 import ApiError from "../../utils/ApiError.js";
+import { createInvoicesForOrder } from "../invoices/invoices.service.js";
 const formatDate = (date) => {
   if (!date) return "-";
   return new Date(date).toLocaleDateString("en-GB", {
@@ -141,7 +142,9 @@ export const getAllOrders = async (vendorId, queryParams = {}) => {
       shipped: await getStatusCount(vendorId, 'Shipped'),
       out_for_delivery: await getStatusCount(vendorId, 'Out for Delivery'),
       delivered: await getStatusCount(vendorId, 'Delivered'),
-      cancelled: await getStatusCount(vendorId, 'Cancelled')
+      cancelled: await getStatusCount(vendorId, 'Cancelled'),
+      paid: await getPaymentStatusCount(vendorId, 'Paid'),
+      unpaid: await getPaymentStatusCount(vendorId, 'Pending')
     }
   };
 
@@ -157,6 +160,16 @@ const getStatusCount = async (vendorId, status) => {
         WHERE oi.vendor_id = ? AND o.order_status = ?
     `, [vendorId, status]);
   return rows[0].count;
+};
+
+const getPaymentStatusCount = async (vendorId, status) => {
+    const [rows] = await db.query(`
+          SELECT COUNT(DISTINCT o.id) as count 
+          FROM orders o 
+          JOIN order_items oi ON o.id = oi.order_id 
+          WHERE oi.vendor_id = ? AND o.payment_status = ?
+      `, [vendorId, status]);
+    return rows[0].count;
 };
 
 /**
@@ -193,11 +206,73 @@ export const updateOrderStatus = async (vendorId, orderId, status) => {
       VALUES (?, ?, ?, 'vendor', ?)
   `, [orderId, status, displayTitle, vendorId]);
 
-  // 3. Clear relevant caches
+  // 3. Automated Invoicing Logic
+  // Fetch payment method and status
+  const [orderInfo] = await db.query("SELECT payment_method, payment_status FROM orders WHERE id = ?", [orderId]);
+  const order = orderInfo[0];
+
+  // If COD and delivered -> Mark as Paid and Generate Invoice
+  if (status === 'Delivered' && order.payment_method === 'COD' && order.payment_status === 'Pending') {
+    await db.query("UPDATE orders SET payment_status = 'Paid', updated_at = NOW() WHERE id = ?", [orderId]);
+    await createInvoicesForOrder(orderId);
+  }
+
+  // 4. Clear relevant caches
   await removeByPattern(`vendor:orders:list:${vendorId}:*`);
   await removeByPattern(`admin:orders:list:*`);
   await removeByPattern(`admin:order:detail:${orderId}`);
-  // If customer caching also existed, we would remove customer order cache here
 
   return { success: true, message: `Order status updated to ${status}` };
+};
+
+/**
+ * Handle manual payment status update by Admin
+ */
+export const updatePaymentStatus = async (adminId, orderId, paymentStatus) => {
+    // 1. Fetch current order info for validation
+    const [orderInfo] = await db.query(
+        "SELECT payment_method, order_status FROM orders WHERE id = ?",
+        [orderId]
+    );
+
+    if (orderInfo.length === 0) {
+        throw new ApiError(404, "Order not found");
+    }
+
+    const { payment_method, order_status } = orderInfo[0];
+
+    // 2. Validation Logic
+    if (order_status === 'Cancelled') {
+        throw new ApiError(400, "Cannot update payment status for a cancelled order.");
+    }
+
+    if (payment_method === 'COD' && order_status !== 'Delivered' && paymentStatus === 'Paid') {
+        throw new ApiError(400, "COD orders can only be marked as 'Paid' after they are successfully Delivered.");
+    }
+
+    // 3. Update Payment Status
+    await db.query("UPDATE orders SET payment_status = ?, updated_at = NOW() WHERE id = ?", [paymentStatus, orderId]);
+
+    // 4. If marked as Paid, generate invoices (if not already generated)
+    if (paymentStatus === 'Paid') {
+        const [invExists] = await db.query("SELECT 1 FROM customer_invoices WHERE order_id = ? LIMIT 1", [orderId]);
+        if (invExists.length === 0) {
+            // Run in background to avoid blocking the main thread
+            createInvoicesForOrder(orderId).catch(err => 
+                console.error(`Background Invoice Generation Error for Order ${orderId}:`, err)
+            );
+        }
+    }
+
+    // 5. Clear caches
+    // Find all vendors involved in this order to clear their caches
+    const [vendors] = await db.query("SELECT DISTINCT vendor_id FROM order_items WHERE order_id = ?", [orderId]);
+    for (const v of vendors) {
+        await removeByPattern(`vendor:orders:list:${v.vendor_id}:*`);
+    }
+    
+    await removeByPattern(`admin:orders:list:*`);
+    await removeByPattern(`admin:order:detail:${orderId}`);
+
+    return { success: true, message: `Payment status updated to ${paymentStatus}` };
 };

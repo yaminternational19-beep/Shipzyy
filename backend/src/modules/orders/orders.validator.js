@@ -10,8 +10,14 @@ export const getOrdersQuerySchema = Joi.object({
     page: Joi.number().integer().min(1).optional(),
     limit: Joi.number().integer().min(1).optional(),
     status: Joi.string().valid('Pending', 'Confirmed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled').optional(),
-    payment_status: Joi.string().valid('Pending', 'Paid', 'Failed').optional(),
+    payment_status: Joi.string().valid('Pending', 'Paid', 'Failed', 'Refunded').optional(),
     search: Joi.string().allow('').optional(),
     fromDate: Joi.date().iso().optional(),
     toDate: Joi.date().iso().optional()
+});
+
+export const updatePaymentStatusSchema = Joi.object({
+    payment_status: Joi.string()
+        .valid('Pending', 'Paid', 'Failed', 'Refunded')
+        .required()
 });

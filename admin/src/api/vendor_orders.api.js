@@ -5,3 +5,6 @@ export const getVendorOrdersApi = (params) =>
 
 export const updateVendorOrderStatusApi = (orderId, status) =>
     api.patch(`/vendor/orders/${orderId}/status`, { status });
+
+export const updateVendorOrderPaymentStatusApi = (orderId, payment_status) =>
+    api.patch(`/vendor/orders/${orderId}/payment-status`, { payment_status });

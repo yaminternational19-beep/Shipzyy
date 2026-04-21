@@ -19,7 +19,7 @@ const VendorSettingsPage = ({ type }) => {
         switch (type) {
             case 'about-us':
                 return {
-                    title: 'About Shipzzy',
+                    title: 'About shipzyy',
                     desc: 'Learn more about our mission and values',
                     component: <AboutUs showToast={showToast} />
                 };

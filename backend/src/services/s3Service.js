@@ -58,6 +58,19 @@ export const uploadFile = async (file, folder) => {
   };
 };
 
+export const uploadContent = async (content, key, contentType = 'text/html') => {
+    const bucket = process.env.AWS_BUCKET;
+    const params = {
+        Bucket: bucket,
+        Key: key,
+        Body: content,
+        ContentType: contentType
+    };
+
+    await s3.send(new PutObjectCommand(params));
+    return getFileUrl(key);
+};
+
 
 export const deleteFile = async (key) => {
 
@@ -89,5 +102,6 @@ export default {
   uploadFile,
   deleteFile,
   updateFile,
+  uploadContent,
   getFileUrl
 };
