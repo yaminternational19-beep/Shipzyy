@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ExternalLink, Store } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { ExternalLink, Store, TrendingUp } from 'lucide-react';
 import './Dashboard.css';
 import Toast from '../../components/common/Toast/Toast';
 
@@ -13,13 +13,14 @@ const DashboardPage = () => {
     const userRole = localStorage.getItem('userRole') || 'SUPER_ADMIN';
     const [isVendorView, setIsVendorView] = useState(false);
     const [toast, setToast] = useState({ show: false, message: '', type: 'info' });
-
-    // const handleGroceryClick = () => {
-    //     setToast({ show: true, message: 'Grocery module is coming soon!', type: 'info' });
-    // };
+    const dashboardRef = useRef(null);
 
     const handleexportClick = () => {
-        setToast({ show: true, message: 'Export functionality is under development!', type: 'info' });
+        if (dashboardRef.current && typeof dashboardRef.current.exportReport === 'function') {
+            dashboardRef.current.exportReport();
+        } else {
+            setToast({ show: true, message: 'Export functionality is not available for this dashboard yet!', type: 'warning' });
+        }
     }
 
     const toggleView = () => {
@@ -33,13 +34,13 @@ const DashboardPage = () => {
 
     const renderDashboard = () => {
         if (userRole === 'SUPER_ADMIN' && isVendorView) {
-            return <VendorOwnerDashboard />;
+            return <VendorOwnerDashboard ref={dashboardRef} />;
         }
 
         switch (userRole) {
             case 'SUPER_ADMIN':
             case 'SUB_ADMIN':
-                return <SuperAdminDashboard />;
+                return <SuperAdminDashboard ref={dashboardRef} />;
             case 'ADMIN':
                 return <AdminDashboard />;
             case 'SUPPORT_AGENT':
@@ -48,7 +49,7 @@ const DashboardPage = () => {
                 return <CommonDashboard title="Finance" />;
             case 'VENDOR_OWNER':
             case 'VENDOR_STAFF':
-                return <VendorOwnerDashboard />;
+                return <VendorOwnerDashboard ref={dashboardRef} />;
             case 'VENDOR_MANAGER':
                 return <CommonDashboard title="Vendor Manager" />;
             default:

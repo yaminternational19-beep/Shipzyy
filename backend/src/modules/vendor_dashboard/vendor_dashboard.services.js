@@ -1,7 +1,12 @@
 import db from "../../config/db.js";
+import { getFromCache, setToCache } from "../../utils/cache.js";
 
 class VendorDashboardService {
     async getDashboardStats(vendorId) {
+        const cacheKey = `vendor:stats:${vendorId}`;
+        const cached = await getFromCache(cacheKey);
+        if (cached) return cached;
+
         const now = new Date();
         const past24Hours = new Date(now - 24 * 60 * 60 * 1000);
         const past7Days = new Date(now - 7 * 24 * 60 * 60 * 1000);
@@ -72,7 +77,18 @@ class VendorDashboardService {
             AND pv.is_live = 1
         `, [vendorId]);
 
-        return {
+        const [statusDist] = await db.query(`
+            SELECT order_status as status, COUNT(*) as count
+            FROM orders o
+            JOIN order_items oi ON o.id = oi.order_id
+            WHERE oi.vendor_id = ?
+            GROUP BY order_status
+        `, [vendorId]);
+
+        // Get last 7 days revenue for sparkline
+        const sparklineData = await this.getRevenueAnalytics(vendorId, { period: '7days' });
+
+        const result = {
             staff: {
                 total: staffStats.total || 0,
                 active: staffStats.active || 0,
@@ -80,7 +96,8 @@ class VendorDashboardService {
             },
             revenue: {
                 weekly: revWeekly.total || 0,
-                monthly: revMonthly.total || 0
+                monthly: revMonthly.total || 0,
+                sparkline: sparklineData.map(d => d.revenue)
             },
             products: {
                 total: productStats.total || 0
@@ -88,7 +105,8 @@ class VendorDashboardService {
             orders: {
                 total: orderStats.total || 0,
                 pending: pendingOrders.count || 0,
-                highPriority: pendingOrders.highPriority || 0
+                highPriority: pendingOrders.highPriority || 0,
+                distribution: statusDist.map(d => ({ name: d.status, value: d.count }))
             },
             reviews: {
                 total: reviewStats.total || 0,
@@ -103,9 +121,16 @@ class VendorDashboardService {
                 trendType: "down"
             }
         };
+
+        await setToCache(cacheKey, result, 300); // 5 mins
+        return result;
     }
 
     async getRecentOrders(vendorId) {
+        const cacheKey = `vendor:recent_orders:${vendorId}`;
+        const cached = await getFromCache(cacheKey);
+        if (cached) return cached;
+
         const [orders] = await db.query(`
             SELECT 
                 o.order_number as id,
@@ -120,16 +145,23 @@ class VendorDashboardService {
             LIMIT 5
         `, [vendorId]);
 
-        return orders.map(ord => ({
+        const result = orders.map(ord => ({
             id: `#${ord.id}`,
             time: this.formatOrderTime(ord.time),
             amt: `₹${parseFloat(ord.amt || 0).toLocaleString()}`,
             status: this.getStatusClass(ord.label),
             label: ord.label
         }));
+
+        await setToCache(cacheKey, result, 300);
+        return result;
     }
 
     async getInventoryAlerts(vendorId) {
+        const cacheKey = `vendor:inventory_alerts:${vendorId}`;
+        const cached = await getFromCache(cacheKey);
+        if (cached) return cached;
+
         const [alerts] = await db.query(`
             SELECT 
                 p.name,
@@ -146,11 +178,14 @@ class VendorDashboardService {
             LIMIT 5
         `, [vendorId]);
 
-        return alerts.map(item => ({
+        const result = alerts.map(item => ({
             name: item.name,
             stock: item.stock,
             unit: `${item.unit || 'units'} left`
         }));
+
+        await setToCache(cacheKey, result, 300);
+        return result;
     }
 
     async getCustomerFeedback(vendorId) {
@@ -191,6 +226,10 @@ class VendorDashboardService {
     }
 
     async getTopProducts(vendorId) {
+        const cacheKey = `vendor:top_products:${vendorId}`;
+        const cached = await getFromCache(cacheKey);
+        if (cached) return cached;
+
         const [products] = await db.query(`
             SELECT 
                 p.id,
@@ -212,7 +251,7 @@ class VendorDashboardService {
             LIMIT 5
         `, [vendorId]);
 
-        return products.map((prod, i) => ({
+        const result = products.map((prod, i) => ({
             name: prod.name,
             sku: `VND-PRD-${String(prod.id).padStart(3, '0')}`,
             cat: prod.category,
@@ -220,10 +259,18 @@ class VendorDashboardService {
             rev: `₹${parseFloat(prod.totalRevenue || 0).toLocaleString()}`,
             status: 'success'
         }));
+
+        await setToCache(cacheKey, result, 600); // 10 mins
+        return result;
     }
 
     async getRevenueAnalytics(vendorId, params = {}) {
         let { period = '7days', year, month, week, startDate, endDate } = params;
+        
+        const cacheKey = `vendor:revenue_analytics:${vendorId}:${period}:${year || 'na'}:${month || 'na'}:${week || 'na'}:${startDate || 'na'}:${endDate || 'na'}`;
+        const cached = await getFromCache(cacheKey);
+        if (cached) return cached;
+
         const now = new Date();
 
         // 1. Weekly/Day-wise (7 Days or Specific Week)
@@ -256,7 +303,9 @@ class VendorDashboardService {
             const [results] = await db.query(`
                 SELECT 
                     FLOOR((DAY(o.created_at) - 1) / 7) + 1 as weekNum,
-                    SUM(oi.price * oi.quantity) as revenue
+                    SUM(oi.price * oi.quantity) as revenue,
+                    COUNT(DISTINCT o.id) as orders,
+                    COUNT(DISTINCT oi.product_id) as products
                 FROM order_items oi
                 JOIN orders o ON oi.order_id = o.id
                 WHERE oi.vendor_id = ? AND o.payment_status = 'Paid' 
@@ -267,7 +316,12 @@ class VendorDashboardService {
 
             return [1, 2, 3, 4, 5].map(w => {
                 const found = results.find(r => r.weekNum === w);
-                return { day: `Week ${w}`, revenue: parseFloat(found?.revenue || 0) };
+                return { 
+                    day: `Week ${w}`, 
+                    revenue: parseFloat(found?.revenue || 0),
+                    orders: parseInt(found?.orders || 0),
+                    products: parseInt(found?.products || 0)
+                };
             });
         }
 
@@ -280,7 +334,9 @@ class VendorDashboardService {
             const [results] = await db.query(`
                 SELECT 
                     MONTH(o.created_at) as monthNum,
-                    SUM(oi.price * oi.quantity) as revenue
+                    SUM(oi.price * oi.quantity) as revenue,
+                    COUNT(DISTINCT o.id) as orders,
+                    COUNT(DISTINCT oi.product_id) as products
                 FROM order_items oi
                 JOIN orders o ON oi.order_id = o.id
                 WHERE oi.vendor_id = ? AND o.payment_status = 'Paid' 
@@ -292,7 +348,12 @@ class VendorDashboardService {
             const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
             return monthNames.map((name, i) => {
                 const found = results.find(r => r.monthNum === (i + 1));
-                return { day: name, revenue: parseFloat(found?.revenue || 0) };
+                return { 
+                    day: name, 
+                    revenue: parseFloat(found?.revenue || 0),
+                    orders: parseInt(found?.orders || 0),
+                    products: parseInt(found?.products || 0)
+                };
             });
         }
 
@@ -304,13 +365,23 @@ class VendorDashboardService {
 
             if (diffDays > 60) {
                 const [results] = await db.query(`
-                    SELECT DATE_FORMAT(o.created_at, '%b %y') as label, SUM(oi.price * oi.quantity) as revenue
-                    FROM order_items oi JOIN orders o ON oi.order_id = o.id
+                    SELECT 
+                        DATE_FORMAT(o.created_at, '%b %y') as label, 
+                        SUM(oi.price * oi.quantity) as revenue,
+                        COUNT(DISTINCT o.id) as orders,
+                        COUNT(DISTINCT oi.product_id) as products
+                    FROM order_items oi 
+                    JOIN orders o ON oi.order_id = o.id
                     WHERE oi.vendor_id = ? AND o.payment_status = 'Paid' AND o.created_at BETWEEN ? AND ?
                     GROUP BY YEAR(o.created_at), MONTH(o.created_at), label
                     ORDER BY YEAR(o.created_at) ASC, MONTH(o.created_at) ASC
                 `, [vendorId, start, end]);
-                return results.map(r => ({ day: r.label, revenue: parseFloat(r.revenue || 0) }));
+                return results.map(r => ({ 
+                    day: r.label, 
+                    revenue: parseFloat(r.revenue || 0),
+                    orders: parseInt(r.orders || 0),
+                    products: parseInt(r.products || 0)
+                }));
             }
 
             const days = [];
@@ -319,7 +390,9 @@ class VendorDashboardService {
                 d.setDate(start.getDate() + i);
                 days.push(d);
             }
-            return await this.getZeroFilledDays(vendorId, days);
+            const result = await this.getZeroFilledDays(vendorId, days);
+            await setToCache(cacheKey, result, 600);
+            return result;
         }
 
         return [];
@@ -330,13 +403,20 @@ class VendorDashboardService {
             const start = new Date(date); start.setHours(0, 0, 0, 0);
             const end = new Date(date); end.setHours(23, 59, 59, 999);
             const [[res]] = await db.query(`
-                SELECT SUM(oi.price * oi.quantity) as total
-                FROM order_items oi JOIN orders o ON oi.order_id = o.id
+                SELECT 
+                    SUM(oi.price * oi.quantity) as total,
+                    COUNT(DISTINCT o.id) as orders,
+                    COUNT(DISTINCT oi.product_id) as products
+                FROM order_items oi 
+                JOIN orders o ON oi.order_id = o.id
                 WHERE oi.vendor_id = ? AND o.created_at BETWEEN ? AND ? AND o.payment_status = 'Paid'
             `, [vendorId, start, end]);
             return {
                 day: date.toLocaleDateString('en-US', { weekday: 'short' }),
-                revenue: parseFloat(res.total || 0)
+                fullDate: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                revenue: parseFloat(res.total || 0),
+                orders: parseInt(res.orders || 0),
+                products: parseInt(res.products || 0)
             };
         }));
     }

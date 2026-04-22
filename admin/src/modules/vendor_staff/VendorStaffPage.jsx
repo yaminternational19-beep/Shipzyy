@@ -137,7 +137,7 @@ const VendorStaffPage = () => {
             <VendorStaffStats stats={stats} />
 
             {/* Tabs */}
-            <div className="tab-group-pills">
+            {/* <div className="tab-group-pills">
                 <button
                     className={activeTab === 'users' ? 'active' : ''}
                     onClick={() => setActiveTab('users')}
@@ -152,7 +152,7 @@ const VendorStaffPage = () => {
                     <Terminal size={14} />
                     Access Logs
                 </button>
-            </div>
+            </div> */}
 
 
             {/* Content Area */}
