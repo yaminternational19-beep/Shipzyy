@@ -1,8 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, use } from 'react';
 import { Loader2 } from 'lucide-react';
 import VendorInvoiceList from './components/VendorInvoiceList';
 import InvoiceStats from '../invoices/components/InvoiceStats';
 import CustomerOrderHistoryModal from './components/CustomerOrderHistoryModal';
+import { getVendorInvoicesApi } from '../../api/vendor_invoices.api';
+
+
+
+
+
 
 // Mock Data strictly specific to the currently logged in vendor
 const MOCK_DATA = Array.from({ length: 25 }, (_, i) => {
@@ -26,6 +32,7 @@ const MOCK_DATA = Array.from({ length: 25 }, (_, i) => {
     };
 });
 
+
 const VendorInvoices = () => {
     const [allFilteredInvoices, setAllFilteredInvoices] = useState([]);
     const [invoices, setInvoices] = useState([]);
@@ -38,6 +45,22 @@ const VendorInvoices = () => {
     const handleViewHistory = (invoice) => {
         setHistoryModal({ open: true, customer: invoice });
     };
+
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                 const res = await getVendorInvoicesApi();
+                 const data = res.data; // Assuming API returns { data: [...] }
+                 console.log("Fetched invoices:", data);
+            } catch (error) {
+                console.error("Error fetching invoices:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
 
     const fetchInvoices = () => {
         setLoading(true);

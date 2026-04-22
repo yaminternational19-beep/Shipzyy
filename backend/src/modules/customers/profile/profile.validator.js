@@ -21,8 +21,8 @@ const addAddressSchema = Joi.object({
     state: Joi.string().max(100).required().messages({ "any.required": "state is required" }),
     pincode: Joi.string().max(20).required().messages({ "any.required": "pincode is required" }),
     country: Joi.string().max(100).required().messages({ "any.required": "country is required" }),
-    latitude: Joi.number().min(-90).max(90).required().messages({ "any.required": "latitude is required for delivery pinpointing" }),
-    longitude: Joi.number().min(-180).max(180).required().messages({ "any.required": "longitude is required for delivery pinpointing" }),
+    latitude: Joi.number().min(-90).max(90).optional(),
+    longitude: Joi.number().min(-180).max(180).optional(),
     is_default: Joi.boolean().optional()
 });
 
@@ -41,5 +41,7 @@ const updateAddressSchema = Joi.object({
     longitude: Joi.number().min(-180).max(180).optional(),
     is_default: Joi.boolean().optional()
 });
+
+
 
 export { updateProfileSchema, addAddressSchema, updateAddressSchema };
