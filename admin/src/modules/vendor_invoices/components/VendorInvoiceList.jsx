@@ -5,7 +5,8 @@ import '../../invoices/components/InvoiceList.css';
 
 const VendorInvoiceList = ({
     invoices, totalCount, filters, setFilters, pagination, setPagination,
-    selectedIds, setSelectedIds, onSelectAll, onExport, onView, onViewHistory
+    selectedIds, setSelectedIds, onSelectAll, onDownload, onView, onViewHistory,
+    showToast, onExportPDF, onExportExcel, isGlobalSelected
 }) => {
     const { currentPage, itemsPerPage } = pagination;
     const totalPages = Math.ceil(totalCount / itemsPerPage) || 1;
@@ -55,29 +56,46 @@ const VendorInvoiceList = ({
                         />
                     </div>
                 </div>
-                <ExportActions selectedCount={selectedIds.length} onExport={() => {}} onDownload={onExport} />
+                <ExportActions 
+                    selectedCount={selectedIds.length} 
+                    onExport={(msg, type) => showToast(msg, type)} 
+                    onDownload={(type) => {
+                        if (type === 'pdf') onExportPDF();
+                        else if (type === 'excel') onExportExcel();
+                    }} 
+                />
             </div>
+
+            {selectedIds.length === invoices.length && invoices.length > 0 && (
+                <div style={{ background: isGlobalSelected ? 'var(--primary-light)' : '#f1f5f9', padding: '8px 24px', fontSize: '0.85rem', color: isGlobalSelected ? 'var(--primary-color)' : '#475569', display: 'flex', justifyContent: 'center', borderBottom: '1px solid #e2e8f0', fontWeight: 500 }}>
+                    {isGlobalSelected ? (
+                        <>All {totalCount} invoices are selected. <span style={{ textDecoration: 'underline', cursor: 'pointer', marginLeft: '8px' }} onClick={() => onSelectAll(false)}>Clear selection</span></>
+                    ) : (
+                        <>All {invoices.length} invoices on this page are selected. <span style={{ textDecoration: 'underline', cursor: 'pointer', marginLeft: '8px' }} onClick={() => onSelectAll(true)}>Select all {totalCount} records</span></>
+                    )}
+                </div>
+            )}
 
             <div className="inv-table-scroll">
                 <table className="inv-table">
                     <thead className="inv-thead">
                         <tr>
                             <th className="inv-th-check">
-                                <div onClick={() => onSelectAll(selectedIds.length !== totalCount)} className="inv-check-trigger">
-                                    {selectedIds.length === totalCount && totalCount > 0 ? <CheckSquare size={17} color="#4f46e5" /> : <Square size={17} color="#94a3b8" />}
+                                <div onClick={() => onSelectAll(selectedIds.length !== invoices.length)} className="inv-check-trigger">
+                                    {(isGlobalSelected || (selectedIds.length === invoices.length && invoices.length > 0)) ? <CheckSquare size={17} color="#4f46e5" /> : <Square size={17} color="#94a3b8" />}
                                 </div>
                             </th>
-                            <th className="inv-th-img">CUSTOMER</th>
-                            <th className="inv-th">CUST ID</th>
-                            <th className="inv-th">PHONE</th>
-                            <th className="inv-th">ORDER ID</th>
-                            <th className="inv-th">INVOICE ID</th>
-                            <th className="inv-th">ITEMS MAPPED</th>
-                            <th className="inv-th">PAYOUT</th>
-                            <th className="inv-th">METHOD</th>
-                            <th className="inv-th">DATE</th>
-                            <th className="inv-th-center">STATUS</th>
-                            <th className="inv-th-right">ACTIONS</th>
+                            <th className="inv-th-img" style={{ textAlign: 'center' }}>CUSTOMER</th>
+                            <th className="inv-th" style={{ textAlign: 'center' }}>CUST ID</th>
+                            <th className="inv-th" style={{ textAlign: 'center' }}>PHONE</th>
+                            <th className="inv-th" style={{ textAlign: 'center' }}>ORDER ID</th>
+                            <th className="inv-th" style={{ textAlign: 'center' }}>INVOICE ID</th>
+                            <th className="inv-th" style={{ textAlign: 'center' }}>ITEMS</th>
+                            <th className="inv-th" style={{ textAlign: 'center' }}>PAYOUT</th>
+                            <th className="inv-th" style={{ textAlign: 'center' }}>METHOD</th>
+                            <th className="inv-th" style={{ textAlign: 'center' }}>DATE</th>
+                            <th className="inv-th-center" style={{ textAlign: 'center' }}>STATUS</th>
+                            <th className="inv-th-right" style={{ textAlign: 'center' }}>ACTIONS</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -138,17 +156,17 @@ const VendorInvoiceList = ({
                                     </td>
 
                                     <td className="inv-td">
-                                        <span className="inv-val-method">{invoice.paymentMethod}</span>
+                                        <span className="inv-val-method" style={{ textAlign: 'center' }}>{invoice.paymentMethod}</span>
                                     </td>
-                                    
+
                                     <td className="inv-td">{invoice.date}</td>
-                                    
+
                                     <td className="inv-td-center">
                                         <span className={`inv-status-badge ${invoice.status.toLowerCase()}`}>
                                             {invoice.status === 'Pending' ? 'Payout Pending' : invoice.status}
                                         </span>
                                     </td>
-                                    
+
                                     <td className="inv-td-right">
                                         <div className="inv-actions">
                                             <button
@@ -164,7 +182,7 @@ const VendorInvoiceList = ({
                                                 <Eye size={13} /> View
                                             </button>
                                             <button
-                                                onClick={() => onExport('pdf')}
+                                                onClick={() => onDownload(invoice)}
                                                 className="inv-btn inv-btn-download"
                                             >
                                                 <Download size={13} /> Download
@@ -207,3 +225,5 @@ const VendorInvoiceList = ({
 };
 
 export default VendorInvoiceList;
+
+

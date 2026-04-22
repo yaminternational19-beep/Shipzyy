@@ -22,6 +22,13 @@ export const listVendorInvoices = async (vendorId, queryParams = {}) => {
         values.push(queryParams.status);
     }
 
+    if (queryParams.customerId) {
+        // Handle CUST- prefix if passed
+        const cleanCustId = queryParams.customerId.replace('CUST-', '');
+        where.push("c.id = ?");
+        values.push(cleanCustId);
+    }
+
     if (queryParams.fromDate) {
         where.push("vi.created_at >= ?");
         values.push(queryParams.fromDate);
@@ -34,9 +41,13 @@ export const listVendorInvoices = async (vendorId, queryParams = {}) => {
 
     const whereClause = where.length ? `WHERE ${where.join(" AND ")}` : "";
 
-    // Get total count
+    // Get total count and total amount
     const [countResult] = await db.query(
-        `SELECT COUNT(*) as total 
+        `SELECT 
+            COUNT(*) as total, 
+            SUM(vi.amount) as totalAmount, 
+            COUNT(DISTINCT c.id) as uniqueCustomers,
+            SUM((SELECT COUNT(*) FROM order_items WHERE order_id = vi.order_id AND vendor_id = vi.vendor_id)) as totalItems
          FROM vendor_invoices vi
          JOIN orders o ON vi.order_id = o.id
          JOIN customers c ON o.customer_id = c.id
@@ -44,6 +55,9 @@ export const listVendorInvoices = async (vendorId, queryParams = {}) => {
         values
     );
     const totalRecords = countResult[0].total;
+    const totalAmount = countResult[0].totalAmount || 0;
+    const totalCustomers = countResult[0].uniqueCustomers || 0;
+    const totalItems = countResult[0].totalItems || 0;
 
     // Get invoices with order and customer details
     const [rows] = await db.query(`
@@ -51,8 +65,9 @@ export const listVendorInvoices = async (vendorId, queryParams = {}) => {
             vi.*,
             o.order_number,
             c.id AS cust_id,
+            c.country_code AS customer_country_code,
             c.mobile AS customer_phone,
-            c.profile_image AS customer_avatar,
+            c.profile_image,
             (SELECT COUNT(*) FROM order_items WHERE order_id = vi.order_id AND vendor_id = vi.vendor_id) as item_count
         FROM vendor_invoices vi
         JOIN orders o ON vi.order_id = o.id
@@ -66,11 +81,11 @@ export const listVendorInvoices = async (vendorId, queryParams = {}) => {
     const formattedRows = formatCustomerDates(rows);
 
     const records = formattedRows.map(row => ({
-        id: row.invoice_id, // Frontend uses id for display
         dbId: row.id,
+        invoice_id: row.invoice_id, // Frontend uses id for display
         customerId: `CUST-${row.cust_id}`,
-        customerPhone: row.customer_phone,
-        customerAvatar: row.customer_avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(row.customer_phone)}&background=random`,
+        customerPhone: `${row.customer_country_code}${row.customer_phone}`,
+        profile: row.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(row.customer_phone)}&background=random`,
         orderId: row.order_number,
         itemCount: row.item_count,
         amount: parseFloat(row.amount),
@@ -82,6 +97,24 @@ export const listVendorInvoices = async (vendorId, queryParams = {}) => {
 
     return {
         records,
+        stats: {
+            total: totalRecords,
+            lifetimeEarnings: totalAmount,
+            uniqueCustomers: totalCustomers,
+            totalItems: totalItems,
+            avgPayout: totalRecords > 0 ? (totalAmount / totalRecords) : 0
+        },
         pagination: getPaginationMeta(page, limit, totalRecords)
     };
+};
+
+/**
+ * Get a single invoice by ID
+ */
+export const getInvoiceById = async (vendorId, invoiceId) => {
+    const [rows] = await db.query(
+        "SELECT * FROM vendor_invoices WHERE id = ? AND vendor_id = ?",
+        [invoiceId, vendorId]
+    );
+    return rows[0];
 };

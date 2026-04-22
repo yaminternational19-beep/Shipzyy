@@ -1,89 +1,169 @@
-import React, { useState, useEffect, use } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { Loader2 } from 'lucide-react';
 import VendorInvoiceList from './components/VendorInvoiceList';
-import InvoiceStats from '../invoices/components/InvoiceStats';
+import VendorInvoiceStats from './components/VendorInvoiceStats';
 import CustomerOrderHistoryModal from './components/CustomerOrderHistoryModal';
-import { getVendorInvoicesApi } from '../../api/vendor_invoices.api';
-
-
-
-
-
-
-// Mock Data strictly specific to the currently logged in vendor
-const MOCK_DATA = Array.from({ length: 25 }, (_, i) => {
-    const isPaid = Math.random() > 0.4;
-    const isCancelled = Math.random() > 0.9;
-    const paymentMethod = Math.random() > 0.5 ? 'Bank Transfer' : 'Platform Wallet';
-    let status = isCancelled ? 'Cancelled' : isPaid ? 'Paid' : 'Pending';
-
-    return {
-        id: `INV-V-${2000 + i}`,
-        orderId: `ORD-${8800 + Math.floor(i / 2)}`,
-        customerId: `CUST-${200 + (i % 12)}`,
-        customerName: `Customer ${1 + (i % 12)}`,
-        customerPhone: `+91 ${Math.floor(Math.random() * 9000000000 + 1000000000)}`,
-        customerAvatar: `https://ui-avatars.com/api/?name=Customer+${1 + (i % 12)}&background=random`,
-        amount: Math.floor(Math.random() * 5000) + 100,
-        paymentMethod: paymentMethod,
-        date: new Date(Date.now() - Math.floor(Math.random() * 10000000000)).toISOString().split('T')[0],
-        status: status,
-        itemCount: Math.floor(Math.random() * 4) + 1
-    };
-});
+import ExportActions from '../../components/common/ExportActions';
+import { getVendorInvoicesApi, downloadVendorInvoiceApi } from '../../api/vendor_invoices.api';
+import { exportInvoicesToPDF, exportInvoicesToExcel } from './services/export.service';
+import Toast from '../../components/common/Toast/Toast';
 
 
 const VendorInvoices = () => {
-    const [allFilteredInvoices, setAllFilteredInvoices] = useState([]);
     const [invoices, setInvoices] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({ search: '', status: 'All', fromDate: '', toDate: '' });
     const [pagination, setPagination] = useState({ currentPage: 1, itemsPerPage: 10, totalRecords: 0 });
     const [selectedIds, setSelectedIds] = useState([]);
+    const [isGlobalSelected, setIsGlobalSelected] = useState(false);
     const [historyModal, setHistoryModal] = useState({ open: false, customer: null });
+    const [stats, setStats] = useState({ 
+        total: 0, 
+        lifetimeEarnings: 0, 
+        uniqueCustomers: 0, 
+        avgPayout: 0 
+    });
+    const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+
+    const showToast = (message, type = 'success') => {
+        setToast({ show: true, message, type });
+        setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
+    };
 
     const handleViewHistory = (invoice) => {
         setHistoryModal({ open: true, customer: invoice });
     };
 
-    useEffect(() => {
-        const fetchData = async () => {
+    const handleExportPDF = async () => {
+        if (!isGlobalSelected && selectedIds.length === 0) {
+            showToast('Please select at least one invoice to export', 'warning');
+            return;
+        }
+
+        let invoicesToExport = [];
+        if (isGlobalSelected) {
             setLoading(true);
             try {
-                 const res = await getVendorInvoicesApi();
-                 const data = res.data; // Assuming API returns { data: [...] }
-                 console.log("Fetched invoices:", data);
+                const response = await getVendorInvoicesApi({ ...filters, limit: pagination.totalRecords });
+                if (response.data.success) {
+                    invoicesToExport = response.data.data.records.map(record => ({
+                        id: record.invoice_id,
+                        orderId: record.orderId,
+                        customerId: record.customerId,
+                        customerPhone: record.customerPhone,
+                        amount: record.amount,
+                        paymentMethod: record.paymentMethod,
+                        date: record.date,
+                        status: record.status
+                    }));
+                }
             } catch (error) {
-                console.error("Error fetching invoices:", error);
+                showToast("Failed to fetch all records for export", "error");
+                return;
             } finally {
                 setLoading(false);
             }
-        };
-        fetchData();
-    }, []);
+        } else {
+            invoicesToExport = invoices.filter(inv => selectedIds.includes(inv.id));
+        }
 
-    const fetchInvoices = () => {
+        exportInvoicesToPDF(invoicesToExport);
+        showToast(`Exporting ${invoicesToExport.length} invoices to PDF`, 'success');
+        setSelectedIds([]);
+        setIsGlobalSelected(false);
+    };
+
+    const handleExportExcel = async () => {
+        if (!isGlobalSelected && selectedIds.length === 0) {
+            showToast('Please select at least one invoice to export', 'warning');
+            return;
+        }
+
+        let invoicesToExport = [];
+        if (isGlobalSelected) {
+            setLoading(true);
+            try {
+                const response = await getVendorInvoicesApi({ ...filters, limit: pagination.totalRecords });
+                if (response.data.success) {
+                    invoicesToExport = response.data.data.records.map(record => ({
+                        id: record.invoice_id,
+                        orderId: record.orderId,
+                        customerId: record.customerId,
+                        customerPhone: record.customerPhone,
+                        amount: record.amount,
+                        paymentMethod: record.paymentMethod,
+                        date: record.date,
+                        status: record.status,
+                        itemCount: record.itemCount
+                    }));
+                }
+            } catch (error) {
+                showToast("Failed to fetch all records for export", "error");
+                return;
+            } finally {
+                setLoading(false);
+            }
+        } else {
+            invoicesToExport = invoices.filter(inv => selectedIds.includes(inv.id));
+        }
+
+        exportInvoicesToExcel(invoicesToExport);
+        showToast(`Exporting ${invoicesToExport.length} invoices to Excel`, 'success');
+        setSelectedIds([]);
+        setIsGlobalSelected(false);
+    };
+
+    const fetchInvoices = async () => {
         setLoading(true);
-        setTimeout(() => {
-            let filtered = MOCK_DATA;
-            if (filters.search) filtered = filtered.filter(i => 
-                i.id.toLowerCase().includes(filters.search.toLowerCase()) || 
-                i.orderId.toLowerCase().includes(filters.search.toLowerCase()) ||
-                i.customerId.toLowerCase().includes(filters.search.toLowerCase()) ||
-                i.customerName.toLowerCase().includes(filters.search.toLowerCase())
-            );
-            if (filters.status !== 'All') filtered = filtered.filter(i => i.status === filters.status);
-            if (filters.fromDate) filtered = filtered.filter(i => new Date(i.date) >= new Date(filters.fromDate));
-            if (filters.toDate) filtered = filtered.filter(i => new Date(i.date) <= new Date(filters.toDate));
+        try {
+            const params = {
+                page: pagination.currentPage,
+                limit: pagination.itemsPerPage,
+                search: filters.search,
+                status: filters.status !== 'All' ? filters.status : undefined,
+                fromDate: filters.fromDate,
+                toDate: filters.toDate
+            };
+            const response = await getVendorInvoicesApi(params);
             
-            const start = (pagination.currentPage - 1) * pagination.itemsPerPage;
-            const end = start + pagination.itemsPerPage;
-            
-            setAllFilteredInvoices(filtered);
-            setInvoices(filtered.slice(start, end));
-            setPagination(prev => ({ ...prev, totalRecords: filtered.length }));
+            if (response.data.success) {
+                const records = response.data.data.records.map(record => ({
+                    id: record.invoice_id,
+                    dbId: record.dbId,
+                    orderId: record.orderId,
+                    customerId: record.customerId,
+                    customerName: record.customerId, // Falling back to customerId as name is not in API
+                    customerPhone: record.customerPhone,
+                    customerAvatar: record.profile,
+                    amount: record.amount,
+                    paymentMethod: record.paymentMethod,
+                    date: record.date,
+                    status: record.status,
+                    itemCount: record.itemCount,
+                    invoiceUrl: record.invoiceUrl
+                }));
+                
+                setInvoices(records);
+                const apiPagination = response.data.data.pagination;
+                setPagination(prev => ({
+                    ...prev,
+                    totalRecords: apiPagination.totalRecords
+                }));
+
+                const apiStats = response.data.data.stats;
+                setStats({
+                    total: apiStats.total,
+                    lifetimeEarnings: apiStats.lifetimeEarnings,
+                    uniqueCustomers: apiStats.uniqueCustomers,
+                    avgPayout: apiStats.avgPayout
+                });
+            }
+        } catch (error) {
+            console.error("Error fetching invoices:", error);
+        } finally {
             setLoading(false);
-        }, 300);
+        }
     };
 
     useEffect(() => {
@@ -95,11 +175,36 @@ const VendorInvoices = () => {
         setPagination(prev => ({ ...prev, currentPage: 1 }));
     };
 
-    const stats = {
-        total: MOCK_DATA.length,
-        paid: MOCK_DATA.filter(i => i.status === 'Paid').length,
-        pending: MOCK_DATA.filter(i => i.status === 'Pending').length,
-        refunded: MOCK_DATA.filter(i => i.status === 'Cancelled').length
+    const handleViewInvoice = (invoice) => {
+        if (invoice.invoiceUrl) {
+            window.open(invoice.invoiceUrl, '_blank');
+        } else {
+            alert('Invoice URL not available');
+        }
+    };
+
+    const handleDownloadInvoice = async (invoice) => {
+        if (invoice.dbId) {
+            setLoading(true);
+            try {
+                const response = await downloadVendorInvoiceApi(invoice.dbId);
+                const url = window.URL.createObjectURL(new Blob([response.data]));
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', `Invoice-${invoice.id}.pdf`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error('Download failed:', error);
+                alert('Failed to download invoice. Please try again.');
+            } finally {
+                setLoading(false);
+            }
+        } else {
+            alert('Invoice ID not available for download');
+        }
     };
 
     return (
@@ -113,7 +218,7 @@ const VendorInvoices = () => {
                 </div>
             </div>
 
-            <InvoiceStats stats={stats} />
+            <VendorInvoiceStats stats={stats} />
 
             <div style={{ marginTop: '24px', position: 'relative' }}>
                 {loading && (
@@ -130,11 +235,21 @@ const VendorInvoices = () => {
                     pagination={pagination}
                     setPagination={setPagination}
                     selectedIds={selectedIds}
-                    setSelectedIds={setSelectedIds}
-                    onSelectAll={(select) => setSelectedIds(select ? allFilteredInvoices.map(i => i.id) : [])}
-                    onView={() => {}}
-                    onExport={() => {}}
+                    setSelectedIds={(ids) => {
+                        setSelectedIds(ids);
+                        setIsGlobalSelected(false);
+                    }}
+                    onSelectAll={(select) => {
+                        setIsGlobalSelected(select);
+                        setSelectedIds(select ? invoices.map(i => i.id) : []);
+                    }}
+                    isGlobalSelected={isGlobalSelected}
+                    onView={handleViewInvoice}
+                    onDownload={handleDownloadInvoice}
                     onViewHistory={handleViewHistory}
+                    showToast={showToast}
+                    onExportPDF={handleExportPDF}
+                    onExportExcel={handleExportExcel}
                 />
             </div>
 
@@ -144,9 +259,15 @@ const VendorInvoices = () => {
                     customerName={historyModal.customer.customerName}
                     customerPhone={historyModal.customer.customerPhone}
                     customerAvatar={historyModal.customer.customerAvatar}
-                    allInvoices={MOCK_DATA}
+                    allInvoices={invoices}
+                    onDownload={handleDownloadInvoice}
                     onClose={() => setHistoryModal({ open: false, customer: null })}
+                    showToast={showToast}
                 />
+            )}
+
+            {toast.show && (
+                <Toast message={toast.message} type={toast.type} onClose={() => setToast({ ...toast, show: false })} />
             )}
         </div>
     );

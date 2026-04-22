@@ -1,49 +1,150 @@
-import React, { useState } from 'react';
-import { X, ShoppingBag, Package, Receipt, Eye, Download, X as CloseIcon } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Receipt, Package, Eye, Download, ChevronLeft, ChevronRight, Loader2, Square, CheckSquare } from 'lucide-react';
+import { getVendorInvoicesApi } from '../../../api/vendor_invoices.api';
+import ExportActions from '../../../components/common/ExportActions';
+import { exportInvoicesToPDF, exportInvoicesToExcel } from '../services/export.service';
 import './CustomerOrderHistoryModal.css';
 
-const CustomerOrderHistoryModal = ({ customerId, customerName, customerPhone, customerAvatar, allInvoices, onClose }) => {
+const CustomerOrderHistoryModal = ({ customerId, customerName, customerPhone, customerAvatar, onDownload, onClose, showToast }) => {
     const [viewInvoice, setViewInvoice] = useState(null);
+    const [invoices, setInvoices] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [pagination, setPagination] = useState({ currentPage: 1, itemsPerPage: 7, totalRecords: 0, totalAmount: 0, totalItems: 0 });
+    const [selectedIds, setSelectedIds] = useState([]);
+    const [isGlobalSelected, setIsGlobalSelected] = useState(false);
+    const [stats, setStats] = useState({ totalInvoices: 0, totalItems: 0, totalAmount: 0 });
 
-    // Filter all invoices for this specific customer
-    const customerInvoices = allInvoices.filter(i => i.customerId === customerId);
-
-    const handleDownload = (inv) => {
-        const content = `
-            PAYSLIP / INVOICE
-            -----------------
-            Invoice ID  : ${inv.id}
-            Order ID    : ${inv.orderId}
-            Customer    : ${customerName} (${customerId})
-            Phone       : ${customerPhone}
-            Amount      : ₹${inv.amount?.toFixed(2)}
-            Products    : ${inv.itemCount}
-            Method      : ${inv.paymentMethod}
-            Date        : ${inv.date}
-            Status      : ${inv.status}
-        `;
-        const blob = new Blob([content], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `Payslip-${inv.id}.txt`;
-        a.click();
-        URL.revokeObjectURL(url);
+    const fetchCustomerHistory = async () => {
+        setLoading(true);
+        try {
+            const params = {
+                customerId: customerId,
+                page: pagination.currentPage,
+                limit: pagination.itemsPerPage
+            };
+            const response = await getVendorInvoicesApi(params);
+            if (response.data.success) {
+                const records = response.data.data.records.map(r => ({
+                    id: r.invoice_id,
+                    dbId: r.dbId,
+                    orderId: r.orderId,
+                    amount: r.amount,
+                    date: r.date,
+                    status: r.status,
+                    itemCount: r.itemCount,
+                    paymentMethod: r.paymentMethod,
+                    invoiceUrl: r.invoiceUrl
+                }));
+                setInvoices(records);
+                const apiPagination = response.data.data.pagination;
+                const apiStats = response.data.data.stats;
+                setPagination(prev => ({ 
+                    ...prev, 
+                    totalRecords: apiPagination.totalRecords
+                }));
+                setStats({
+                    totalInvoices: apiStats.total,
+                    totalItems: apiStats.totalItems,
+                    totalAmount: apiStats.lifetimeEarnings
+                });
+                setSelectedIds([]); 
+                setIsGlobalSelected(false);
+            }
+        } catch (error) {
+            console.error("Error fetching customer history:", error);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const stats = {
-        totalOrders: [...new Set(customerInvoices.map(i => i.orderId))].length,
-        totalInvoices: customerInvoices.length,
-        totalProducts: customerInvoices.reduce((sum, i) => sum + (i.itemCount || 0), 0),
-        totalSpent: customerInvoices.filter(i => i.status === 'Paid').reduce((sum, i) => sum + (i.amount || 0), 0),
-        paid: customerInvoices.filter(i => i.status === 'Paid').length,
-        pending: customerInvoices.filter(i => i.status === 'Pending').length,
+    useEffect(() => {
+        fetchCustomerHistory();
+    }, [pagination.currentPage]);
+
+    const totalPages = Math.ceil(pagination.totalRecords / pagination.itemsPerPage) || 1;
+
+    const handleDownload = async (inv) => {
+        if (onDownload) {
+            onDownload(inv);
+        }
     };
+
+    const toggleSelectRow = (id) => {
+        setIsGlobalSelected(false);
+        if (selectedIds.includes(id)) setSelectedIds(selectedIds.filter(item => item !== id));
+        else setSelectedIds([...selectedIds, id]);
+    };
+
+    const handleSelectAll = (checking) => {
+        setIsGlobalSelected(checking && pagination.totalRecords > invoices.length);
+        setSelectedIds(checking ? invoices.map(i => i.id) : []);
+    };
+
+    const handleExport = async (type) => {
+        if (!isGlobalSelected && selectedIds.length === 0) {
+            showToast('Please select at least one invoice to export', 'warning');
+            return;
+        }
+
+        let invoicesToExport = [];
+        if (isGlobalSelected) {
+            setLoading(true);
+            try {
+                const response = await getVendorInvoicesApi({ 
+                    customerId, 
+                    limit: pagination.totalRecords 
+                });
+                if (response.data.success) {
+                    invoicesToExport = response.data.data.records.map(r => ({
+                        id: r.invoice_id,
+                        orderId: r.orderId,
+                        amount: r.amount,
+                        date: r.date,
+                        status: r.status,
+                        itemCount: r.itemCount,
+                        paymentMethod: r.paymentMethod,
+                        customerId,
+                        customerName,
+                        customerPhone
+                    }));
+                }
+            } catch (error) {
+                showToast("Failed to fetch all history for export", "error");
+                return;
+            } finally {
+                setLoading(false);
+            }
+        } else {
+            invoicesToExport = invoices.filter(inv => selectedIds.includes(inv.id)).map(inv => ({
+                ...inv,
+                customerId,
+                customerName,
+                customerPhone
+            }));
+        }
+
+        if (type === 'pdf') {
+            exportInvoicesToPDF(invoicesToExport);
+        } else {
+            exportInvoicesToExcel(invoicesToExport);
+        }
+
+        showToast(`Exported ${invoicesToExport.length} invoices to ${type === 'pdf' ? 'PDF' : 'Excel'}`, 'success');
+        setSelectedIds([]);
+        setIsGlobalSelected(false);
+    };
+
 
     return (
         <>
         <div className="modal-overlay">
-            <div className="customer-view-modal" style={{ width: '85%', maxWidth: '1100px', height: '88vh', display: 'flex', flexDirection: 'column' }}>
+            <div className="customer-view-modal" style={{ width: '85%', maxWidth: '1100px', height: '88vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                {loading && (
+                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.6)', zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Loader2 className="animate-spin" size={40} color="var(--primary-color)" />
+                    </div>
+                )}
+                
                 {/* Header */}
                 <div className="modal-header">
                     <div className="modal-header-profile">
@@ -55,7 +156,7 @@ const CustomerOrderHistoryModal = ({ customerId, customerName, customerPhone, cu
                             <div className="modal-header-details">
                                 <span className="inv-badge-purple">{customerId}</span>
                                 <span className="inv-val-phone">{customerPhone}</span>
-                                <span style={{ color: '#64748b', fontSize: '0.82rem' }}>· Orders from this vendor</span>
+                                <span style={{ color: '#64748b', fontSize: '0.82rem' }}>· Full History</span>
                             </div>
                         </div>
                     </div>
@@ -65,10 +166,9 @@ const CustomerOrderHistoryModal = ({ customerId, customerName, customerPhone, cu
                 {/* Stats */}
                 <div className="modal-stats-bar">
                     {[
-                        { label: 'Total Orders', value: stats.totalOrders, icon: ShoppingBag, color: '#4f46e5', bg: '#eef2ff' },
                         { label: 'Total Invoices', value: stats.totalInvoices, icon: Receipt, color: '#e11d48', bg: '#fff1f2' },
-                        { label: 'Products Bought', value: stats.totalProducts, icon: Package, color: '#0d9488', bg: '#f0fdfa' },
-                        { label: 'Amount Paid (₹)', value: `₹${stats.totalSpent.toLocaleString()}`, icon: Receipt, color: '#16a34a', bg: '#f0fdf4' },
+                        { label: 'Total Items (Lifetime)', value: stats.totalItems, icon: Package, color: '#0d9488', bg: '#f0fdfa' },
+                        { label: 'Amount Total (Lifetime)', value: `₹${stats.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, icon: Receipt, color: '#16a34a', bg: '#f0fdf4' },
                     ].map((stat, idx) => {
                         const Icon = stat.icon;
                         return (
@@ -86,44 +186,72 @@ const CustomerOrderHistoryModal = ({ customerId, customerName, customerPhone, cu
                 </div>
 
                 {/* Invoice List */}
-                <div className="modal-content-area">
-                    <h3 className="modal-title-small">All Invoices from This Customer</h3>
-                    <div className="inv-list-wrapper">
+                <div className="modal-content-area" style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                        <h3 className="modal-title-small" style={{ margin: 0 }}>All Recorded Invoices for {customerName}</h3>
+                        <ExportActions 
+                            selectedCount={isGlobalSelected ? pagination.totalRecords : selectedIds.length}
+                            onExport={(msg, type) => showToast(msg, type)}
+                            onDownload={handleExport}
+                        />
+                    </div>
+
+                    {selectedIds.length === invoices.length && invoices.length > 0 && (
+                        <div style={{ background: isGlobalSelected ? 'var(--primary-light)' : '#f1f5f9', padding: '8px 24px', fontSize: '0.82rem', color: isGlobalSelected ? 'var(--primary-color)' : '#475569', display: 'flex', justifyContent: 'center', borderBottom: '1px solid #e2e8f0', fontWeight: 500, marginBottom: '8px', borderRadius: '8px' }}>
+                            {isGlobalSelected ? (
+                                <>All {pagination.totalRecords} history records are selected. <span style={{ textDecoration: 'underline', cursor: 'pointer', marginLeft: '8px' }} onClick={() => { setIsGlobalSelected(false); setSelectedIds([]); }}>Clear selection</span></>
+                            ) : (
+                                <>All {invoices.length} invoices on this page are selected. <span style={{ textDecoration: 'underline', cursor: 'pointer', marginLeft: '8px' }} onClick={() => setIsGlobalSelected(true)}>Select entire customer history ({pagination.totalRecords} records)</span></>
+                            )}
+                        </div>
+                    )}
+
+                    <div className="inv-list-wrapper" style={{ flex: 1 }}>
                         <table className="inv-table" style={{ minWidth: '100%' }}>
                             <thead className="inv-thead">
                                 <tr>
-                                    <th className="inv-th">ORDER ID</th>
-                                    <th className="inv-th">INVOICE ID</th>
-                                    <th className="inv-th">PRODUCTS</th>
-                                    <th className="inv-th">AMOUNT</th>
-                                    <th className="inv-th">DATE</th>
-                                    <th className="inv-th-center">STATUS</th>
-                                    <th className="inv-th-right">ACTIONS</th>
+                                    <th className="inv-th-check" style={{ width: '50px' }}>
+                                        <div onClick={() => handleSelectAll(selectedIds.length !== invoices.length)} className="inv-check-trigger">
+                                            {(isGlobalSelected || (selectedIds.length === invoices.length && invoices.length > 0)) ? <CheckSquare size={17} color="#4f46e5" /> : <Square size={17} color="#94a3b8" />}
+                                        </div>
+                                    </th>
+                                    <th className="inv-th" style={{ textAlign: 'center' }}>ORDER ID</th>
+                                    <th className="inv-th" style={{ textAlign: 'center' }}>INVOICE ID</th>
+                                    <th className="inv-th" style={{ textAlign: 'center' }}>PRODUCTS</th>
+                                    <th className="inv-th" style={{ textAlign: 'center' }}>AMOUNT</th>
+                                    <th className="inv-th" style={{ textAlign: 'center' }}>DATE</th>
+                                    <th className="inv-th-center" style={{ textAlign: 'center' }}>STATUS</th>
+                                    <th className="inv-th-right" style={{ textAlign: 'center' }}>ACTIONS</th>
                                 </tr>
                             </thead>
                             <tbody className="inv-tbody">
-                                {customerInvoices.length === 0 ? (
+                                {invoices.length === 0 && !loading ? (
                                     <tr>
-                                        <td colSpan={7} className="inv-empty-cell" style={{ padding: '40px' }}>No invoices found for this customer.</td>
+                                        <td colSpan={8} className="inv-empty-cell" style={{ padding: '40px' }}>No invoices found for this customer.</td>
                                     </tr>
-                                ) : customerInvoices.map((inv) => (
-                                    <tr key={inv.id}>
-                                        <td className="inv-td">
+                                ) : invoices.map((inv) => (
+                                    <tr key={inv.id} className={selectedIds.includes(inv.id) ? 'selected' : ''}>
+                                        <td className="inv-check-cell">
+                                            <div onClick={() => toggleSelectRow(inv.id)} className="inv-check-trigger">
+                                                {selectedIds.includes(inv.id) ? <CheckSquare size={17} color="#4f46e5" /> : <Square size={17} color="#94a3b8" />}
+                                            </div>
+                                        </td>
+                                        <td className="inv-td" style={{ textAlign: 'center' }}>
                                             <span className="inv-val-order">{inv.orderId}</span>
                                         </td>
-                                        <td className="inv-td">
+                                        <td className="inv-td" style={{ textAlign: 'center' }}>
                                             <span className="inv-val-invoice">{inv.id}</span>
                                         </td>
-                                        <td className="inv-td">
+                                        <td className="inv-td" style={{ textAlign: 'center' }}>
                                             <span style={{ background: '#ede9fe', color: '#7c3aed', fontSize: '0.72rem', fontWeight: 700, padding: '2px 8px', borderRadius: '20px', border: '1px solid #ddd6fe' }}>
                                                 {inv.itemCount} Product{inv.itemCount > 1 ? 's' : ''}
                                             </span>
                                         </td>
-                                        <td className="inv-td">
+                                        <td className="inv-td" style={{ textAlign: 'center' }}>
                                             <span className="inv-val-amount" style={{ fontSize: '0.92rem' }}>₹{inv.amount?.toFixed(2)}</span>
                                         </td>
-                                        <td className="inv-td">{inv.date}</td>
-                                        <td className="inv-td-center">
+                                        <td className="inv-td" style={{ textAlign: 'center' }}>{inv.date}</td>
+                                        <td className="inv-td-center" style={{ textAlign: 'center' }}>
                                             <span className={`inv-status-badge ${inv.status.toLowerCase()}`}>
                                                 {inv.status === 'Pending' ? 'Payout Pending' : inv.status}
                                             </span>
@@ -131,7 +259,7 @@ const CustomerOrderHistoryModal = ({ customerId, customerName, customerPhone, cu
                                         <td className="inv-td-right">
                                             <div className="inv-actions">
                                                 <button
-                                                    onClick={() => setViewInvoice(inv)}
+                                                    onClick={() => inv.invoiceUrl ? window.open(inv.invoiceUrl, '_blank') : setViewInvoice(inv)}
                                                     title="View Payslip"
                                                     className="inv-btn inv-btn-view"
                                                 >
@@ -150,6 +278,32 @@ const CustomerOrderHistoryModal = ({ customerId, customerName, customerPhone, cu
                                 ))}
                             </tbody>
                         </table>
+                    </div>
+
+                    {/* Pagination for Modal */}
+                    <div className="inv-pagination" style={{ borderTop: '1px solid #e2e8f0', paddingTop: '16px', background: 'white', marginTop: 'auto' }}>
+                        <span className="inv-pagination-info">
+                            Showing {Math.min(pagination.itemsPerPage * (pagination.currentPage - 1) + 1, pagination.totalRecords)}–{Math.min(pagination.itemsPerPage * pagination.currentPage, pagination.totalRecords)} of {pagination.totalRecords} records
+                        </span>
+                        <div className="inv-pagination-btns">
+                            <button
+                                disabled={pagination.currentPage === 1 || loading}
+                                className="inv-page-btn"
+                                onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage - 1 }))}
+                            >
+                                <ChevronLeft size={14} /> Prev
+                            </button>
+                            <span className="inv-page-label">
+                                {pagination.currentPage} / {totalPages}
+                            </span>
+                            <button
+                                disabled={pagination.currentPage === totalPages || totalPages === 0 || loading}
+                                className="inv-page-btn"
+                                onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage + 1 }))}
+                            >
+                                Next <ChevronRight size={14} />
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

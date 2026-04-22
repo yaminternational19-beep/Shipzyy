@@ -43,5 +43,4 @@ const updateAddressSchema = Joi.object({
 });
 
 
-
 export { updateProfileSchema, addAddressSchema, updateAddressSchema };
