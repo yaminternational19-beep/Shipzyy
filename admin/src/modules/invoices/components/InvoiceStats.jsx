@@ -5,9 +5,9 @@ import './InvoiceStats.css';
 const InvoiceStats = ({ stats }) => {
     const statCards = [
         { title: 'Total Invoices', value: stats.total, icon: Receipt, class: 'primary', subText: 'All generated' },
-        { title: 'Paid amounts', value: stats.paid, icon: CheckCircle, class: 'success', subText: 'Fully settled' },
-        { title: 'Pending amounts', value: stats.pending, icon: Clock, class: 'warning', subText: 'Awaiting payment' },
-        { title: 'Refunded amounts', value: stats.refunded || stats.overdue, icon: AlertCircle, class: 'error', subText: 'Cancelled or Refunded' }
+        { title: 'Paid amounts', value: `₹${stats.paid?.toLocaleString() || 0}`, icon: CheckCircle, class: 'success', subText: 'Fully settled' },
+        { title: 'Pending amounts', value: `₹${stats.pending?.toLocaleString() || 0}`, icon: Clock, class: 'warning', subText: 'Awaiting payment' },
+        { title: 'Refunded amounts', value: stats.refunded || stats.overdue || 0, icon: AlertCircle, class: 'error', subText: 'Cancelled or Refunded' }
     ];
 
     return (

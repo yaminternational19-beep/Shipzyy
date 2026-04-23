@@ -12,4 +12,9 @@ router.get("/vendor-invoices", adminInvoicesController.getVendorInvoices);
 router.get("/vendor-invoices/history/:vendorId", adminInvoicesController.getVendorInvoiceHistory);
 router.get("/vendor-invoices/:id/download", adminInvoicesController.downloadInvoice);
 
+// Customer Invoice Routes
+router.get("/customer-invoices", adminInvoicesController.getCustomerInvoices);
+router.get("/customer-invoices/history/:customerId", adminInvoicesController.getCustomerInvoiceHistory);
+router.get("/customer-invoices/:id/download", adminInvoicesController.downloadCustomerInvoice);
+
 export default router;

@@ -45,7 +45,9 @@ export const listVendorInvoices = async (queryParams = {}) => {
             SUM(amount) as totalAmount,
             COUNT(*) as totalInvoices,
             SUM(IF(vi.status = 'Paid', 1, 0)) as paidInvoices,
+            SUM(IF(vi.status = 'Paid', vi.amount, 0)) as paidAmount,
             SUM(IF(vi.status = 'Pending', 1, 0)) as pendingInvoices,
+            SUM(IF(vi.status = 'Pending', vi.amount, 0)) as pendingAmount,
             SUM(IF(vi.status = 'Cancelled', 1, 0)) as cancelledInvoices
          FROM vendor_invoices vi
          JOIN vendors v ON vi.vendor_id = v.id
@@ -94,10 +96,10 @@ export const listVendorInvoices = async (queryParams = {}) => {
         records,
         stats: {
             total: totalStats[0].totalInvoices || 0,
-            paid: totalStats[0].paidInvoices || 0,
-            pending: totalStats[0].pendingInvoices || 0,
+            paid: parseFloat(totalStats[0].paidAmount || 0),
+            pending: parseFloat(totalStats[0].pendingAmount || 0),
             refunded: totalStats[0].cancelledInvoices || 0,
-            totalAmount: totalStats[0].totalAmount || 0,
+            totalAmount: parseFloat(totalStats[0].totalAmount || 0),
             uniqueVendors: totalRecords
         },
         pagination: getPaginationMeta(page, limit, totalRecords)
@@ -171,6 +173,178 @@ export const getInvoiceById = async (invoiceId) => {
          FROM vendor_invoices vi 
          JOIN vendors v ON vi.vendor_id = v.id 
          WHERE vi.id = ?`,
+        [invoiceId]
+    );
+    return rows[0];
+};
+
+/**
+ * List all customer invoice summaries for Admin (one row per customer)
+ */
+export const listCustomerInvoices = async (queryParams = {}) => {
+    const { page, limit, skip } = getPagination(queryParams);
+
+    let where = [];
+    let values = [];
+
+    if (queryParams.search) {
+        where.push("(c.name LIKE ? OR c.email LIKE ? OR c.mobile LIKE ?)");
+        const searchVal = `%${queryParams.search}%`;
+        values.push(searchVal, searchVal, searchVal);
+    }
+
+    if (queryParams.fromDate) {
+        where.push("ci.created_at >= ?");
+        values.push(queryParams.fromDate);
+    }
+
+    if (queryParams.toDate) {
+        where.push("ci.created_at <= ?");
+        values.push(queryParams.toDate);
+    }
+
+    const whereClause = where.length ? `WHERE ${where.join(" AND ")}` : "";
+
+    // Get total count of unique customers who have invoices
+    const [countResult] = await db.query(
+        `SELECT COUNT(DISTINCT ci.customer_id) as total
+         FROM customer_invoices ci
+         JOIN customers c ON ci.customer_id = c.id
+         ${whereClause}`,
+        values
+    );
+    const totalRecords = countResult[0].total;
+
+    // Get total stats across all customer invoices
+    const [totalStats] = await db.query(
+        `SELECT 
+            SUM(amount) as totalAmount,
+            COUNT(*) as totalInvoices,
+            SUM(IF(ci.status = 'Paid', 1, 0)) as paidInvoices,
+            SUM(IF(ci.status = 'Paid', ci.amount, 0)) as paidAmount,
+            SUM(IF(ci.status = 'Pending', 1, 0)) as pendingInvoices,
+            SUM(IF(ci.status = 'Pending', ci.amount, 0)) as pendingAmount,
+            SUM(IF(ci.status = 'Cancelled', 1, 0)) as cancelledInvoices
+         FROM customer_invoices ci
+         JOIN customers c ON ci.customer_id = c.id
+         ${whereClause}`,
+        values
+    );
+
+    // Get customer-wise summary
+    const [rows] = await db.query(`
+        SELECT 
+            c.id AS c_id,
+            c.name AS customer_name,
+            c.country_code AS customer_country_code,
+            c.mobile AS customer_phone,
+            c.email AS customer_email,
+            c.profile_image AS customer_avatar,
+            COUNT(ci.id) as total_invoices,
+            SUM(ci.amount) as total_amount,
+            MAX(ci.created_at) as last_invoice_date,
+            (SELECT SUM(amount) FROM customer_invoices WHERE customer_id = c.id AND status = 'Pending') as pending_amount
+        FROM customer_invoices ci
+        JOIN customers c ON ci.customer_id = c.id
+        ${whereClause}
+        GROUP BY c.id
+        ORDER BY last_invoice_date DESC
+        LIMIT ? OFFSET ?
+    `, [...values, limit, skip]);
+
+    const records = rows.map(row => ({
+        customerId: `CUST-${row.c_id}`,
+        dbCustomerId: row.c_id,
+        customerName: row.customer_name,
+        customerPhone: `${row.customer_country_code}${row.customer_phone}`,
+        customerEmail: row.customer_email,
+        customerAvatar: row.customer_avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(row.customer_name)}&background=random`,
+        totalInvoices: row.total_invoices,
+        totalAmount: parseFloat(row.total_amount || 0),
+        pendingAmount: parseFloat(row.pending_amount || 0),
+        lastInvoiceDate: row.last_invoice_date
+    }));
+
+    return {
+        records,
+        stats: {
+            total: totalStats[0].totalInvoices || 0,
+            paid: parseFloat(totalStats[0].paidAmount || 0),
+            pending: parseFloat(totalStats[0].pendingAmount || 0),
+            refunded: totalStats[0].cancelledInvoices || 0,
+            totalAmount: parseFloat(totalStats[0].totalAmount || 0),
+            uniqueCustomers: totalRecords
+        },
+        pagination: getPaginationMeta(page, limit, totalRecords)
+    };
+};
+
+/**
+ * Get individual invoice history for a specific customer
+ */
+export const getCustomerInvoiceHistory = async (customerId, queryParams = {}) => {
+    const { page, limit, skip } = getPagination(queryParams);
+
+    let where = ["ci.customer_id = ?"];
+    let values = [customerId];
+
+    if (queryParams.search) {
+        where.push("(ci.invoice_id LIKE ? OR o.order_number LIKE ?)");
+        const searchVal = `%${queryParams.search}%`;
+        values.push(searchVal, searchVal);
+    }
+
+    if (queryParams.status && queryParams.status !== 'All') {
+        where.push("ci.status = ?");
+        values.push(queryParams.status);
+    }
+
+    const whereClause = `WHERE ${where.join(" AND ")}`;
+
+    const [rows] = await db.query(`
+        SELECT 
+            ci.*,
+            o.order_number,
+            (SELECT COUNT(*) FROM order_items WHERE order_id = ci.order_id) as item_count
+        FROM customer_invoices ci
+        JOIN orders o ON ci.order_id = o.id
+        ${whereClause}
+        ORDER BY ci.created_at DESC
+        LIMIT ? OFFSET ?
+    `, [...values, limit, skip]);
+
+    const [countResult] = await db.query(
+        `SELECT COUNT(*) as total FROM customer_invoices ci JOIN orders o ON ci.order_id = o.id ${whereClause}`,
+        values
+    );
+
+    const records = rows.map(row => ({
+        id: row.invoice_id,
+        dbId: row.id,
+        orderId: row.order_number,
+        amount: parseFloat(row.amount),
+        status: row.status,
+        date: row.created_at,
+        itemCount: row.item_count,
+        invoiceUrl: row.invoice_url,
+        paymentMethod: row.payment_method
+    }));
+
+    return {
+        records,
+        pagination: getPaginationMeta(page, limit, countResult[0].total)
+    };
+};
+
+/**
+ * Get customer invoice by ID for PDF download
+ */
+export const getCustomerInvoiceById = async (invoiceId) => {
+    const [rows] = await db.query(
+        `SELECT ci.*, c.name as customer_name, c.email as customer_email 
+         FROM customer_invoices ci 
+         JOIN customers c ON ci.customer_id = c.id 
+         WHERE ci.id = ?`,
         [invoiceId]
     );
     return rows[0];
