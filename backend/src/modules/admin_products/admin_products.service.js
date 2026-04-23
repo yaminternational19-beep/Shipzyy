@@ -5,7 +5,7 @@ import { getFromCache, setToCache, removeFromCache, removeByPattern } from "../.
 
 
 const getProducts = async (queryParams) => {
-    const cacheKey = `admin:products:list:${JSON.stringify(queryParams)}`;
+    const cacheKey = `admin:products:list:v2:${JSON.stringify(queryParams)}`;
     const cachedData = await getFromCache(cacheKey);
     if (cachedData) return cachedData;
 
@@ -14,29 +14,39 @@ const getProducts = async (queryParams) => {
     let where = [];
     let values = [];
 
-    if (queryParams.vendorId) {
+    const sanitizeId = (val) => {
+        if (!val || val === 'null' || val === 'undefined' || val === '') return null;
+        return isNaN(Number(val)) ? null : Number(val);
+    };
+
+    const vendorId = sanitizeId(queryParams.vendor_id || queryParams.vendorId || queryParams.vendor);
+    if (vendorId) {
         where.push("p.vendor_id = ?");
-        values.push(queryParams.vendorId);
+        values.push(vendorId);
     }
 
-    if (queryParams.categoryId) {
+    const categoryId = sanitizeId(queryParams.category_id || queryParams.categoryId || queryParams.category);
+    if (categoryId) {
         where.push("p.category_id = ?");
-        values.push(queryParams.categoryId);
+        values.push(categoryId);
     }
 
-    if (queryParams.subCategoryId) {
+    const subCategoryId = sanitizeId(queryParams.subcategory_id || queryParams.subCategoryId || queryParams.subCategory);
+    if (subCategoryId) {
         where.push("p.subcategory_id = ?");
-        values.push(queryParams.subCategoryId);
+        values.push(subCategoryId);
     }
 
-    if (queryParams.brandId) {
+    const brandId = sanitizeId(queryParams.brand_id || queryParams.brandId || queryParams.brand);
+    if (brandId) {
         where.push("p.brand_id = ?");
-        values.push(queryParams.brandId);
+        values.push(brandId);
     }
 
-    if (queryParams.status) {
+    const status = queryParams.status || queryParams.approval_status || queryParams.isApproved;
+    if (status && status !== 'null' && status !== 'undefined' && status !== '') {
         where.push("p.approval_status = ?");
-        values.push(queryParams.status);
+        values.push(status);
     }
 
     if (queryParams.search) {
@@ -47,7 +57,7 @@ const getProducts = async (queryParams) => {
     const whereClause = where.length ? `WHERE ${where.join(" AND ")}` : "";
 
     const [countResult] = await db.query(
-        `SELECT COUNT(*) as total FROM products p ${whereClause}`,
+        `SELECT COUNT(*) as total FROM products p LEFT JOIN vendors v ON p.vendor_id = v.id ${whereClause}`,
         values
     );
 
@@ -131,6 +141,7 @@ LIMIT ? OFFSET ?`,
             SUM(CASE WHEN approval_status = 'APPROVED' THEN 1 ELSE 0 END) as approvedCount,
             SUM(CASE WHEN approval_status = 'REJECTED' THEN 1 ELSE 0 END) as rejectedCount
         FROM products p
+        LEFT JOIN vendors v ON p.vendor_id = v.id
         ${whereClause}`,
         values
     );

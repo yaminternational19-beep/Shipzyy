@@ -3,7 +3,17 @@ import { Search, X } from 'lucide-react';
 import ActionButton from '../../../components/common/ActionButton/ActionButton';
 import ExportActions from '../../../components/common/ExportActions';
 
-const ProductFilters = ({ filters, setFilters, onClear, selectedCount = 0, onExport, onDownload }) => {
+const ProductFilters = ({ 
+    filters, 
+    setFilters, 
+    onClear, 
+    selectedCount = 0, 
+    onExport, 
+    onDownload,
+    vendorList = [],
+    categoryList = [],
+    brandList = []
+}) => {
 
     const handleChange = (key, value) => {
         setFilters(prev => ({ ...prev, [key]: value }));
@@ -39,7 +49,9 @@ const ProductFilters = ({ filters, setFilters, onClear, selectedCount = 0, onExp
                         onChange={(e) => handleChange('vendor', e.target.value)}
                     >
                         <option value="">All Companies</option>
-                        <option value="Testing Company">Testing Company</option>
+                        {vendorList.map(vendor => (
+                            <option key={vendor.id} value={vendor.id}>{vendor.business_name}</option>
+                        ))}
                     </select>
 
                     {/* Category */}
@@ -49,18 +61,9 @@ const ProductFilters = ({ filters, setFilters, onClear, selectedCount = 0, onExp
                         onChange={(e) => handleChange('category', e.target.value)}
                     >
                         <option value="">All Categories</option>
-                        <option value="Electronics">Electronics</option>
-                        <option value="House">House</option>
-                    </select>
-
-                    {/* Sub Category */}
-                    <select
-                        className="filter-select"
-                        value={filters.subCategory}
-                        onChange={(e) => handleChange('subCategory', e.target.value)}
-                    >
-                        <option value="">All Sub Categories</option>
-                        <option value="Laptop">Laptop</option>
+                        {categoryList.map(cat => (
+                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        ))}
                     </select>
 
                     {/* Brand */}
@@ -70,8 +73,9 @@ const ProductFilters = ({ filters, setFilters, onClear, selectedCount = 0, onExp
                         onChange={(e) => handleChange('brand', e.target.value)}
                     >
                         <option value="">All Brands</option>
-                        <option value="Apple">Apple</option>
-                        <option value="MyBrand">MyBrand</option>
+                        {brandList.map(brand => (
+                            <option key={brand.id} value={brand.id}>{brand.name}</option>
+                        ))}
                     </select>
 
                     {/* Status */}

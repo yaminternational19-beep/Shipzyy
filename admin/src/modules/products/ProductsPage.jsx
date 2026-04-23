@@ -6,6 +6,9 @@ import ProductList from './components/ProductList';
 import ProductView from './components/ProductView';
 import Toast from '../../components/common/Toast/Toast';
 import { getProductsApi, updateProductStatusApi } from '../../api/admin_products.api';
+import { getVendorsApi } from '../../api/vendor.api';
+import { getCategoriesApi } from '../../api/categories.api';
+import { getBrandsApi } from '../../api/brands.api';
 import { exportProductsToPDF, exportProductsToExcel } from './services/export.service';
 import './Products.css';
 
@@ -27,6 +30,11 @@ const ProductsPage = () => {
         subCategory: '',
         isApproved: ''
     });
+    
+    const [vendorList, setVendorList] = useState([]);
+    const [categoryList, setCategoryList] = useState([]);
+    const [brandList, setBrandList] = useState([]);
+
     const [pagination, setPagination] = useState({
         page: 1,
         limit: 10,
@@ -37,6 +45,26 @@ const ProductsPage = () => {
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
     const [viewingProductId, setViewingProductId] = useState(null);
     const [debouncedSearch, setDebouncedSearch] = useState('');
+
+    // Fetch Filter Options (Vendors, Categories, Brands)
+    useEffect(() => {
+        const fetchFilterData = async () => {
+            try {
+                const [vRes, cRes, bRes] = await Promise.all([
+                    getVendorsApi({ all: true }),
+                    getCategoriesApi({ all: true }),
+                    getBrandsApi({ all: true })
+                ]);
+
+                if (vRes.data.success) setVendorList(vRes.data.data.records || []);
+                if (cRes.data.success) setCategoryList(cRes.data.data.records || []);
+                if (bRes.data.success) setBrandList(bRes.data.data.records || []);
+            } catch (error) {
+                console.error("Error fetching filter data:", error);
+            }
+        };
+        fetchFilterData();
+    }, []);
 
     // Debounce search effect
     useEffect(() => {
@@ -235,6 +263,9 @@ const ProductsPage = () => {
                 <ProductFilters
                     filters={filters}
                     setFilters={handleFilterUpdate}
+                    vendorList={vendorList}
+                    categoryList={categoryList}
+                    brandList={brandList}
                     selectedCount={selectedRows.length}
                     onExport={showToast}
                     onDownload={handleExport}

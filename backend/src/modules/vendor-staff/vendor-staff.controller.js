@@ -12,7 +12,8 @@ import vendorService from '../vendor/vendor.service.js';
 
 export const getVendorStaff = async (req, res) => {
   try {
-    const result = await service.getVendorStaff(req.query);
+    const query = { ...req.query, vendor_id: req.user.vendor_id || req.query.vendor_id };
+    const result = await service.getVendorStaff(query);
     return ApiResponse.success(res, 'Vendor staff fetched', result);
   } catch (err) {
     return ApiResponse.error(res, err.message);

@@ -87,9 +87,10 @@ const listReviews = async (queryParams, vendorId = null) => {
     const where = [];
     const params = [];
 
-    if (vendorId) {
+    const explicitVendorId = vendorId || queryParams.vendor_id || queryParams.vendorId || queryParams.vendor;
+    if (explicitVendorId && explicitVendorId !== 'null' && explicitVendorId !== 'undefined' && explicitVendorId !== '') {
         where.push(`r.vendor_id = ?`);
-        params.push(vendorId);
+        params.push(explicitVendorId);
     }
 
     if (queryParams.product_id) {

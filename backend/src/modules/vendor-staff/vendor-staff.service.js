@@ -108,7 +108,8 @@ const getVendorStaff = async (queryParams) => {
         SUM(status='Inactive') as inactive,
         COUNT(DISTINCT role) as rolesDefined
       FROM vendor_staff
-  `);
+      ${whereClause}
+  `, values);
 
   const result = {
     stats: stats[0],

@@ -3,6 +3,7 @@ import ApiError from "../../../utils/ApiError.js";
 import { getCartItems } from "../cart/cart.service.js";
 import { getPagination, getPaginationMeta } from "../../../utils/pagination.js";
 import { createInvoicesForOrder } from "../../invoices/invoices.service.js";
+import { removeFromCache } from "../../../utils/cache.js";
 
 const formatDate = (date) => {
   if (!date) return null;
@@ -535,6 +536,7 @@ export const placeOrder = async (customerId, payload) => {
 
     // 9. Clear cart
     await connection.query(`DELETE FROM customers_cart WHERE customer_id = ?`, [customerId]);
+    await removeFromCache(`customer:cart:${customerId}`);
 
     await connection.commit();
 

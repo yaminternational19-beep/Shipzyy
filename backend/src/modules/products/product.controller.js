@@ -20,7 +20,8 @@ export const createProduct = asyncHandler(async (req, res) => {
 });
 
 export const getAllProducts = asyncHandler(async (req, res) => {
-  const products = await productService.getAllProducts(req.query);
+  const query = { ...req.query, vendor_id: req.user.vendor_id || req.query.vendor_id };
+  const products = await productService.getAllProducts(query);
   return ApiResponse.success(res, "Products fetched successfully", products);
 });
 
