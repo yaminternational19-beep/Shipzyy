@@ -2,75 +2,56 @@ import React, { useState, useEffect } from 'react';
 import { Loader2, X } from 'lucide-react';
 import VendorInvoiceList from './VendorInvoiceList';
 import InvoiceStats from './InvoiceStats';
+import { getVendorInvoiceHistoryApi, downloadVendorInvoiceApi } from '../../../api/admin_invoices.api';
+import { exportVendorHistoryToExcel, exportVendorHistoryToPDF } from '../services/invoiceExport.service';
 
-const VendorInvoiceHistoryModal = ({ vendorId, onClose }) => {
-    const [allFilteredInvoices, setAllFilteredInvoices] = useState([]);
+const VendorInvoiceHistoryModal = ({ vendorId, onClose, showToast }) => {
     const [invoices, setInvoices] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({ search: '', status: 'All', fromDate: '', toDate: '' });
-    const [pagination, setPagination] = useState({ currentPage: 1, itemsPerPage: 5, totalRecords: 0 });
+    const [pagination, setPagination] = useState({ currentPage: 1, itemsPerPage: 10, totalRecords: 0 });
     const [selectedIds, setSelectedIds] = useState([]);
-    const [vendorInfo, setVendorInfo] = useState({});
+    const [stats, setStats] = useState({ total: 0, paid: 0, pending: 0, refunded: 0 });
 
-    const generateHistoryData = () => {
-        return Array.from({ length: 15 }, (_, i) => {
-            const isPaid = Math.random() > 0.3;
-            const paymentMethod = Math.random() > 0.5 ? 'Bank Transfer' : 'Platform Wallet';
-            let status = isPaid ? 'Paid' : 'Pending';
-
-            return {
-                id: `INV-V-${8000 + i}`,
-                orderId: `ORD-${5000 + Math.floor(i / 2)}`, // Multiple invoices sharing one orderID per vendor constraint
-                vendorId: vendorId,
-                vendorName: `Vendor Company ${vendorId?.split('-')[1] || 'Unknown'}`,
-                vendorPhone: `+1 ${Math.floor(Math.random() * 900 + 100)}-${Math.floor(Math.random() * 900 + 100)}-${Math.floor(Math.random() * 9000 + 1000)}`,
-                vendorEmail: `contact${vendorId?.split('-')[1] || 'Unknown'}@vendorcompany.com`,
-                vendorAvatar: `https://ui-avatars.com/api/?name=Company+History&background=random`,
-                amount: Math.floor(Math.random() * 3000) + 150,
-                paymentMethod: paymentMethod,
-                date: new Date(Date.now() - Math.floor(Math.random() * 20000000000)).toISOString().split('T')[0],
-                status: status,
-                itemCount: Math.floor(Math.random() * 3) + 1
-            };
-        }).sort((a, b) => new Date(b.date) - new Date(a.date));
-    };
-
-    const [allHistoryMock] = useState(generateHistoryData());
-
-    useEffect(() => {
-        if (allHistoryMock.length > 0) {
-            setVendorInfo({
-                name: allHistoryMock[0].vendorName,
-                avatar: allHistoryMock[0].vendorAvatar
-            });
-        }
-    }, [allHistoryMock]);
-
-    const fetchInvoices = () => {
+    const fetchHistory = async () => {
         setLoading(true);
-        setTimeout(() => {
-            let filtered = allHistoryMock;
-            
-            if (filters.search) filtered = filtered.filter(i => 
-                i.id.toLowerCase().includes(filters.search.toLowerCase()) || 
-                i.orderId.toLowerCase().includes(filters.search.toLowerCase())
-            );
-            if (filters.status !== 'All') filtered = filtered.filter(i => i.status === filters.status);
-            if (filters.fromDate) filtered = filtered.filter(i => new Date(i.date) >= new Date(filters.fromDate));
-            if (filters.toDate) filtered = filtered.filter(i => new Date(i.date) <= new Date(filters.toDate));
-            
-            const start = (pagination.currentPage - 1) * pagination.itemsPerPage;
-            const end = start + pagination.itemsPerPage;
-            
-            setAllFilteredInvoices(filtered);
-            setInvoices(filtered.slice(start, end));
-            setPagination(prev => ({ ...prev, totalRecords: filtered.length }));
+        try {
+            const params = {
+                page: pagination.currentPage,
+                limit: pagination.itemsPerPage,
+                ...filters
+            };
+            if (params.status === 'All') delete params.status;
+
+            const res = await getVendorInvoiceHistoryApi(vendorId, params);
+            if (res.data.success) {
+                const { records, pagination: pg } = res.data.data;
+                setInvoices(records);
+                setPagination(prev => ({ ...prev, totalRecords: pg.totalRecords }));
+                
+                // Calculate local stats for this vendor's view
+                // In a real scenario, the backend could return these stats as well
+                if (pagination.currentPage === 1) {
+                    const paid = records.filter(i => i.status === 'Paid').length;
+                    const pending = records.filter(i => i.status === 'Pending').length;
+                    const refunded = records.filter(i => i.status === 'Cancelled').length;
+                    setStats({
+                        total: pg.totalRecords,
+                        paid: paid, // This is just a sample for the first page, backend should ideally provide full stats
+                        pending: pending,
+                        refunded: refunded
+                    });
+                }
+            }
+        } catch (err) {
+            console.error("Error fetching vendor history:", err);
+        } finally {
             setLoading(false);
-        }, 400);
+        }
     };
 
     useEffect(() => {
-        fetchInvoices();
+        fetchHistory();
     }, [pagination.currentPage, pagination.itemsPerPage, filters]);
 
     const handleFilterChange = (newFilters) => {
@@ -78,26 +59,75 @@ const VendorInvoiceHistoryModal = ({ vendorId, onClose }) => {
         setPagination(prev => ({ ...prev, currentPage: 1 }));
     };
 
-    const stats = {
-        total: allHistoryMock.length,
-        paid: allHistoryMock.filter(i => i.status === 'Paid').length,
-        pending: allHistoryMock.filter(i => i.status === 'Pending').length,
-        refunded: allHistoryMock.filter(i => i.status === 'Cancelled').length
+    const handleView = async (invoice) => {
+        // Open window immediately to avoid popup blocker
+        const win = window.open('', '_blank');
+        if (win) win.document.write('Loading invoice...');
+
+        try {
+            const res = await downloadVendorInvoiceApi(invoice.dbId || invoice.id);
+            const blob = new Blob([res.data], { type: 'application/pdf' });
+            const url = window.URL.createObjectURL(blob);
+            
+            if (win) {
+                win.location.href = url;
+            } else {
+                // Fallback if window.open failed
+                const link = document.createElement('a');
+                link.href = url;
+                link.target = '_blank';
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+            }
+        } catch (err) {
+            console.error("Error viewing invoice:", err);
+            if (win) win.close();
+        }
+    };
+
+    const handleHistoryExport = (type) => {
+        if (invoices.length === 0) return;
+        
+        const dataToExport = selectedIds.length > 0 
+            ? invoices.filter(i => selectedIds.includes(i.id))
+            : invoices;
+
+        if (type === 'excel') {
+            exportVendorHistoryToExcel(dataToExport, vendorId);
+        } else {
+            exportVendorHistoryToPDF(dataToExport, vendorId);
+        }
+    };
+
+    const handleDownload = async (invoice) => {
+        try {
+            const res = await downloadVendorInvoiceApi(invoice.dbId || invoice.id);
+            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `Invoice-${invoice.id}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (err) {
+            console.error("Error downloading invoice:", err);
+        }
     };
 
     return (
-        <div className="modal-overlay">
-            <div className="customer-view-modal" style={{ width: '90%', maxWidth: '1400px', height: '90vh', display: 'flex', flexDirection: 'column' }}>
+        <div className="modal-overlay" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', paddingLeft: '260px' }}>
+            <div className="customer-view-modal" style={{ width: '95%', maxWidth: '1400px', height: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
                 <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                        <div style={{ width: '50px', height: '50px', borderRadius: '12px', overflow: 'hidden' }}>
-                            <img src={vendorInfo.avatar} alt="Profile" style={{ width: '100%', height: '100%' }} />
+                        <div style={{ width: '50px', height: '50px', borderRadius: '12px', overflow: 'hidden', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <img src={`https://ui-avatars.com/api/?name=${vendorId}&background=random`} alt="Profile" style={{ width: '100%', height: '100%' }} />
                         </div>
                         <div>
-                            <h2 style={{ margin: 0, fontSize: '1.5rem', color: 'var(--text-primary)', fontWeight: 700 }}>{vendorInfo.name || 'Anonymous Vendor'}</h2>
+                            <h2 style={{ margin: 0, fontSize: '1.5rem', color: 'var(--text-primary)', fontWeight: 700 }}>Vendor Invoice History</h2>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                                <span className="cust-id-badge" style={{ margin: 0, background: '#fff7ed', color: '#ea580c', borderColor: '#ffedd5' }}>{vendorId}</span>
-                                <span style={{ color: '#64748b', fontSize: '0.85rem' }}>Invoice History Overview</span>
+                                <span className="cust-id-badge" style={{ margin: 0, background: '#fff7ed', color: '#ea580c', borderColor: '#ffedd5' }}>VND-{vendorId}</span>
+                                <span style={{ color: '#64748b', fontSize: '0.85rem' }}>Detailed transaction records</span>
                             </div>
                         </div>
                     </div>
@@ -115,6 +145,7 @@ const VendorInvoiceHistoryModal = ({ vendorId, onClose }) => {
                         )}
                         
                         <VendorInvoiceList
+                            mode="detail"
                             invoices={invoices}
                             totalCount={pagination.totalRecords}
                             filters={filters}
@@ -123,10 +154,10 @@ const VendorInvoiceHistoryModal = ({ vendorId, onClose }) => {
                             setPagination={setPagination}
                             selectedIds={selectedIds}
                             setSelectedIds={setSelectedIds}
-                            onSelectAll={(select) => setSelectedIds(select ? allFilteredInvoices.map(i => i.id) : [])}
-                            onView={() => {}}
-                            onExport={() => {}}
-                            isModal={true}
+                            onSelectAll={(select) => setSelectedIds(select ? invoices.map(i => i.id) : [])}
+                            onView={(item) => handleView(item)}
+                            onExport={(type, item) => item ? handleDownload(item) : handleHistoryExport(type)}
+                            showToast={showToast}
                         />
                     </div>
                 </div>

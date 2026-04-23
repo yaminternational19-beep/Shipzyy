@@ -14,7 +14,8 @@ const Toast = ({ message, type = 'info', onClose, duration = 3000 }) => {
     const icons = {
         success: <CheckCircle2 className="toast-icon" />,
         error: <AlertCircle className="toast-icon" />,
-        info: <Info className="toast-icon" />
+        info: <Info className="toast-icon" />,
+        warning: <AlertCircle className="toast-icon" />
     };
 
     return (

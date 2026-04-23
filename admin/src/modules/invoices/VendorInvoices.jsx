@@ -4,72 +4,129 @@ import VendorInvoiceList from './components/VendorInvoiceList';
 import InvoiceStats from './components/InvoiceStats';
 import VendorInvoiceHistoryModal from './components/VendorInvoiceHistoryModal';
 
-// Mock Data
-const MOCK_DATA = Array.from({ length: 45 }, (_, i) => {
-    const isPaid = Math.random() > 0.4;
-    const isCancelled = Math.random() > 0.9;
-    const paymentMethod = Math.random() > 0.5 ? 'Bank Transfer' : 'Platform Wallet';
-    let status = isCancelled ? 'Cancelled' : isPaid ? 'Paid' : 'Pending';
-
-    return {
-        id: `INV-V-${1000 + i}`,
-        orderId: `ORD-${8800 + Math.floor(i / 2)}`, // Duplicates order IDs to show multiple products logic
-        vendorId: `VND-${100 + i % 8}`,
-        vendorName: `Vendor Company ${1 + i % 8}`,
-        vendorPhone: `+1 ${Math.floor(Math.random() * 900 + 100)}-${Math.floor(Math.random() * 900 + 100)}-${Math.floor(Math.random() * 9000 + 1000)}`,
-        vendorEmail: `contact${1 + i % 8}@vendorcompany.com`,
-        vendorAvatar: `https://ui-avatars.com/api/?name=Company+${1 + i % 8}&background=random`,
-        amount: Math.floor(Math.random() * 5000) + 100,
-        paymentMethod: paymentMethod,
-        date: new Date(Date.now() - Math.floor(Math.random() * 10000000000)).toISOString().split('T')[0],
-        status: status,
-        itemCount: Math.floor(Math.random() * 3) + 1
-    };
-});
-
-const uniqueVendorCompanies = [...new Set(MOCK_DATA.map(i => i.vendorName))].sort();
+import { getAdminVendorInvoicesApi } from '../../api/admin_invoices.api';
+import Toast from '../../components/common/Toast/Toast';
+import { exportVendorSummariesToExcel, exportVendorSummariesToPDF } from './services/invoiceExport.service';
 
 const VendorInvoices = () => {
-    const [allFilteredInvoices, setAllFilteredInvoices] = useState([]);
-    const [invoices, setInvoices] = useState([]);
+    const [vendors, setVendors] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [filters, setFilters] = useState({ search: '', status: 'All', fromDate: '', toDate: '', vendor: 'All' });
-    const [pagination, setPagination] = useState({ currentPage: 1, itemsPerPage: 10, totalRecords: 0 });
+    const [filters, setFilters] = useState({ search: '', fromDate: '', toDate: '' });
+    const [pagination, setPagination] = useState({ currentPage: 1, itemsPerPage: 10, totalRecords: 0, totalPages: 1 });
     const [selectedIds, setSelectedIds] = useState([]);
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
     const [historyVendorId, setHistoryVendorId] = useState(null);
+    const [stats, setStats] = useState({ total: 0, paid: 0, pending: 0, refunded: 0 });
+    const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
-    const handleViewHistory = (vendorId) => {
-        setHistoryVendorId(vendorId);
+    const showToast = (message, type = 'success') => {
+        setToast({ show: true, message, type });
+        setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
+    };
+
+    const handleViewHistory = (id) => {
+        setHistoryVendorId(id);
         setIsHistoryModalOpen(true);
     };
 
-    const fetchInvoices = () => {
+    const fetchVendorSummaries = async () => {
         setLoading(true);
-        setTimeout(() => {
-            let filtered = MOCK_DATA;
-            if (filters.search) filtered = filtered.filter(i => 
-                i.id.toLowerCase().includes(filters.search.toLowerCase()) || 
-                i.orderId.toLowerCase().includes(filters.search.toLowerCase()) || 
-                i.vendorName.toLowerCase().includes(filters.search.toLowerCase())
-            );
-            if (filters.status !== 'All') filtered = filtered.filter(i => i.status === filters.status);
-            if (filters.vendor !== 'All') filtered = filtered.filter(i => i.vendorName === filters.vendor);
-            if (filters.fromDate) filtered = filtered.filter(i => new Date(i.date) >= new Date(filters.fromDate));
-            if (filters.toDate) filtered = filtered.filter(i => new Date(i.date) <= new Date(filters.toDate));
+        try {
+            const params = {
+                page: pagination.currentPage,
+                limit: pagination.itemsPerPage,
+                ...filters
+            };
             
-            const start = (pagination.currentPage - 1) * pagination.itemsPerPage;
-            const end = start + pagination.itemsPerPage;
-            
-            setAllFilteredInvoices(filtered);
-            setInvoices(filtered.slice(start, end));
-            setPagination(prev => ({ ...prev, totalRecords: filtered.length }));
+            const res = await getAdminVendorInvoicesApi(params);
+            if (res.data.success) {
+                const { records, pagination: pg, stats: apiStats } = res.data.data;
+                setVendors(records);
+                setPagination(prev => ({
+                    ...prev,
+                    totalRecords: pg.totalRecords,
+                    totalPages: pg.totalPages
+                }));
+                setStats({
+                    total: apiStats.total,
+                    paid: apiStats.paid,
+                    pending: apiStats.pending,
+                    refunded: apiStats.refunded
+                });
+            }
+        } catch (err) {
+            console.error("Error fetching vendor summaries:", err);
+            showToast("Failed to fetch data", "error");
+        } finally {
             setLoading(false);
-        }, 500);
+        }
+    };
+
+    const handleBulkExport = async (type) => {
+        if (selectedIds.length === 0) {
+            return showToast('Please select vendors to export', 'error');
+        }
+        
+        setLoading(true);
+        try {
+            let dataToExport;
+            
+            // If we have more selected than current page items, fetch all selected data
+            if (selectedIds.length > vendors.length) {
+                const res = await getAdminVendorInvoicesApi({ 
+                    limit: pagination.totalRecords,
+                    ...filters 
+                });
+                dataToExport = (res.data.data.records || []).filter(v => selectedIds.includes(v.vendorId));
+            } else {
+                dataToExport = vendors.filter(v => selectedIds.includes(v.vendorId));
+            }
+
+            if (type === 'excel') {
+                exportVendorSummariesToExcel(dataToExport);
+                showToast('Excel report generated successfully');
+            } else {
+                exportVendorSummariesToPDF(dataToExport);
+                showToast('PDF report generated successfully');
+            }
+        } catch (error) {
+            showToast('Failed to generate report', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+    const handleSelectAll = async (select) => {
+        if (!select) {
+            setSelectedIds([]);
+            return;
+        }
+
+        setLoading(true);
+        try {
+            // Fetch all records with current filters to get all IDs
+            const params = {
+                limit: pagination.totalRecords,
+                ...filters
+            };
+            
+            const res = await getAdminVendorInvoicesApi(params);
+            if (res.data.success) {
+                const allIds = (res.data.data.records || []).map(v => v.vendorId);
+                setSelectedIds(allIds);
+            }
+        } catch (error) {
+            console.error('Select All Error:', error);
+            showToast('Failed to select all vendors', 'error');
+        } finally {
+            setLoading(false);
+        }
     };
 
     useEffect(() => {
-        fetchInvoices();
+        const debounce = setTimeout(() => {
+            fetchVendorSummaries();
+        }, 300);
+        return () => clearTimeout(debounce);
     }, [pagination.currentPage, pagination.itemsPerPage, filters]);
 
     const handleFilterChange = (newFilters) => {
@@ -77,29 +134,22 @@ const VendorInvoices = () => {
         setPagination(prev => ({ ...prev, currentPage: 1 }));
     };
 
-    const stats = {
-        total: MOCK_DATA.length,
-        paid: MOCK_DATA.filter(i => i.status === 'Paid').length,
-        pending: MOCK_DATA.filter(i => i.status === 'Pending').length,
-        refunded: MOCK_DATA.filter(i => i.status === 'Cancelled').length
-    };
-
     return (
         <div className="management-module">
+            {toast.show && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast({ ...toast, show: false })}
+                />
+            )}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.8rem', margin: 0, fontWeight: 700, color: 'var(--text-primary)' }}>Vendor Invoices</h1>
+                    <h1 style={{ fontSize: '1.8rem', margin: 0, fontWeight: 700, color: 'var(--text-primary)' }}>Vendor Invoice Summary</h1>
                     <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '4px' }}>
-                        Manage and track vendor payments, platform payouts, and bills.
+                        Overview of vendor payouts and invoice history.
                     </p>
                 </div>
-                <button
-                    className="btn btn-primary"
-                    onClick={() => {}}
-                    style={{ borderRadius: '10px', padding: '10px 20px', display: 'flex', gap: '8px', alignItems: 'center' }}
-                >
-                    <Plus size={18} /> Generate Invoice
-                </button>
             </div>
 
             <InvoiceStats stats={stats} />
@@ -112,19 +162,18 @@ const VendorInvoices = () => {
                 )}
                 
                 <VendorInvoiceList
-                    invoices={invoices}
+                    invoices={vendors} // Reusing the prop name for now
                     totalCount={pagination.totalRecords}
                     filters={filters}
                     setFilters={handleFilterChange}
-                    vendorCompanies={uniqueVendorCompanies}
                     pagination={pagination}
                     setPagination={setPagination}
                     selectedIds={selectedIds}
                     setSelectedIds={setSelectedIds}
-                    onSelectAll={(select) => setSelectedIds(select ? allFilteredInvoices.map(i => i.id) : [])}
-                    onView={() => {}}
+                    onSelectAll={handleSelectAll}
                     onViewHistory={handleViewHistory}
-                    onExport={() => {}}
+                    onExport={handleBulkExport}
+                    showToast={showToast}
                 />
             </div>
             
@@ -132,10 +181,10 @@ const VendorInvoices = () => {
                 <VendorInvoiceHistoryModal 
                     vendorId={historyVendorId} 
                     onClose={() => setIsHistoryModalOpen(false)} 
+                    showToast={showToast}
                 />
             )}
         </div>
     );
 };
-
 export default VendorInvoices;
