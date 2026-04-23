@@ -312,9 +312,38 @@ const OrdersPage = () => {
                                                                             <Package size={16} color="#94a3b8" />
                                                                         </div>
                                                                     )}
-                                                                    <div>
-                                                                        <div style={{ fontWeight: 600, fontSize: '0.88rem' }}>{item.productName}</div>
-                                                                        <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{item.brand}</div>
+                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                                                        <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#1e293b' }}>{item.productName}</div>
+                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                                                            <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{item.brand}</span>
+                                                                            <span style={{ fontSize: '0.7rem', color: 'var(--primary-color)', fontWeight: 600, background: '#f0f7ff', padding: '0 6px', borderRadius: '4px' }}>
+                                                                                Vendor: {item.vendorName}
+                                                                            </span>
+                                                                        </div>
+                                                                        
+                                                                        {/* Item Level Badges */}
+                                                                        <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
+                                                                            <span className={`status-badge ${getStatusClass(item.status)}`} 
+                                                                                style={{ fontSize: '0.62rem', padding: '2px 8px', borderRadius: '4px', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.02em' }}>
+                                                                                {item.status}
+                                                                            </span>
+                                                                            <span 
+                                                                                style={{ 
+                                                                                    fontSize: '0.62rem', 
+                                                                                    padding: '2px 8px', 
+                                                                                    borderRadius: '4px', 
+                                                                                    textTransform: 'uppercase',
+                                                                                    fontWeight: 700,
+                                                                                    letterSpacing: '0.02em',
+                                                                                    background: (item.paymentStatus === 'Paid') ? '#dcfce7' : '#fef9c3',
+                                                                                    color: (item.paymentStatus === 'Paid') ? '#15803d' : '#a16207',
+                                                                                    border: `1px solid ${(item.paymentStatus === 'Paid') ? '#bbf7d0' : '#fef08a'}`,
+                                                                                    minWidth: 'fit-content',
+                                                                                    display: 'inline-block'
+                                                                                }}>
+                                                                                {item.paymentStatus || 'PENDING'}
+                                                                            </span>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
                                                             </td>

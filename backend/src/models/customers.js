@@ -196,7 +196,7 @@ const TABLES = [
                 coupon_code VARCHAR(50) NULL,
                 payment_method ENUM('Online', 'COD') DEFAULT 'COD',
                 payment_status ENUM('Pending', 'Paid', 'Failed', 'Refunded') DEFAULT 'Pending',
-                order_status ENUM('Pending', 'Confirmed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled') DEFAULT 'Pending',
+                order_status ENUM('Pending', 'Confirmed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled', 'Partially Shipped', 'Partially Delivered', 'Return Requested', 'Returned', 'Refunded') DEFAULT 'Pending',
                 
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -222,6 +222,9 @@ const TABLES = [
                 quantity INT NOT NULL DEFAULT 1,
                 price DECIMAL(10, 2) NOT NULL,
                 
+                item_status ENUM('Pending', 'Confirmed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled', 'Return Requested', 'Returned', 'Refunded') DEFAULT 'Pending',
+                payment_status ENUM('Pending', 'Paid', 'Refunded') DEFAULT 'Pending',
+                status_updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 
                 FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
@@ -230,7 +233,9 @@ const TABLES = [
                 
                 INDEX idx_order_id (order_id),
                 INDEX idx_vendor_id (vendor_id),
-                INDEX idx_product_id (product_id)
+                INDEX idx_product_id (product_id),
+                INDEX idx_item_status (item_status),
+                INDEX idx_payment_status (payment_status)
             );
         `
     },
@@ -314,6 +319,66 @@ const TABLES = [
 
                 FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
                 INDEX idx_order_id (order_id)
+            );
+        `
+    },
+    {
+        name: "order_returns",
+        query: `
+            CREATE TABLE IF NOT EXISTS order_returns (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                order_item_id BIGINT NOT NULL,
+                customer_id BIGINT NOT NULL,
+                vendor_id BIGINT NOT NULL,
+                
+                reason TEXT NOT NULL,
+                images JSON NULL,
+                status ENUM('Requested', 'Approved', 'Rejected', 'Picked Up', 'Received', 'Refunded') DEFAULT 'Requested',
+                admin_notes TEXT,
+                vendor_notes TEXT,
+                
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                
+                FOREIGN KEY (order_item_id) REFERENCES order_items(id),
+                FOREIGN KEY (customer_id) REFERENCES customers(id),
+                FOREIGN KEY (vendor_id) REFERENCES vendors(id),
+                INDEX idx_item (order_item_id),
+                INDEX idx_vendor (vendor_id),
+                INDEX idx_status (status)
+            );
+        `
+    },
+    {
+        name: "order_refunds",
+        query: `
+            CREATE TABLE IF NOT EXISTS order_refunds (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                order_item_id BIGINT NOT NULL,
+                order_return_id BIGINT NULL,
+                vendor_id BIGINT NOT NULL,
+                
+                amount DECIMAL(10, 2) NOT NULL,
+                refund_method ENUM('UPI', 'Bank Transfer') NOT NULL,
+                
+                -- Manual Payment Details
+                account_holder_name VARCHAR(150),
+                account_number VARCHAR(50),
+                ifsc_code VARCHAR(20),
+                upi_id VARCHAR(100),
+                
+                -- Proof of Payment
+                transaction_id VARCHAR(255) NOT NULL COMMENT 'Manual Transaction Ref from Vendor',
+                payment_proof_url VARCHAR(255),
+                
+                status ENUM('Pending', 'Completed') DEFAULT 'Completed',
+                processed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                
+                FOREIGN KEY (order_item_id) REFERENCES order_items(id),
+                FOREIGN KEY (order_return_id) REFERENCES order_returns(id),
+                FOREIGN KEY (vendor_id) REFERENCES vendors(id),
+                INDEX idx_item (order_item_id),
+                INDEX idx_vendor (vendor_id)
             );
         `
     }

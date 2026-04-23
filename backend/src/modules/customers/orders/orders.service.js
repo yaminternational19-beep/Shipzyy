@@ -492,9 +492,9 @@ export const placeOrder = async (customerId, payload) => {
     for (const item of cartItems) {
       await connection.query(
         `INSERT INTO order_items (
-          order_id, product_id, vendor_id, quantity, price
-        ) VALUES (?, ?, ?, ?, ?)`,
-        [orderId, item.product_id, item.vendor_id, item.quantity, item.offer_price]
+          order_id, product_id, vendor_id, quantity, price, item_status
+        ) VALUES (?, ?, ?, ?, ?, ?)`,
+        [orderId, item.product_id, item.vendor_id, item.quantity, item.offer_price, order_status]
       );
     }
 
@@ -622,7 +622,7 @@ export const getOrderDetails = async (customerId, orderId) => {
 
   const itemsQuery = `
     SELECT 
-      oi.id as item_id, oi.quantity, oi.price AS offer_price,
+      oi.id as item_id, oi.quantity, oi.price AS offer_price, oi.item_status, oi.status_updated_at,
       p.id, p.name, p.slug, p.description,
       v.business_name AS vendor_name,
       pv.mrp, pv.discount_percentage,

@@ -281,6 +281,9 @@ const getOrderById = async (orderId) => {
             v.email                             AS vendorEmail,
             v.mobile                            AS vendorPhone,
             v.country_code                      AS vendorCountryCode,
+            oi.item_status                      AS itemStatus,
+            oi.payment_status                   AS paymentStatus,
+            oi.status_updated_at                AS itemStatusAt,
             (
                 SELECT image_url FROM product_images
                 WHERE product_id = p.id AND is_primary = 1
@@ -340,6 +343,8 @@ const getOrderById = async (orderId) => {
             quantity:      item.quantity,
             price:         parseFloat(item.price || 0),
             lineTotal:     parseFloat(item.price || 0) * item.quantity,
+            status:        item.itemStatus,
+            statusAt:      item.itemStatusAt,
             vendorId:      item.vendorId,
             vendorCompany: item.vendorCompanyName,
             vendorName:    item.vendorName,

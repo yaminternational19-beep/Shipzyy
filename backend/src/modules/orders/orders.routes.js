@@ -12,4 +12,5 @@ router.get("/", validate(getOrdersQuerySchema, 'query'), controller.getAllOrders
 router.patch("/:orderId/status", validate(updateStatusSchema), controller.updateOrderStatus);
 router.patch("/:orderId/payment-status", validate(updatePaymentStatusSchema), controller.updatePaymentStatus);
 
+
 export default router;

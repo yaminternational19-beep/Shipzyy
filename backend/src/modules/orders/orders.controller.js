@@ -14,7 +14,7 @@ export const getAllOrders = asyncHandler(async (req, res) => {
 });
 
 export const updateOrderStatus = asyncHandler(async (req, res) => {
-    const vendorId = req.user?.id;
+    const vendorId = req.user?.vendor_id || req.user?.id;
     const { orderId } = req.params;
     const { status } = req.body;
 
@@ -33,6 +33,8 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
 export const updatePaymentStatus = asyncHandler(async (req, res) => {
     // Admin or Vendor can update payment status
     const userId = req.user?.id;
+    const vendorId = req.user?.vendor_id || req.user?.id;
+    const role = req.user?.role;
     const { orderId } = req.params;
     const { payment_status } = req.body;
 
@@ -44,6 +46,6 @@ export const updatePaymentStatus = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Payment status is required");
     }
 
-    const result = await ordersService.updatePaymentStatus(userId, orderId, payment_status);
+    const result = await ordersService.updatePaymentStatus(vendorId, role, orderId, payment_status);
     return ApiResponse.success(res, result.message, result);
 });

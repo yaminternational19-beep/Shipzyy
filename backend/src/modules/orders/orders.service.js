@@ -26,7 +26,7 @@ export const getAllOrders = async (vendorId, queryParams = {}) => {
   let values = [vendorId];
 
   if (queryParams.status) {
-    where.push("o.order_status = ?");
+    where.push("oi.item_status = ?");
     values.push(queryParams.status);
   }
 
@@ -71,8 +71,8 @@ export const getAllOrders = async (vendorId, queryParams = {}) => {
       o.order_number,
       o.total_amount AS order_total_amount,
       o.payment_method,
-      o.payment_status,
-      o.order_status as status,
+      o.order_status as global_status,
+      o.payment_status as global_payment_status,
       o.created_at,
       o.updated_at,
       c.name as customerName,
@@ -84,19 +84,29 @@ export const getAllOrders = async (vendorId, queryParams = {}) => {
       ca.city,
       ca.state,
       ca.pincode,
+      -- Vendor Specific Calculations
       (SELECT COUNT(*) FROM order_items WHERE order_id = o.id AND vendor_id = ?) as vendorProductsCount,
-      (SELECT SUM(price * quantity) FROM order_items WHERE order_id = o.id AND vendor_id = ?) as vendorTotalAmount
+      (SELECT SUM(price * quantity) FROM order_items WHERE order_id = o.id AND vendor_id = ?) as vendorTotalAmount,
+      (SELECT 
+          CASE 
+              WHEN COUNT(*) = SUM(CASE WHEN payment_status = 'Paid' THEN 1 ELSE 0 END) THEN 'Paid'
+              WHEN SUM(CASE WHEN payment_status = 'Refunded' THEN 1 ELSE 0 END) > 0 THEN 'Refunded'
+              ELSE 'Pending'
+          END
+       FROM order_items WHERE order_id = o.id AND vendor_id = ?) as payment_status,
+      (SELECT item_status FROM order_items WHERE order_id = o.id AND vendor_id = ? ORDER BY 
+        FIELD(item_status, 'Pending', 'Confirmed', 'Shipped', 'Out for Delivery', 'Return Requested', 'Delivered', 'Returned', 'Refunded', 'Cancelled') ASC LIMIT 1) as vendor_status
     FROM orders o
-    JOIN order_items oi ON o.id = oi.order_id
     JOIN customers c ON o.customer_id = c.id
     LEFT JOIN customers_addresses ca ON o.address_id = ca.id
-    ${whereClause}
-    GROUP BY o.id
+    WHERE o.id IN (SELECT DISTINCT order_id FROM order_items WHERE vendor_id = ?)
+      ${where.length > 1 ? ' AND ' + where.slice(1).join(" AND ") : ""}
     ORDER BY o.created_at DESC
     LIMIT ? OFFSET ?
   `;
 
-  const [rows] = await db.query(selectQuery, [vendorId, vendorId, ...values, limit, skip]);
+
+  const [rows] = await db.query(selectQuery, [vendorId, vendorId, vendorId, vendorId, vendorId, ...values.slice(1), limit, skip]);
 
   const orders = rows.map(row => ({
     id: row.id.toString(),
@@ -109,7 +119,8 @@ export const getAllOrders = async (vendorId, queryParams = {}) => {
     totalAmount: parseFloat(row.vendorTotalAmount || 0),
     paymentMethod: row.payment_method,
     paymentStatus: row.payment_status,
-    status: row.status,
+    status: row.vendor_status, // Show the vendor's specific status
+    globalStatus: row.global_status,
     deliveryAddress: `${row.address_line_1}, ${row.address_line_2 ? row.address_line_2 + ', ' : ''}${row.city}, ${row.state} - ${row.pincode}`,
     createdDate: formatDate(row.created_at),
     statusDate: formatDate(row.updated_at)
@@ -119,10 +130,13 @@ export const getAllOrders = async (vendorId, queryParams = {}) => {
   for (const order of orders) {
     const [items] = await db.query(`
         SELECT 
+            oi.id as itemId,
             p.name, 
             oi.product_id, 
             oi.quantity as qty, 
             oi.price,
+            oi.item_status as status,
+            oi.payment_status as paymentStatus,
             (SELECT image_url FROM product_images WHERE product_id = p.id ORDER BY is_primary DESC LIMIT 1) as image
         FROM order_items oi
         JOIN products p ON oi.product_id = p.id
@@ -157,122 +171,229 @@ const getStatusCount = async (vendorId, status) => {
         SELECT COUNT(DISTINCT o.id) as count 
         FROM orders o 
         JOIN order_items oi ON o.id = oi.order_id 
-        WHERE oi.vendor_id = ? AND o.order_status = ?
+        WHERE oi.vendor_id = ? AND oi.item_status = ?
     `, [vendorId, status]);
   return rows[0].count;
 };
 
 const getPaymentStatusCount = async (vendorId, status) => {
-    const [rows] = await db.query(`
+  const [rows] = await db.query(`
           SELECT COUNT(DISTINCT o.id) as count 
           FROM orders o 
           JOIN order_items oi ON o.id = oi.order_id 
           WHERE oi.vendor_id = ? AND o.payment_status = ?
       `, [vendorId, status]);
-    return rows[0].count;
+  return rows[0].count;
 };
 
 /**
- * Update order status
+ * Helper to synchronize the main order status based on all item statuses
  */
-export const updateOrderStatus = async (vendorId, orderId, status) => {
-  // 1. Check if vendor has access to this order
-  const [access] = await db.query(`
-        SELECT 1 FROM order_items WHERE order_id = ? AND vendor_id = ? LIMIT 1
-    `, [orderId, vendorId]);
+const syncMainOrderStatus = async (orderId) => {
+  const [items] = await db.query(
+    "SELECT item_status FROM order_items WHERE order_id = ?",
+    [orderId]
+  );
 
-  if (access.length === 0) {
-    throw new ApiError(403, "You do not have access to this order");
+  if (items.length === 0) return;
+
+  const statuses = items.map(i => i.item_status);
+  const uniqueStatuses = [...new Set(statuses)];
+
+  let mainStatus = 'Pending';
+
+  // 1. If all items are delivered
+  if (uniqueStatuses.length === 1 && uniqueStatuses[0] === 'Delivered') {
+    mainStatus = 'Delivered';
+  }
+  // 2. If all items are cancelled
+  else if (uniqueStatuses.length === 1 && uniqueStatuses[0] === 'Cancelled') {
+    mainStatus = 'Cancelled';
+  }
+  // 3. If all items are refunded
+  else if (uniqueStatuses.length === 1 && uniqueStatuses[0] === 'Refunded') {
+    mainStatus = 'Refunded';
+  }
+  // 4. Handle Returns/Refunds mixing with others
+  else if (statuses.includes('Refunded')) {
+    mainStatus = 'Refunded'; // Or "Partially Refunded" if you want to be very specific
+  }
+  else if (statuses.includes('Returned')) {
+    mainStatus = 'Returned';
+  }
+  else if (statuses.includes('Return Requested')) {
+    mainStatus = 'Return Requested';
+  }
+  // 5. If some are delivered and others are still in progress
+  else if (statuses.includes('Delivered')) {
+    mainStatus = 'Partially Delivered';
+  }
+  // 6. If any item is shipped/out for delivery
+  else if (statuses.includes('Shipped') || statuses.includes('Out for Delivery')) {
+    mainStatus = 'Partially Shipped';
+  }
+  // 7. If all items are at least confirmed
+  else if (!statuses.includes('Pending')) {
+    mainStatus = 'Confirmed';
   }
 
-  // 2. Update status in orders table
-  await db.query(`
-        UPDATE orders SET order_status = ?, updated_at = NOW() WHERE id = ?
-    `, [status, orderId]);
+  await db.query("UPDATE orders SET order_status = ?, updated_at = NOW() WHERE id = ?", [mainStatus, orderId]);
+  return mainStatus;
+};
 
-  // 2.1 Log the status update
+/**
+ * Update order status (Item-Level for Vendors)
+ */
+export const updateOrderStatus = async (vendorId, orderId, status) => {
+  // 1. Update item_status for this vendor's items in the order
+  const [result] = await db.query(`
+        UPDATE order_items 
+        SET item_status = ?, status_updated_at = NOW() 
+        WHERE order_id = ? AND vendor_id = ?
+    `, [status, orderId, vendorId]);
+
+  if (result.affectedRows === 0) {
+    throw new ApiError(403, "You do not have access to this order or no items were found");
+  }
+
+  // 2. Sync the main order status based on all items
+  const newMainStatus = await syncMainOrderStatus(orderId);
+
+  // 3. Log the status update
   const displayTitles = {
-      'Pending': 'Order Pending',
-      'Confirmed': 'Order Confirmed',
-      'Shipped': 'Order Shipped',
-      'Out for Delivery': 'Out for Delivery',
-      'Delivered': 'Order Delivered',
-      'Cancelled': 'Order Cancelled'
+    'Pending': 'Vendor Pending',
+    'Confirmed': 'Vendor Confirmed',
+    'Shipped': 'Vendor Shipped',
+    'Out for Delivery': 'Out for Delivery',
+    'Delivered': 'Vendor Delivered',
+    'Cancelled': 'Vendor Cancelled'
   };
-  const displayTitle = displayTitles[status] || `Order ${status}`;
+  const displayTitle = displayTitles[status] || `Vendor ${status}`;
 
   await db.query(`
       INSERT INTO order_status_logs (order_id, status, display_title, changed_by_role, changed_by_id)
       VALUES (?, ?, ?, 'vendor', ?)
   `, [orderId, status, displayTitle, vendorId]);
 
-  // 3. Automated Invoicing Logic
-  // Fetch payment method and status
-  const [orderInfo] = await db.query("SELECT payment_method, payment_status FROM orders WHERE id = ?", [orderId]);
-  const order = orderInfo[0];
-
-  // If COD and delivered -> Mark as Paid and Generate Invoice
-  if (status === 'Delivered' && order.payment_method === 'COD' && order.payment_status === 'Pending') {
-    await db.query("UPDATE orders SET payment_status = 'Paid', updated_at = NOW() WHERE id = ?", [orderId]);
-    await createInvoicesForOrder(orderId);
-  }
-
   // 4. Clear relevant caches
   await removeByPattern(`vendor:orders:list:${vendorId}:*`);
   await removeByPattern(`admin:orders:list:*`);
   await removeByPattern(`admin:order:detail:${orderId}`);
 
-  return { success: true, message: `Order status updated to ${status}` };
+  return { success: true, message: `Your items in order ${orderId} updated to ${status}. Main order is now ${newMainStatus}.` };
 };
 
 /**
- * Handle manual payment status update by Admin
+ * Helper to synchronize main payment status based on items
  */
-export const updatePaymentStatus = async (adminId, orderId, paymentStatus) => {
-    // 1. Fetch current order info for validation
-    const [orderInfo] = await db.query(
-        "SELECT payment_method, order_status FROM orders WHERE id = ?",
-        [orderId]
-    );
+const syncMainPaymentStatus = async (orderId) => {
+  const [items] = await db.query(
+    "SELECT payment_status FROM order_items WHERE order_id = ?",
+    [orderId]
+  );
 
-    if (orderInfo.length === 0) {
-        throw new ApiError(404, "Order not found");
-    }
+  if (items.length === 0) return;
 
-    const { payment_method, order_status } = orderInfo[0];
+  const statuses = items.map(i => i.payment_status);
+  const uniqueStatuses = [...new Set(statuses)];
 
-    // 2. Validation Logic
-    if (order_status === 'Cancelled') {
-        throw new ApiError(400, "Cannot update payment status for a cancelled order.");
-    }
+  let mainPaymentStatus = 'Pending';
 
-    if (payment_method === 'COD' && order_status !== 'Delivered' && paymentStatus === 'Paid') {
-        throw new ApiError(400, "COD orders can only be marked as 'Paid' after they are successfully Delivered.");
-    }
+  // 1. If all items are paid
+  if (uniqueStatuses.length === 1 && uniqueStatuses[0] === 'Paid') {
+    mainPaymentStatus = 'Paid';
+  }
+  // 2. If some are paid and others are still pending
+  else if (statuses.includes('Paid')) {
+    mainPaymentStatus = 'Pending'; // Order is still pending overall until all are paid
+  }
+  // 3. Handle refunds
+  else if (uniqueStatuses.includes('Refunded')) {
+    mainPaymentStatus = 'Refunded';
+  }
 
-    // 3. Update Payment Status
-    await db.query("UPDATE orders SET payment_status = ?, updated_at = NOW() WHERE id = ?", [paymentStatus, orderId]);
-
-    // 4. If marked as Paid, generate invoices (if not already generated)
-    if (paymentStatus === 'Paid') {
-        const [invExists] = await db.query("SELECT 1 FROM customer_invoices WHERE order_id = ? LIMIT 1", [orderId]);
-        if (invExists.length === 0) {
-            // Run in background to avoid blocking the main thread
-            createInvoicesForOrder(orderId).catch(err => 
-                console.error(`Background Invoice Generation Error for Order ${orderId}:`, err)
-            );
-        }
-    }
-
-    // 5. Clear caches
-    // Find all vendors involved in this order to clear their caches
-    const [vendors] = await db.query("SELECT DISTINCT vendor_id FROM order_items WHERE order_id = ?", [orderId]);
-    for (const v of vendors) {
-        await removeByPattern(`vendor:orders:list:${v.vendor_id}:*`);
-    }
-    
-    await removeByPattern(`admin:orders:list:*`);
-    await removeByPattern(`admin:order:detail:${orderId}`);
-
-    return { success: true, message: `Payment status updated to ${paymentStatus}` };
+  await db.query("UPDATE orders SET payment_status = ?, updated_at = NOW() WHERE id = ?", [mainPaymentStatus, orderId]);
+  return mainPaymentStatus;
 };
+
+/**
+ * Handle manual payment status update (Item-Level)
+ */
+export const updatePaymentStatus = async (userId, role, orderId, paymentStatus) => {
+  // 1. Fetch current order info for validation
+  const [orderInfo] = await db.query(
+    "SELECT payment_method, order_status FROM orders WHERE id = ?",
+    [orderId]
+  );
+
+  if (orderInfo.length === 0) {
+    throw new ApiError(404, "Order not found");
+  }
+
+  const { payment_method, order_status } = orderInfo[0];
+
+  // 2. Role-based Validation
+  const isVendor = ['VENDOR_OWNER', 'VENDOR_STAFF'].includes(role);
+  if (isVendor && payment_method !== 'COD') {
+    throw new ApiError(403, "Vendors can only update payment status for COD orders. Online payments are handled by the system.");
+  }
+
+  // 3. Status-based Validation
+  if (order_status === 'Cancelled') {
+    throw new ApiError(400, "Cannot update payment status for a cancelled order.");
+  }
+
+  const allowedStatusesForPaid = ['Delivered', 'Partially Delivered', 'Returned', 'Refunded'];
+  if (payment_method === 'COD' && !allowedStatusesForPaid.includes(order_status) && paymentStatus === 'Paid') {
+    throw new ApiError(400, "COD items can only be marked as 'Paid' after they are Delivered.");
+  }
+
+  // 4. Update Item-Level Payment Status
+  if (isVendor) {
+    // Vendor only updates their own items
+    await db.query(`
+            UPDATE order_items 
+            SET payment_status = ?, status_updated_at = NOW() 
+            WHERE order_id = ? AND vendor_id = ?
+        `, [paymentStatus, orderId, userId]);
+  } else {
+    // Admin updates all items in the order
+    await db.query(`
+            UPDATE order_items 
+            SET payment_status = ?, status_updated_at = NOW() 
+            WHERE order_id = ?
+        `, [paymentStatus, orderId]);
+  }
+
+  // 5. Sync main order payment status
+  const newMainPaymentStatus = await syncMainPaymentStatus(orderId);
+
+  // 6. If marked as Paid, generate invoices (if all items are now paid)
+  if (newMainPaymentStatus === 'Paid') {
+    const [invExists] = await db.query("SELECT 1 FROM customer_invoices WHERE order_id = ? LIMIT 1", [orderId]);
+    if (invExists.length === 0) {
+      createInvoicesForOrder(orderId).catch(err =>
+        console.error(`Background Invoice Generation Error for Order ${orderId}:`, err)
+      );
+    }
+  }
+
+  // 7. Clear caches
+  const [vendors] = await db.query("SELECT DISTINCT vendor_id FROM order_items WHERE order_id = ?", [orderId]);
+  for (const v of vendors) {
+    await removeByPattern(`vendor:orders:list:${v.vendor_id}:*`);
+  }
+
+  await removeByPattern(`admin:orders:list:*`);
+  await removeByPattern(`admin:order:detail:${orderId}`);
+
+  return {
+    success: true,
+    message: `Payment status updated to ${paymentStatus} for your items.`,
+    globalPaymentStatus: newMainPaymentStatus
+  };
+};
+
+/**
+ * Handle Return Request from Customer
+ */
