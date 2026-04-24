@@ -35,4 +35,36 @@ const createReview = asyncHandler(async (req, res) => {
     return ApiResponse.success(res, "Review submitted successfully", result, 201);
 });
 
-export default { createReview };
+const updateReview = asyncHandler(async (req, res) => {
+    const customerId = req.user.id;
+    const reviewId = req.params.reviewId;
+    const updateData = req.body;
+
+    // Handle new image uploads
+    let files = [];
+    if (req.files) {
+        if (Array.isArray(req.files)) {
+            files = req.files;
+        } else {
+            files = [
+                ...(req.files.images || []),
+                ...(req.files.imageUrls || [])
+            ];
+        }
+    } else if (req.file) {
+        files = [req.file];
+    }
+
+    const result = await reviewsService.updateReview(customerId, reviewId, updateData, files);
+    return ApiResponse.success(res, result.message, null);
+});
+
+const deleteReview = asyncHandler(async (req, res) => {
+    const customerId = req.user.id;
+    const reviewId = req.params.reviewId;
+
+    const result = await reviewsService.deleteReview(customerId, reviewId);
+    return ApiResponse.success(res, result.message, null);
+});
+
+export default { createReview, updateReview, deleteReview };

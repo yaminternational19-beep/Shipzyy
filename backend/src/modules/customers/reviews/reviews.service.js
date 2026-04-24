@@ -30,14 +30,14 @@ const createReview = async (customerId, reviewData, files = []) => {
         throw new ApiError(400, "You can only review items after they have been delivered.");
     }
 
-    // 2. Check for existing review (One review per order item)
+    // 2. Check for existing review (One review per customer per product)
     const [existing] = await db.query(
-        `SELECT id FROM customer_reviews WHERE order_item_id = ?`,
-        [item_id]
+        `SELECT id FROM customer_reviews WHERE customer_id = ? AND product_id = ?`,
+        [customerId, product_id]
     );
 
     if (existing.length > 0) {
-        throw new ApiError(400, "You have already reviewed this item.");
+        throw new ApiError(400, "You have already reviewed this product.");
     }
 
     // 3. Handle images
@@ -69,6 +69,68 @@ const createReview = async (customerId, reviewData, files = []) => {
         id: result.insertId,
         message: "Review submitted successfully"
     };
+};
+
+/**
+ * Update an existing review
+ */
+const updateReview = async (customerId, reviewId, updateData, files = []) => {
+    const { rating, review } = updateData;
+
+    // 1. Verify ownership
+    const [existing] = await db.query(
+        `SELECT id, images FROM customer_reviews WHERE id = ? AND customer_id = ?`,
+        [reviewId, customerId]
+    );
+
+    if (existing.length === 0) {
+        throw new ApiError(403, "You can only edit your own reviews.");
+    }
+
+    // 2. Handle new images if provided
+    let imageUrls = null;
+    if (files && files.length > 0) {
+        imageUrls = [];
+        for (const file of files) {
+            const { url } = await uploadFile(file, 'reviews');
+            imageUrls.push(url);
+        }
+    }
+
+    // 3. Update
+    if (imageUrls) {
+        await db.query(
+            `UPDATE customer_reviews SET rating = ?, review = ?, images = ? WHERE id = ?`,
+            [rating, review, JSON.stringify(imageUrls), reviewId]
+        );
+    } else {
+        await db.query(
+            `UPDATE customer_reviews SET rating = ?, review = ? WHERE id = ?`,
+            [rating, review, reviewId]
+        );
+    }
+
+    return { message: "Review updated successfully" };
+};
+
+/**
+ * Delete a review
+ */
+const deleteReview = async (customerId, reviewId) => {
+    // 1. Verify ownership
+    const [existing] = await db.query(
+        `SELECT id FROM customer_reviews WHERE id = ? AND customer_id = ?`,
+        [reviewId, customerId]
+    );
+
+    if (existing.length === 0) {
+        throw new ApiError(403, "You can only delete your own reviews.");
+    }
+
+    // 2. Delete
+    await db.query(`DELETE FROM customer_reviews WHERE id = ?`, [reviewId]);
+
+    return { message: "Review deleted successfully" };
 };
 
 /**
@@ -134,5 +196,5 @@ const listReviews = async (queryParams, vendorId = null) => {
 };
 
 
-export default { createReview, listReviews };
+export default { createReview, updateReview, deleteReview, listReviews };
 

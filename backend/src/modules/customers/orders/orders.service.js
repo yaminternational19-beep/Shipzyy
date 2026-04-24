@@ -595,6 +595,7 @@ export const getOrderHistory = async (customerId, queryParams = {}) => {
         v.business_name as vendor_name,
         (SELECT image_url FROM product_images WHERE product_id = p.id ORDER BY is_primary DESC LIMIT 1) as image,
         IF(r.id IS NOT NULL, 1, 0) as is_reviewed,
+        r.id as review_id,
         r.rating as review_rating,
         r.review as review_message,
         r.images as review_images
@@ -709,6 +710,7 @@ export const getOrderDetails = async (customerId, orderId) => {
       IF(cw.id IS NOT NULL, 1, 0) AS is_liked,
       IF(cc.id IS NOT NULL, 1, 0) AS is_in_cart,
       IF(r.id IS NOT NULL, 1, 0) AS is_reviewed,
+      r.id AS review_id,
       r.rating as review_rating,
       r.review as review_message,
       r.images as review_images

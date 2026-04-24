@@ -22,6 +22,30 @@ router.post(
   reviewsController.createReview
 );
 
+/**
+ * Edit a review
+ * PUT /api/v1/customers/reviews/:reviewId
+ */
+router.put(
+  "/reviews/:reviewId",
+  customerAuth,
+  upload.fields([
+    { name: "images", maxCount: 5 },
+    { name: "imageUrls", maxCount: 5 }
+  ]),
+  reviewsController.updateReview
+);
+
+/**
+ * Delete a review
+ * DELETE /api/v1/customers/reviews/:reviewId
+ */
+router.delete(
+  "/reviews/:reviewId",
+  customerAuth,
+  reviewsController.deleteReview
+);
+
 
 
 export default router;

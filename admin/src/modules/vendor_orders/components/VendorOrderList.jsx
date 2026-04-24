@@ -207,7 +207,7 @@ const VendorOrderList = ({ onAssignRider, onUpdateStatus, onUpdatePaymentStatus,
                         <option value="">Payment Status</option>
                         <option value="Paid">Paid</option>
                         <option value="Pending">Pending</option>
-                        <option value="Failed">Failed</option>
+                
                     </select>
 
                     <div className="date-inputs">
@@ -373,8 +373,8 @@ const VendorOrderList = ({ onAssignRider, onUpdateStatus, onUpdatePaymentStatus,
                                                 >
                                                     <option value="Pending">Pending</option>
                                                     <option value="Paid">Mark as Paid</option>
-                                                    <option value="Failed">Mark as Failed</option>
-                                                    <option value="Refunded">Refunded</option>
+                                                    {/* <option value="Failed">Mark as Failed</option>
+                                                    <option value="Refunded">Refunded</option> */}
                                                 </select>
                                             </div>
 

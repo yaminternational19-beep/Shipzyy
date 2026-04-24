@@ -97,16 +97,17 @@ export const getAllOrders = async (vendorId, queryParams = {}) => {
       (SELECT item_status FROM order_items WHERE order_id = o.id AND vendor_id = ? ORDER BY 
         FIELD(item_status, 'Pending', 'Confirmed', 'Shipped', 'Out for Delivery', 'Return Requested', 'Delivered', 'Returned', 'Refunded', 'Cancelled') ASC LIMIT 1) as vendor_status
     FROM orders o
+    JOIN order_items oi ON o.id = oi.order_id
     JOIN customers c ON o.customer_id = c.id
     LEFT JOIN customers_addresses ca ON o.address_id = ca.id
-    WHERE o.id IN (SELECT DISTINCT order_id FROM order_items WHERE vendor_id = ?)
-      ${where.length > 1 ? ' AND ' + where.slice(1).join(" AND ") : ""}
+    ${whereClause}
+    GROUP BY o.id
     ORDER BY o.created_at DESC
     LIMIT ? OFFSET ?
   `;
 
 
-  const [rows] = await db.query(selectQuery, [vendorId, vendorId, vendorId, vendorId, vendorId, ...values.slice(1), limit, skip]);
+  const [rows] = await db.query(selectQuery, [vendorId, vendorId, vendorId, vendorId, ...values, limit, skip]);
 
   const orders = rows.map(row => ({
     id: row.id.toString(),
