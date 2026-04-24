@@ -2,9 +2,18 @@ import db from "../../../config/db.js";
 import { getPagination, getPaginationMeta } from "../../../utils/pagination.js";
 import { getFromCache, setToCache } from "../../../utils/cache.js";
 
+const formatDate = (date) => {
+  if (!date) return null;
+  return new Date(date).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric"
+  });
+};
+
 export const getHomeData = async (customerId, queryParams = {}) => {
   const { page, limit, skip } = getPagination(queryParams);
-  const cacheKey = `customer:home:${customerId || 'guest'}:${page}:${limit}`;
+  const cacheKey = `customer:home:v2:${customerId || 'guest'}:${page}:${limit}`;
 
   const cachedData = await getFromCache(cacheKey);
   if (cachedData) return cachedData;
@@ -102,6 +111,7 @@ export const getHomeData = async (customerId, queryParams = {}) => {
             pv.max_mrp AS mrp, pv.discount_percentage,
             IF(cw.id IS NOT NULL, 1, 0) AS is_liked,
             IF(cc.id IS NOT NULL, 1, 0) AS is_in_cart,
+            (SELECT COALESCE(AVG(rating), 0) FROM customer_reviews WHERE product_id = p.id) AS avg_rating,
             ROW_NUMBER() OVER(PARTITION BY p.subcategory_id ORDER BY p.created_at DESC) as rn
           FROM products p
           LEFT JOIN categories c ON p.category_id = c.id
@@ -178,6 +188,7 @@ export const getHomeData = async (customerId, queryParams = {}) => {
           pv.max_mrp AS mrp, pv.discount_percentage,
           IF(cw.id IS NOT NULL, 1, 0) AS is_liked,
           IF(cc.id IS NOT NULL, 1, 0) AS is_in_cart,
+          (SELECT COALESCE(AVG(rating), 0) FROM customer_reviews WHERE product_id = p.id) AS avg_rating,
           ROW_NUMBER() OVER(PARTITION BY p.subcategory_id ORDER BY p.created_at DESC) as rn
         FROM products p
         LEFT JOIN categories c ON p.category_id = c.id
@@ -282,7 +293,7 @@ export const getSubCategories = async (categoryId, queryParams = {}) => {
 const getProducts = async (customerId, queryParams = {}) => {
   const { page = 1, limit = 20, category_id, subcategory_id } = queryParams;
   const skip = (page - 1) * limit;
-  const cacheKey = `customer:products:${customerId || 'guest'}:${category_id || 0}:${subcategory_id || 0}:${page}:${limit}`;
+  const cacheKey = `customer:products:v2:${customerId || 'guest'}:${category_id || 0}:${subcategory_id || 0}:${page}:${limit}`;
 
   const cachedData = await getFromCache(cacheKey);
   if (cachedData) return cachedData;
@@ -331,7 +342,8 @@ const getProducts = async (customerId, queryParams = {}) => {
         pv.max_mrp AS mrp,
         pv.discount_percentage,
         IF(cw.id IS NOT NULL, 1, 0) AS is_liked,
-        IF(cc.id IS NOT NULL, 1, 0) AS is_in_cart
+        IF(cc.id IS NOT NULL, 1, 0) AS is_in_cart,
+        (SELECT COALESCE(AVG(rating), 0) FROM customer_reviews WHERE product_id = p.id) AS avg_rating
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN subcategories sc ON p.subcategory_id = sc.id
@@ -379,7 +391,7 @@ const getProducts = async (customerId, queryParams = {}) => {
 };
 
 const getProductById = async (customerId, productId, queryParams = {}) => {
-  const cacheKey = `customer:product:v2:${customerId || 'guest'}:${productId}`;
+  const cacheKey = `customer:product:v4:${customerId || 'guest'}:${productId}`;
   const cachedData = await getFromCache(cacheKey);
   if (cachedData) return cachedData;
 
@@ -399,7 +411,8 @@ const getProductById = async (customerId, productId, queryParams = {}) => {
         pi.image_url AS primary_image,
         pv.min_price, pv.max_mrp, pv.total_stock, pv.variant_name, pv.unit, pv.discount_percentage,
         IF(cw.id IS NOT NULL, 1, 0) AS is_liked,
-        IF(cc.id IS NOT NULL, 1, 0) AS is_in_cart
+        IF(cc.id IS NOT NULL, 1, 0) AS is_in_cart,
+        (SELECT COALESCE(AVG(rating), 0) FROM customer_reviews WHERE product_id = p.id) AS avg_rating
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN subcategories sc ON p.subcategory_id = sc.id
@@ -458,7 +471,28 @@ const getProductById = async (customerId, productId, queryParams = {}) => {
       ORDER BY is_primary DESC, created_at ASC
     `, [productId]);
 
-    // 3. Similar products (logic: same subcategory if present, else same category)
+    // 3. Fetch product reviews
+    const [reviews] = await db.query(`
+      SELECT 
+        r.id, r.rating, r.review, r.images, r.created_at,
+        c.name as customer_name
+      FROM customer_reviews r
+      JOIN customers c ON r.customer_id = c.id
+      WHERE r.product_id = ?
+      ORDER BY r.created_at DESC
+      LIMIT 20
+    `, [productId]);
+
+    const formattedReviews = reviews.map(r => ({
+      id: r.id,
+      rating: r.rating,
+      review: r.review,
+      review_given_by: r.customer_name || "Customer",
+      created_at: formatDate(r.created_at),
+      images: r.images ? (typeof r.images === 'string' ? JSON.parse(r.images) : r.images) : []
+    }));
+
+    // 4. Similar products (logic: same subcategory if present, else same category)
     let similarWhere = "p.subcategory_id = ?";
     let similarValue = rawProduct.subcategory_id;
 
@@ -489,7 +523,8 @@ const getProductById = async (customerId, productId, queryParams = {}) => {
         pv.max_mrp AS mrp, 
         pv.discount_percentage,
         IF(cw.id IS NOT NULL, 1, 0) AS is_liked,
-        IF(cc.id IS NOT NULL, 1, 0) AS is_in_cart
+        IF(cc.id IS NOT NULL, 1, 0) AS is_in_cart,
+        (SELECT COALESCE(AVG(rating), 0) FROM customer_reviews WHERE product_id = p.id) AS avg_rating
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN subcategories sc ON p.subcategory_id = sc.id
@@ -528,6 +563,7 @@ const getProductById = async (customerId, productId, queryParams = {}) => {
         offer_price: rawProduct.min_price,
         mrp: rawProduct.max_mrp,
         discount_percentage: rawProduct.discount_percentage,
+        avg_rating: rawProduct.avg_rating,
         stock_available: stockAvailable,
         variant_name: rawProduct.variant_name || null,
         unit: rawProduct.unit || "N/A",
@@ -544,6 +580,7 @@ const getProductById = async (customerId, productId, queryParams = {}) => {
         is_in_cart: !!rawProduct.is_in_cart,
         company_name: rawProduct.vendor_name,
         images,
+        reviews: formattedReviews,
         similar_products: similarProducts.map(sp => ({
           ...sp,
           is_liked: !!sp.is_liked,

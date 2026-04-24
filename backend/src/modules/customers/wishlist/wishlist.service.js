@@ -24,7 +24,7 @@ const toggleWishlist = async (customerId, productId, isLiked) => {
     }
 
     // 3. Invalidate Redis cache for this customer's wishlist
-    await removeFromCache(`customer:wishlist:${customerId}`);
+    await removeFromCache(`customer:wishlist:v2:${customerId}`);
 
     return { 
         status: "success",
@@ -37,7 +37,7 @@ const toggleWishlist = async (customerId, productId, isLiked) => {
  * Get all products in the customer's wishlist
  */
 const getWishlist = async (customerId) => {
-    const cacheKey = `customer:wishlist:${customerId}`;
+    const cacheKey = `customer:wishlist:v2:${customerId}`;
 
     // 1. Try to fetch from Redis cache
     const cachedData = await getFromCache(cacheKey);
@@ -64,7 +64,8 @@ const getWishlist = async (customerId) => {
             pv.max_mrp AS mrp,
             pv.discount_percentage,
             1 AS is_liked,
-            IF(cc.id IS NOT NULL, 1, 0) AS is_in_cart
+            IF(cc.id IS NOT NULL, 1, 0) AS is_in_cart,
+            (SELECT COALESCE(AVG(rating), 0) FROM customer_reviews WHERE product_id = p.id) AS avg_rating
         FROM customers_wishlist cw
         JOIN products p ON cw.product_id = p.id
         LEFT JOIN categories c ON p.category_id = c.id

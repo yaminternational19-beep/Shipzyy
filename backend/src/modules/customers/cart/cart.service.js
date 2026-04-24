@@ -3,7 +3,7 @@ import ApiError from "../../../utils/ApiError.js";
 import { getFromCache, setToCache, removeFromCache } from "../../../utils/cache.js";
 
 export const getCartItems = async (customerId) => {
-  const cacheKey = `customer:cart:${customerId}`;
+  const cacheKey = `customer:cart:v2:${customerId}`;
   const cachedData = await getFromCache(cacheKey);
   if (cachedData) return cachedData;
 
@@ -21,6 +21,7 @@ export const getCartItems = async (customerId) => {
       p.slug,
       p.description,
       (SELECT image_url FROM product_images WHERE product_id = p.id ORDER BY is_primary DESC LIMIT 1) AS product_image,
+      (SELECT COALESCE(AVG(rating), 0) FROM customer_reviews WHERE product_id = p.id) AS avg_rating,
       pv.sale_price AS live_price,
       pv.mrp AS live_mrp,
       pv.stock AS live_stock,
@@ -100,7 +101,7 @@ export const getCartItems = async (customerId) => {
 
 
 export const addToCart = async (customerId, { product_id, quantity }) => {
-  const cacheKey = `customer:cart:${customerId}`;
+  const cacheKey = `customer:cart:v2:${customerId}`;
   // 1. Check if product exists and get its current price & vendor_id
   const productQuery = `
     SELECT p.id, p.vendor_id, pv.mrp, pv.sale_price, pv.stock
@@ -156,7 +157,7 @@ export const addToCart = async (customerId, { product_id, quantity }) => {
 
 
 export const removeFromCart = async (customerId, { cart_id, product_id, quantity, cart_ids, clear_all }) => {
-  const cacheKey = `customer:cart:${customerId}`;
+  const cacheKey = `customer:cart:v2:${customerId}`;
 
   // 1. Handle Clear All
   if (clear_all === true || clear_all === "true") {
@@ -224,7 +225,7 @@ export const removeFromCart = async (customerId, { cart_id, product_id, quantity
  * Remove all items from the customer's cart
  */
 export const clearCart = async (customerId) => {
-  const cacheKey = `customer:cart:${customerId}`;
+  const cacheKey = `customer:cart:v2:${customerId}`;
   await db.execute(`DELETE FROM customers_cart WHERE customer_id = ?`, [customerId]);
   await removeFromCache(cacheKey);
   return { status: "success", message: "All items removed from cart" };
