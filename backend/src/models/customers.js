@@ -274,6 +274,7 @@ const TABLES = [
         query: `
             CREATE TABLE IF NOT EXISTS customer_reviews (
                 id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                order_item_id BIGINT NOT NULL,
                 order_id BIGINT NOT NULL,
                 customer_id BIGINT NOT NULL,
                 vendor_id BIGINT NOT NULL,
@@ -283,10 +284,12 @@ const TABLES = [
                 images JSON,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                FOREIGN KEY (order_item_id) REFERENCES order_items(id) ON DELETE CASCADE,
                 FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
                 FOREIGN KEY (customer_id) REFERENCES customers(id),
                 FOREIGN KEY (vendor_id) REFERENCES vendors(id),
                 FOREIGN KEY (product_id) REFERENCES products(id),
+                INDEX idx_item_id (order_item_id),
                 INDEX idx_order_id (order_id),
                 INDEX idx_customer_id (customer_id),
                 INDEX idx_vendor_id (vendor_id),

@@ -9,45 +9,38 @@ import formatCustomerDates from "../../../utils/formatCustomerDates.js";
  */
 
 const createReview = async (customerId, reviewData, files = []) => {
-    const { order_id, product_id, rating, review } = reviewData;
+    const { order_id, product_id, item_id, rating, review } = reviewData;
 
-    // 1. Verify order belongs to customer and is Delivered
-    const [orders] = await db.query(
-        `SELECT id, order_status FROM orders WHERE id = ? AND customer_id = ?`,
-        [order_id, customerId]
+    // 1. Verify item belongs to customer, the correct order/product, and is Delivered
+    const [items] = await db.query(
+        `SELECT oi.*, o.customer_id
+         FROM order_items oi
+         JOIN orders o ON oi.order_id = o.id
+         WHERE oi.id = ? AND oi.order_id = ? AND oi.product_id = ? AND o.customer_id = ?`,
+        [item_id, order_id, product_id, customerId]
     );
 
-    if (orders.length === 0) {
-        throw new ApiError(404, "Order not found");
+    if (items.length === 0) {
+        throw new ApiError(404, "Order item not found or details mismatch");
     }
 
-    if (orders[0].order_status !== 'Delivered') {
-        throw new ApiError(400, "You can only review products after they have been delivered.");
+    const item = items[0];
+
+    if (item.item_status !== 'Delivered') {
+        throw new ApiError(400, "You can only review items after they have been delivered.");
     }
 
-    // 2. Verify product is in that order and get vendor_id
-    const [orderItems] = await db.query(
-        `SELECT vendor_id FROM order_items WHERE order_id = ? AND product_id = ?`,
-        [order_id, product_id]
-    );
-
-    if (orderItems.length === 0) {
-        throw new ApiError(400, "This product was not part of the specified order.");
-    }
-
-    const { vendor_id } = orderItems[0];
-
-    // 3. Check for existing review (One review per product per order)
+    // 2. Check for existing review (One review per order item)
     const [existing] = await db.query(
-        `SELECT id FROM customer_reviews WHERE customer_id = ? AND order_id = ? AND product_id = ?`,
-        [customerId, order_id, product_id]
+        `SELECT id FROM customer_reviews WHERE order_item_id = ?`,
+        [item_id]
     );
 
     if (existing.length > 0) {
-        throw new ApiError(400, "You have already reviewed this product for this order.");
+        throw new ApiError(400, "You have already reviewed this item.");
     }
 
-    // 4. Handle images
+    // 3. Handle images
     let imageUrls = [];
     if (files && files.length > 0) {
         for (const file of files) {
@@ -56,14 +49,15 @@ const createReview = async (customerId, reviewData, files = []) => {
         }
     }
 
-    // 5. Insert review
+    // 4. Insert review
     const [result] = await db.query(
-        `INSERT INTO customer_reviews (order_id, customer_id, vendor_id, product_id, rating, review, images)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO customer_reviews (order_item_id, order_id, customer_id, vendor_id, product_id, rating, review, images)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
+            item_id,
             order_id, 
             customerId, 
-            vendor_id, 
+            item.vendor_id, 
             product_id, 
             rating, 
             review, 

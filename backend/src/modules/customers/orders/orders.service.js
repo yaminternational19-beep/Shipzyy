@@ -24,9 +24,9 @@ const calculateDistanceKm = (lat1, lon1, lat2, lon2) => {
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLon / 2) *
+    Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 };
@@ -147,8 +147,8 @@ export const applyCoupon = async (customerId, couponCode, subtotal, excludeOrder
     let queryParams = [customerId, coupon.code];
 
     if (excludeOrderId) {
-        usageQuery += ` AND id != ?`;
-        queryParams.push(excludeOrderId);
+      usageQuery += ` AND id != ?`;
+      queryParams.push(excludeOrderId);
     }
 
     const [pastUsage] = await db.query(usageQuery, queryParams);
@@ -389,12 +389,12 @@ export const placeOrder = async (customerId, payload) => {
 
     // 2. Re-calculate everything securely using our robust checkout summary logic
     // Pass existingOrder.id to allow re-using the same coupon if it's the same flow
-    const summary = await getCheckoutSummary(customerId, { 
-        address_id, 
-        coupon_code, 
-        excludeOrderId: existingOrder?.id 
+    const summary = await getCheckoutSummary(customerId, {
+      address_id,
+      coupon_code,
+      excludeOrderId: existingOrder?.id
     });
-    
+
     const { subtotal, discount, delivery_charges, total } = summary.order_summary;
 
     // 3. Get active cart items directly from DB (bypassing cache)
@@ -422,22 +422,22 @@ export const placeOrder = async (customerId, payload) => {
       );
 
       // Compare cartItems with existingItems
-      const isIdentical = 
-          cartItems.length === existingItems.length && 
-          cartItems.every(ci => existingItems.some(ei => ei.product_id === ci.product_id && ei.quantity === ci.quantity)) &&
-          existingOrder.address_id === parseInt(address_id) &&
-          existingOrder.payment_method === payment_method &&
-          (existingOrder.coupon_code || null) === (coupon_code?.toUpperCase() || null);
+      const isIdentical =
+        cartItems.length === existingItems.length &&
+        cartItems.every(ci => existingItems.some(ei => ei.product_id === ci.product_id && ei.quantity === ci.quantity)) &&
+        existingOrder.address_id === parseInt(address_id) &&
+        existingOrder.payment_method === payment_method &&
+        (existingOrder.coupon_code || null) === (coupon_code?.toUpperCase() || null);
 
       if (isIdentical) {
-          await connection.rollback();
-          return {
-            order_id: existingOrder.id,
-            order_number: existingOrder.order_number,
-            payable_amount: existingOrder.total_amount,
-            status: "Pending",
-            message: "Order has already been placed. You can proceed to payment."
-          };
+        await connection.rollback();
+        return {
+          order_id: existingOrder.id,
+          order_number: existingOrder.order_number,
+          payable_amount: existingOrder.total_amount,
+          status: "Pending",
+          message: "Order has already been placed. You can proceed to payment."
+        };
       }
 
       // 5. UPDATE MODE: If something changed, update the existing order
@@ -471,15 +471,15 @@ export const placeOrder = async (customerId, payload) => {
           coupon_code, payment_method, payment_status, order_status
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          orderNumber, 
-          customerId, 
-          address_id, 
-          subtotal, 
-          discount, 
-          delivery_charges, 
-          total, 
-          coupon_code?.toUpperCase() || null, 
-          payment_method, 
+          orderNumber,
+          customerId,
+          address_id,
+          subtotal,
+          discount,
+          delivery_charges,
+          total,
+          coupon_code?.toUpperCase() || null,
+          payment_method,
           'Pending',
           payment_method === 'COD' ? 'Confirmed' : 'Pending'
         ]
@@ -500,38 +500,38 @@ export const placeOrder = async (customerId, payload) => {
 
     // 8. Stock Management: Reduce stock and increment sold_count
     for (const item of cartItems) {
-        // Find the variant for this product and reduce its stock
-        const [stockUpdate] = await connection.query(
-            `UPDATE product_variants 
+      // Find the variant for this product and reduce its stock
+      const [stockUpdate] = await connection.query(
+        `UPDATE product_variants 
              SET stock = GREATEST(0, stock - ?), updated_at = NOW()
              WHERE product_id = ? AND stock >= ?
              LIMIT 1`,
-            [item.quantity, item.product_id, item.quantity]
-        );
+        [item.quantity, item.product_id, item.quantity]
+      );
 
-        if (stockUpdate.affectedRows === 0) {
-            // If stock was enough during cart check but not now (race condition)
-            throw new ApiError(400, `Sorry, one or more items just went out of stock.`);
-        }
+      if (stockUpdate.affectedRows === 0) {
+        // If stock was enough during cart check but not now (race condition)
+        throw new ApiError(400, `Sorry, one or more items just went out of stock.`);
+      }
 
-        // Increment product's global sold_count
-        await connection.query(
-            `UPDATE products SET sold_count = sold_count + ?, updated_at = NOW() WHERE id = ?`,
-            [item.quantity, item.product_id]
-        );
+      // Increment product's global sold_count
+      await connection.query(
+        `UPDATE products SET sold_count = sold_count + ?, updated_at = NOW() WHERE id = ?`,
+        [item.quantity, item.product_id]
+      );
     }
 
     // 9. If Coupon changed/used, update logic (Note: we don't increment used_count here if same order update)
     // For simplicity, we assume usage count is based on 'Placed/Completed' orders.
     // If you want strict usage count on placement:
     if (coupon_code && summary.coupon_applied) {
-        // Only increment if the existing order didn't already use this coupon
-        if (!existingOrder || existingOrder.coupon_code !== coupon_code.toUpperCase()) {
-            await connection.query(
-                `UPDATE coupons SET used_count = used_count + 1 WHERE code = ?`,
-                [coupon_code.toUpperCase()]
-            );
-        }
+      // Only increment if the existing order didn't already use this coupon
+      if (!existingOrder || existingOrder.coupon_code !== coupon_code.toUpperCase()) {
+        await connection.query(
+          `UPDATE coupons SET used_count = used_count + 1 WHERE code = ?`,
+          [coupon_code.toUpperCase()]
+        );
+      }
     }
 
     // 9. Clear cart
@@ -585,11 +585,68 @@ export const getOrderHistory = async (customerId, queryParams = {}) => {
 
   const [orders] = await db.query(query, [customerId, limit, skip]);
 
-  // Apply date formatting
-  const formattedOrders = orders.map(order => ({
-    ...order,
-    created_at: formatDate(order.created_at)
-  }));
+  // Fetch items for each order to support item-level tracking and multiple vendors
+  for (const order of orders) {
+    const [items] = await db.query(`
+      SELECT 
+        oi.id as item_id, oi.product_id, oi.quantity, oi.price, 
+        oi.item_status as status, oi.payment_status,
+        p.name as product_name,
+        v.business_name as vendor_name,
+        (SELECT image_url FROM product_images WHERE product_id = p.id ORDER BY is_primary DESC LIMIT 1) as image,
+        IF(r.id IS NOT NULL, 1, 0) as is_reviewed,
+        r.rating as review_rating,
+        r.review as review_message,
+        r.images as review_images
+      FROM order_items oi
+      JOIN products p ON oi.product_id = p.id
+      JOIN vendors v ON oi.vendor_id = v.id
+      LEFT JOIN customer_reviews r ON r.order_item_id = oi.id
+      WHERE oi.order_id = ?
+    `, [order.id]);
+
+    order.items = items.map(i => ({
+      ...i,
+      is_reviewed: !!i.is_reviewed,
+      review_images: i.review_images ? (typeof i.review_images === 'string' ? JSON.parse(i.review_images) : i.review_images) : []
+    }));
+  }
+
+  // Apply date formatting and calculate common status if needed
+  const formattedOrders = orders.map(order => {
+    const items = order.items || [];
+    const itemStatuses = items.map(i => i.status);
+    const uniqueStatuses = [...new Set(itemStatuses)];
+
+    // Derive common status from items if not already set or to ensure item-level accuracy
+    let commonStatus = order.order_status;
+    if (items.length > 0) {
+        if (uniqueStatuses.length === 1 && uniqueStatuses[0] === 'Delivered') {
+            commonStatus = 'Delivered';
+        } else if (uniqueStatuses.length === 1 && uniqueStatuses[0] === 'Cancelled') {
+            commonStatus = 'Cancelled';
+        } else if (itemStatuses.includes('Refunded')) {
+            commonStatus = 'Refunded';
+        } else if (itemStatuses.includes('Returned')) {
+            commonStatus = 'Returned';
+        } else if (itemStatuses.includes('Return Requested')) {
+            commonStatus = 'Return Requested';
+        } else if (itemStatuses.includes('Delivered')) {
+            commonStatus = 'Partially Delivered';
+        } else if (itemStatuses.includes('Shipped') || itemStatuses.includes('Out for Delivery')) {
+            commonStatus = 'Partially Shipped';
+        } else if (!itemStatuses.includes('Pending')) {
+            commonStatus = 'Confirmed';
+        }
+    }
+
+    return {
+      ...order,
+      order_status: commonStatus,
+      created_at: formatDate(order.created_at),
+      items: items
+    };
+  });
 
   return {
     orders: formattedOrders,
@@ -620,18 +677,45 @@ export const getOrderDetails = async (customerId, orderId) => {
 
   const order = orders[0];
 
+  // Concatenate name, phone, address, city, state, and pincode into a single string
+  const addressParts = [
+    order.contact_person_name,
+    order.contact_phone,
+    order.address_line_1,
+    order.address_line_2,
+    order.city,
+    order.state,
+    order.pincode
+  ].filter(part => part && part !== '');
+  
+  order.full_address = addressParts.join(', ');
+
+  // Remove individual fields as requested
+  const fieldsToRemove = [
+    'address_name', 'contact_person_name', 'contact_phone', 
+    'address_line_1', 'address_line_2', 'city', 'state', 'pincode',
+    'address_id'
+  ];
+  fieldsToRemove.forEach(field => delete order[field]);
+
   const itemsQuery = `
     SELECT 
-      oi.id as item_id, oi.quantity, oi.price AS offer_price, oi.item_status, oi.status_updated_at,
-      p.id, p.name, p.slug, p.description,
+      oi.id as item_id, oi.quantity, oi.price AS offer_price, 
+      oi.item_status, oi.payment_status, oi.status_updated_at,
+      p.id as product_id, p.name, p.slug, p.description,
       v.business_name AS vendor_name,
       pv.mrp, pv.discount_percentage,
       (SELECT image_url FROM product_images WHERE product_id = p.id ORDER BY is_primary DESC LIMIT 1) as product_image,
       IF(cw.id IS NOT NULL, 1, 0) AS is_liked,
-      IF(cc.id IS NOT NULL, 1, 0) AS is_in_cart
+      IF(cc.id IS NOT NULL, 1, 0) AS is_in_cart,
+      IF(r.id IS NOT NULL, 1, 0) AS is_reviewed,
+      r.rating as review_rating,
+      r.review as review_message,
+      r.images as review_images
     FROM order_items oi
     JOIN products p ON oi.product_id = p.id
     JOIN vendors v ON oi.vendor_id = v.id
+    LEFT JOIN customer_reviews r ON r.order_item_id = oi.id
     LEFT JOIN (
         SELECT product_id, MAX(mrp) AS mrp, MAX(discount_value) AS discount_percentage 
         FROM product_variants 
@@ -644,14 +728,63 @@ export const getOrderDetails = async (customerId, orderId) => {
   `;
   const [items] = await db.query(itemsQuery, [customerId, customerId, orderId]);
 
+  const itemStatuses = items.map(i => i.item_status);
+  const uniqueStatuses = [...new Set(itemStatuses)];
+
+  // Derive common status from items
+  let commonStatus = order.order_status;
+  if (items.length > 0) {
+    if (uniqueStatuses.length === 1 && uniqueStatuses[0] === 'Delivered') {
+      commonStatus = 'Delivered';
+    } else if (uniqueStatuses.length === 1 && uniqueStatuses[0] === 'Cancelled') {
+      commonStatus = 'Cancelled';
+    } else if (itemStatuses.includes('Refunded')) {
+      commonStatus = 'Refunded';
+    } else if (itemStatuses.includes('Returned')) {
+      commonStatus = 'Returned';
+    } else if (itemStatuses.includes('Return Requested')) {
+      commonStatus = 'Return Requested';
+    } else if (itemStatuses.includes('Delivered')) {
+      commonStatus = 'Partially Delivered';
+    } else if (itemStatuses.includes('Shipped') || itemStatuses.includes('Out for Delivery')) {
+      commonStatus = 'Partially Shipped';
+    } else if (!itemStatuses.includes('Pending')) {
+      commonStatus = 'Confirmed';
+    }
+  }
+
+  // Status mapping for tracking
+  const getTrackingArray = (currentStatus) => {
+    const sequence = ['Pending', 'Confirmed', 'Shipped', 'Out for Delivery', 'Delivered'];
+    const currentIndex = sequence.indexOf(currentStatus);
+    
+    const tracking = sequence.map((label, index) => ({
+      label,
+      is_completed: currentStatus === 'Cancelled' ? false : index <= currentIndex
+    }));
+
+    // Add Cancelled if applicable
+    tracking.push({
+      label: 'Cancelled',
+      is_completed: currentStatus === 'Cancelled'
+    });
+
+    return tracking;
+  };
+
   return {
     ...order,
+    order_status: commonStatus,
     created_at: formatDate(order.created_at),
     updated_at: formatDate(order.updated_at),
     items: items.map(item => ({
-        ...item,
-        is_liked: !!item.is_liked,
-        is_in_cart: !!item.is_in_cart
+      ...item,
+      is_liked: !!item.is_liked,
+      is_in_cart: !!item.is_in_cart,
+      is_reviewed: !!item.is_reviewed,
+      status_updated_at: formatDate(item.status_updated_at),
+      review_images: item.review_images ? (typeof item.review_images === 'string' ? JSON.parse(item.review_images) : item.review_images) : [],
+      tracking_status: getTrackingArray(item.item_status)
     }))
   };
 };
