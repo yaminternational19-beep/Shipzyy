@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Ticket, Users, Bike, Truck } from 'lucide-react';
 import Toast from '../../components/common/Toast/Toast';
 import AllTickets from './components/AllTickets';
@@ -7,6 +7,11 @@ import RiderTickets from './components/RiderTickets';
 import VendorTickets from './components/VendorTickets';
 import './Tickets.css';
 
+import { getTicketsApi, replyToTicketApi } from '../../api/admin_tickets.api';
+
+
+
+
 const TicketsPage = () => {
     const [activeTab, setActiveTab] = useState('all');
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
@@ -14,6 +19,7 @@ const TicketsPage = () => {
     const showToast = (message, type = 'success') => {
         setToast({ show: true, message, type });
     };
+
 
     return (
         <div className="tickets-module management-module" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -47,13 +53,13 @@ const TicketsPage = () => {
                     <Users size={14} />
                     Customers
                 </button>
-                <button
+                {/* <button
                     className={activeTab === 'rider' ? 'active' : ''}
                     onClick={() => setActiveTab('rider')}
                 >
                     <Bike size={14} />
                     Riders
-                </button>
+                </button> */}
                 <button
                     className={activeTab === 'vendor' ? 'active' : ''}
                     onClick={() => setActiveTab('vendor')}

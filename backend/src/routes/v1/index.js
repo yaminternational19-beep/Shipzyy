@@ -55,6 +55,7 @@ import couponRoutes from '../../modules/coupons/coupons.routes.js';
 import deliveryChargeRoutes from '../../modules/delivery_charges/delivery_charges.routes.js';
 import adminReviewsRoutes from '../../modules/admin_reviews/admin_reviews.routes.js';
 import adminInvoicesRoutes from '../../modules/admin_invoices/admin_invoices.routes.js';
+import adminTicketsRoutes from '../../modules/admin_tickets/admin_tickets.routes.js';
 
 router.use("/subadmin", subadmins);
 router.use("/categories", categoryRoutes);
@@ -70,6 +71,7 @@ router.use("/coupons", couponRoutes);
 router.use("/delivery-charges", deliveryChargeRoutes);
 router.use("/admin-reviews", adminReviewsRoutes);
 router.use("/admin-invoices", adminInvoicesRoutes);
+router.use("/admin-tickets", adminTicketsRoutes);
 
 
 // ==========================================
