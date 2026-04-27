@@ -536,9 +536,8 @@ export const placeOrder = async (customerId, payload) => {
 
     // 9. Clear cart
     await connection.query(`DELETE FROM customers_cart WHERE customer_id = ?`, [customerId]);
-    await removeFromCache(`customer:cart:${customerId}`);
-
     await connection.commit();
+    await removeFromCache(`customer:cart:v2:${customerId}`);
 
     return {
       order_id: orderId,
@@ -660,7 +659,7 @@ export const getOrderHistory = async (customerId, queryParams = {}) => {
  * Get granular details for one specific order
  */
 
-export const getOrderDetails = async (customerId, orderId) => {
+export const getOrderDetails = async (customerId, orderId, itemId = null) => {
   const orderQuery = `
     SELECT 
       o.*, 
@@ -699,7 +698,7 @@ export const getOrderDetails = async (customerId, orderId) => {
   ];
   fieldsToRemove.forEach(field => delete order[field]);
 
-  const itemsQuery = `
+  let itemsQuery = `
     SELECT 
       oi.id as item_id, oi.quantity, oi.price AS offer_price, 
       oi.item_status, oi.payment_status, oi.status_updated_at,
@@ -728,7 +727,14 @@ export const getOrderDetails = async (customerId, orderId) => {
     LEFT JOIN customers_cart cc ON cc.customer_id = ? AND cc.product_id = p.id
     WHERE oi.order_id = ?
   `;
-  const [items] = await db.query(itemsQuery, [customerId, customerId, orderId]);
+
+  const itemsParams = [customerId, customerId, orderId];
+  if (itemId) {
+    itemsQuery += ` AND oi.id = ?`;
+    itemsParams.push(itemId);
+  }
+
+  const [items] = await db.query(itemsQuery, itemsParams);
 
   const itemStatuses = items.map(i => i.item_status);
   const uniqueStatuses = [...new Set(itemStatuses)];

@@ -48,8 +48,9 @@ export const getOrderHistory = asyncHandler(async (req, res) => {
 export const getOrderDetails = asyncHandler(async (req, res) => {
   const customerId = req.user?.id;
   const { orderId } = req.params;
+  const { item_id } = req.query;
 
-  const result = await ordersService.getOrderDetails(customerId, orderId);
+  const result = await ordersService.getOrderDetails(customerId, orderId, item_id);
 
   return ApiResponse.success(res, "Order details fetched successfully", result);
 });
