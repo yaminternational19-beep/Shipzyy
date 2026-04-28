@@ -196,7 +196,7 @@ const TABLES = [
                 coupon_code VARCHAR(50) NULL,
                 payment_method ENUM('Online', 'COD') DEFAULT 'COD',
                 payment_status ENUM('Pending', 'Paid', 'Failed', 'Refunded') DEFAULT 'Pending',
-                order_status ENUM('Pending', 'Confirmed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled', 'Partially Shipped', 'Partially Delivered', 'Return Requested', 'Returned', 'Refunded') DEFAULT 'Pending',
+                order_status ENUM('Pending', 'Confirmed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled', 'Partially Shipped', 'Partially Delivered', 'Return Requested', 'Return Approved', 'Return Picked Up', 'Returned', 'Refunded', 'Return Rejected') DEFAULT 'Pending',
                 
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -222,7 +222,7 @@ const TABLES = [
                 quantity INT NOT NULL DEFAULT 1,
                 price DECIMAL(10, 2) NOT NULL,
                 
-                item_status ENUM('Pending', 'Confirmed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled', 'Return Requested', 'Returned', 'Refunded') DEFAULT 'Pending',
+                item_status ENUM('Pending', 'Confirmed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled', 'Return Requested', 'Return Approved', 'Return Picked Up', 'Returned', 'Refunded', 'Return Rejected') DEFAULT 'Pending',
                 payment_status ENUM('Pending', 'Paid', 'Refunded') DEFAULT 'Pending',
                 status_updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -310,12 +310,20 @@ const TABLES = [
                     'Shipped',
                     'Out for Delivery',
                     'Delivered',
-                    'Cancelled'
+                    'Cancelled',
+                    'Partially Shipped',
+                    'Partially Delivered',
+                    'Return Requested',
+                    'Return Approved',
+                    'Return Picked Up',
+                    'Returned',
+                    'Refunded',
+                    'Return Rejected'
                 ) NOT NULL,
 
                 display_title VARCHAR(100) NOT NULL,
 
-                changed_by_role ENUM('admin', 'vendor', 'system') DEFAULT 'system',
+                changed_by_role ENUM('admin', 'vendor', 'system', 'customer') DEFAULT 'system',
                 changed_by_id BIGINT NULL,
 
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

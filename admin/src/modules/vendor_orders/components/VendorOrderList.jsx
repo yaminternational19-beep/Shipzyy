@@ -128,7 +128,7 @@ const VendorOrderList = ({ onAssignRider, onUpdateStatus, onUpdatePaymentStatus,
         return <span className={`status-badge ${s}`}>{status}</span>;
     };
 
-    const STATUS_OPTIONS = ['Pending', 'Confirmed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled'];
+    const STATUS_OPTIONS = ['Pending', 'Confirmed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled', 'Return Requested', 'Returned'];
 
     const getNextStatuses = (currentStatus) => {
         switch (currentStatus) {
@@ -197,6 +197,8 @@ const VendorOrderList = ({ onAssignRider, onUpdateStatus, onUpdatePaymentStatus,
                         <option value="Out for Delivery">Out for Delivery</option>
                         <option value="Delivered">Delivered</option>
                         <option value="Cancelled">Cancelled</option>
+                        <option value="Return Requested">Return Requested</option>
+                        <option value="Returned">Returned</option>
                     </select>
 
                     <select
@@ -346,37 +348,39 @@ const VendorOrderList = ({ onAssignRider, onUpdateStatus, onUpdatePaymentStatus,
                                 <td style={{ padding: '16px 12px', textAlign: 'center', fontSize: '0.8rem', color: '#64748b' }}>
                                     {order.statusDate || '-'}
                                 </td>
-                                <td style={{ padding: '16px 12px', textAlign: 'center' }}>
+                                 <td style={{ padding: '16px 12px', textAlign: 'center' }}>
                                         <div className="action-buttons-group">
-                                            <div className="action-select-wrapper status-update">
-                                                <Package size={14} className="select-icon" />
-                                                <select
-                                                    onChange={(e) => onUpdateStatus(order.id, e.target.value)}
-                                                    value={order.status}
-                                                    className="premium-select"
-                                                >
-                                                    <option value="Pending">Pending</option>
-                                                    <option value="Confirmed">Confirmed</option>
-                                                    <option value="Shipped">Shipped</option>
-                                                    <option value="Out for Delivery">Out for Delivery</option>
-                                                    <option value="Delivered">Delivered</option>
-                                                    <option value="Cancelled">Cancelled</option>
-                                                </select>
-                                            </div>
+                                            {!['Cancelled', 'Returned', 'Refunded', 'Return Requested', 'Return Approved', 'Return Picked Up', 'Return Rejected'].includes(order.status) && (
+                                                <>
+                                                    <div className="action-select-wrapper status-update">
+                                                        <Package size={14} className="select-icon" />
+                                                        <select
+                                                            onChange={(e) => onUpdateStatus(order.id, e.target.value)}
+                                                            value={order.status}
+                                                            className="premium-select"
+                                                        >
+                                                            <option value="Pending">Pending</option>
+                                                            <option value="Confirmed">Confirmed</option>
+                                                            <option value="Shipped">Shipped</option>
+                                                            <option value="Out for Delivery">Out for Delivery</option>
+                                                            <option value="Delivered">Delivered</option>
+                                                            <option value="Cancelled">Cancelled</option>
+                                                        </select>
+                                                    </div>
 
-                                            <div className="action-select-wrapper payment-update">
-                                                <CreditCard size={14} className="select-icon" />
-                                                <select
-                                                    onChange={(e) => onUpdatePaymentStatus(order.id, e.target.value)}
-                                                    className={`premium-select payment ${order.paymentStatus === 'Paid' ? 'is-paid' : ''}`}
-                                                    value={order.paymentStatus || 'Pending'}
-                                                >
-                                                    <option value="Pending">Pending</option>
-                                                    <option value="Paid">Mark as Paid</option>
-                                                    {/* <option value="Failed">Mark as Failed</option>
-                                                    <option value="Refunded">Refunded</option> */}
-                                                </select>
-                                            </div>
+                                                    <div className="action-select-wrapper payment-update">
+                                                        <CreditCard size={14} className="select-icon" />
+                                                        <select
+                                                            onChange={(e) => onUpdatePaymentStatus(order.id, e.target.value)}
+                                                            className={`premium-select payment ${order.paymentStatus === 'Paid' ? 'is-paid' : ''}`}
+                                                            value={order.paymentStatus || 'Pending'}
+                                                        >
+                                                            <option value="Pending">Pending</option>
+                                                            <option value="Paid">Mark as Paid</option>
+                                                        </select>
+                                                    </div>
+                                                </>
+                                            )}
 
                                             <button
                                                 onClick={() => setViewingOrder(order)}

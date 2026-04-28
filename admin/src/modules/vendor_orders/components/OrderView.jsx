@@ -18,6 +18,8 @@ const OrderView = ({ order, onClose }) => {
             'Out for Delivery': { bg: '#fdf2f7', color: '#db2777' },
             Delivered: { bg: '#ecfdf5', color: '#10b981' },
             Cancelled: { bg: '#fef2f2', color: '#ef4444' },
+            'Return Requested': { bg: '#fffbeb', color: '#b45309' },
+            Returned: { bg: '#ecfdf5', color: '#059669' },
         };
         return map[status] || { bg: '#f1f5f9', color: '#64748b' };
     };

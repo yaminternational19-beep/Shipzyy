@@ -25,6 +25,7 @@ export const vendorMenuItems = [
     { name: "Products", key: "VENDOR_PRODUCTS", icon: Package, path: "/vendor-products", group: "MANAGEMENT", description: "Manage your products" },
     { name: "Product Reviews", key: "VENDOR_REVIEWS", icon: MessageSquare, path: "/vendor-reviews", group: "MANAGEMENT", description: "View and manage feedback for your products" },
     { name: "Orders", key: "VENDOR_ORDERS", icon: ShoppingBag, path: "/vendor-orders", group: "MANAGEMENT", description: "Manage your orders" },
+    { name: "Returns", key: "VENDOR_RETURNS", icon: Package, path: "/vendor-returns", group: "MANAGEMENT", description: "Manage returned products" },
     // { name: "Reports", key: "REPORTS", icon: BarChart3, path: "/vendor-reports", group: "MANAGEMENT", description: "View your sales reports" },
 
     // { name: "Payouts", key: "PAYOUTS", icon: CreditCard, path: "/vendor-payouts", group: "FINANCE", description: "Manage your payouts" },

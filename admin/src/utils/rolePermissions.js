@@ -29,6 +29,7 @@ export const rolePermissions = {
     VENDOR_OWNER: [
         "DASHBOARD",
         "VENDOR_ORDERS",
+        "VENDOR_RETURNS",
         "VENDOR_PRODUCTS",
         "VENDOR_REVIEWS",
         "STAFF",

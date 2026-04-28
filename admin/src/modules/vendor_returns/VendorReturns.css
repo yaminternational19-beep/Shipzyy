@@ -290,24 +290,6 @@
     border: 1px solid #fee2e2;
 }
 
-.status-badge.return-requested {
-    background-color: #fffbeb;
-    color: #d97706;
-    border: 1px solid #fef3c7;
-}
-
-.status-badge.returned {
-    background-color: #f0fdf4;
-    color: #16a34a;
-    border: 1px solid #dcfce7;
-}
-
-.status-badge.refunded {
-    background-color: #faf5ff;
-    color: #9333ea;
-    border: 1px solid #f3e8ff;
-}
-
 @keyframes fadeIn {
     from {
         opacity: 0;

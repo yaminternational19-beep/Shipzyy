@@ -85,6 +85,7 @@ import vendorSupportRoutes from '../../modules/vendor_support/vendor_support.rou
 import vendorReviewsRoutes from '../../modules/vendor_reviews/vendor_reviews.routes.js';
 import vendorInvoiceRoutes from '../../modules/vendor_invoices/vendor_invoices.routes.js';
 import vendorDashboardRoutes from '../../modules/vendor_dashboard/vendor_dashboard.routes.js';
+import vendorReturnsRoutes from '../../modules/vendor_returns/vendor_returns.routes.js';
 
 router.use("/products", productRoutes);
 router.use("/vendor-staff", vendorStaffRoutes);
@@ -94,6 +95,7 @@ router.use("/vendor/support", vendorSupportRoutes);
 router.use("/vendor/reviews", vendorReviewsRoutes);
 router.use("/vendor/invoices", vendorInvoiceRoutes);
 router.use("/vendor/dashboard", vendorDashboardRoutes);
+router.use("/vendor/returns", vendorReturnsRoutes);
 
 
 // ==========================================

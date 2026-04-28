@@ -27,3 +27,19 @@ export const cancelItemSchema = Joi.object({
     "any.required": "Item ID is required",
   }),
 });
+
+export const returnItemSchema = Joi.object({
+  order_id: Joi.number().integer().required().messages({
+    "number.base": "Order ID must be a number",
+    "any.required": "Order ID is required",
+  }),
+  item_id: Joi.number().integer().required().messages({
+    "number.base": "Item ID must be a number",
+    "any.required": "Item ID is required",
+  }),
+  reason: Joi.string().min(10).required().messages({
+    "string.empty": "Return reason is mandatory",
+    "string.min": "Please provide a detailed reason (at least 10 characters)",
+    "any.required": "Return reason is required"
+  }),
+});

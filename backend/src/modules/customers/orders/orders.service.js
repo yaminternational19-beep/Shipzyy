@@ -4,6 +4,7 @@ import { getCartItems } from "../cart/cart.service.js";
 import { getPagination, getPaginationMeta } from "../../../utils/pagination.js";
 import { createInvoicesForOrder } from "../../invoices/invoices.service.js";
 import { removeFromCache, removeByPattern } from "../../../utils/cache.js";
+import s3Service from "../../../services/s3Service.js";
 
 const formatDate = (date) => {
   if (!date) return null;
@@ -590,7 +591,7 @@ export const getOrderHistory = async (customerId, queryParams = {}) => {
       SELECT 
         oi.id as item_id, oi.product_id, oi.quantity, oi.price, 
         oi.item_status as status, oi.payment_status,
-        p.name as product_name,
+        p.name as product_name, p.return_allowed as is_return_allowed, p.return_days,
         v.business_name as vendor_name,
         (SELECT image_url FROM product_images WHERE product_id = p.id ORDER BY is_primary DESC LIMIT 1) as image,
         IF(r.id IS NOT NULL, 1, 0) as is_reviewed,
@@ -608,6 +609,8 @@ export const getOrderHistory = async (customerId, queryParams = {}) => {
     order.items = items.map(i => ({
       ...i,
       is_reviewed: !!i.is_reviewed,
+      is_return_allowed: !!i.is_return_allowed,
+      return_days: i.return_days || 0,
       review_images: i.review_images ? (typeof i.review_images === 'string' ? JSON.parse(i.review_images) : i.review_images) : []
     }));
   }
@@ -703,6 +706,7 @@ export const getOrderDetails = async (customerId, orderId, itemId = null) => {
       oi.id as item_id, oi.quantity, oi.price AS offer_price, 
       oi.item_status, oi.payment_status, oi.status_updated_at,
       p.id as product_id, p.name, p.slug, p.description,
+      p.return_allowed as is_return_allowed, p.return_days,
       v.business_name AS vendor_name,
       pv.mrp, pv.discount_percentage,
       (SELECT image_url FROM product_images WHERE product_id = p.id ORDER BY is_primary DESC LIMIT 1) as product_image,
@@ -763,19 +767,48 @@ export const getOrderDetails = async (customerId, orderId, itemId = null) => {
 
   // Status mapping for tracking
   const getTrackingArray = (currentStatus) => {
-    const sequence = ['Pending', 'Confirmed', 'Shipped', 'Out for Delivery', 'Delivered'];
-    const currentIndex = sequence.indexOf(currentStatus);
+    const baseSequence = ['Pending', 'Confirmed', 'Shipped', 'Out for Delivery', 'Delivered'];
+    const returnSequence = ['Return Requested', 'Return Approved', 'Return Picked Up', 'Returned'];
+    
+    let sequence = [...baseSequence];
+    
+    // If the status is any of the return statuses, append the return sequence
+    const isReturning = returnSequence.includes(currentStatus) || currentStatus === 'Return Rejected' || currentStatus === 'Refunded';
+    if (isReturning || currentStatus === 'Returned') {
+        sequence = [...baseSequence, ...returnSequence];
+    }
+
+    let currentIndex = sequence.indexOf(currentStatus);
+    if (currentStatus === 'Refunded') {
+        currentIndex = sequence.indexOf('Returned'); // Mark all return steps as done
+    }
     
     const tracking = sequence.map((label, index) => ({
       label,
-      is_completed: currentStatus === 'Cancelled' ? false : index <= currentIndex
+      is_completed: currentStatus === 'Cancelled' ? false : (currentIndex !== -1 && index <= currentIndex)
     }));
 
+    // Special case for Delivered: if we are in return phase, Delivered must be true
+    if (isReturning || currentStatus === 'Returned') {
+        const deliveredIndex = tracking.findIndex(t => t.label === 'Delivered');
+        if (deliveredIndex !== -1) tracking[deliveredIndex].is_completed = true;
+    }
+
     // Add Cancelled if applicable
-    tracking.push({
-      label: 'Cancelled',
-      is_completed: currentStatus === 'Cancelled'
-    });
+    if (currentStatus === 'Cancelled') {
+        tracking.push({
+            label: 'Cancelled',
+            is_completed: true
+        });
+    }
+
+    // Add Return Rejected if applicable
+    if (currentStatus === 'Return Rejected') {
+        tracking.push({
+            label: 'Return Rejected',
+            is_completed: true
+        });
+    }
 
     return tracking;
   };
@@ -790,6 +823,8 @@ export const getOrderDetails = async (customerId, orderId, itemId = null) => {
       is_liked: !!item.is_liked,
       is_in_cart: !!item.is_in_cart,
       is_reviewed: !!item.is_reviewed,
+      is_return_allowed: !!item.is_return_allowed,
+      return_days: item.return_days || 0,
       status_updated_at: formatDate(item.status_updated_at),
       review_images: item.review_images ? (typeof item.review_images === 'string' ? JSON.parse(item.review_images) : item.review_images) : [],
       tracking_status: getTrackingArray(item.item_status)
@@ -873,5 +908,130 @@ export const cancelOrderItem = async (customerId, orderId, itemId) => {
     connection.release();
   }
 };
+
+/**
+ * Handle product return request
+ */
+export const returnOrderItem = async (customerId, orderId, itemId, reason, files = []) => {
+  if (!reason) {
+    throw new ApiError(400, "Return reason is mandatory", "REASON_REQUIRED");
+  }
+
+  if (!files || files.length === 0) {
+    throw new ApiError(400, "At least one image is mandatory for return", "IMAGES_REQUIRED");
+  }
+
+  const [orderItems] = await db.query(
+    `SELECT oi.id, oi.item_status, o.customer_id, oi.quantity, oi.product_id, oi.vendor_id, oi.status_updated_at,
+            p.return_allowed, p.return_days
+     FROM order_items oi
+     JOIN orders o ON oi.order_id = o.id
+     JOIN products p ON oi.product_id = p.id
+     WHERE oi.order_id = ? AND oi.id = ? AND o.customer_id = ?`,
+    [orderId, itemId, customerId]
+  );
+
+  if (orderItems.length === 0) {
+    throw new ApiError(404, "Order item not found");
+  }
+
+  const item = orderItems[0];
+
+  if (item.item_status === 'Return Requested' || item.item_status === 'Returned') {
+    throw new ApiError(400, "Return has already been requested for this item.", "ALREADY_RETURNED");
+  }
+
+  if (item.item_status !== 'Delivered') {
+    throw new ApiError(400, "Only delivered items can be returned.", "RETURN_NOT_ALLOWED");
+  }
+
+  if (!item.return_allowed) {
+    throw new ApiError(400, "This product is not eligible for return.", "NON_RETURNABLE_PRODUCT");
+  }
+
+  // Validate return window
+  const deliveryDate = new Date(item.status_updated_at);
+  const currentDate = new Date();
+  const daysPassed = (currentDate - deliveryDate) / (1000 * 60 * 60 * 24);
+
+  if (daysPassed > item.return_days) {
+    throw new ApiError(400, `Return window of ${item.return_days} days has expired.`, "RETURN_WINDOW_EXPIRED");
+  }
+
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    await connection.query(
+      `UPDATE order_items 
+       SET item_status = 'Return Requested', status_updated_at = NOW() 
+       WHERE id = ?`,
+      [itemId]
+    );
+
+    // Sync main order status
+    const [allItems] = await connection.query(
+      `SELECT item_status FROM order_items WHERE order_id = ?`,
+      [orderId]
+    );
+    
+    const statuses = allItems.map(i => i.item_status);
+    let mainStatus = 'Return Requested';
+    
+    const uniqueStatuses = [...new Set(statuses)];
+    if (uniqueStatuses.length === 1 && uniqueStatuses[0] === 'Delivered') mainStatus = 'Delivered';
+    else if (uniqueStatuses.length === 1 && uniqueStatuses[0] === 'Cancelled') mainStatus = 'Cancelled';
+    else if (uniqueStatuses.length === 1 && uniqueStatuses[0] === 'Refunded') mainStatus = 'Refunded';
+    else if (statuses.includes('Refunded')) mainStatus = 'Refunded';
+    else if (statuses.includes('Returned')) mainStatus = 'Returned';
+    else if (statuses.includes('Return Requested')) mainStatus = 'Return Requested';
+    else if (statuses.includes('Delivered')) mainStatus = 'Partially Delivered';
+    else if (statuses.includes('Shipped') || statuses.includes('Out for Delivery')) mainStatus = 'Partially Shipped';
+    else if (!statuses.includes('Pending')) mainStatus = 'Confirmed';
+
+    await connection.query(
+      `UPDATE orders SET order_status = ?, updated_at = NOW() WHERE id = ?`,
+      [mainStatus, orderId]
+    );
+
+    // Log the return request reason if provided
+    if (reason) {
+        await connection.query(
+            `INSERT INTO order_status_logs (order_id, status, display_title, changed_by_role, changed_by_id)
+            VALUES (?, 'Return Requested', ?, 'customer', ?)`,
+            [orderId, `Return Reason: ${reason}`, customerId]
+        );
+    }
+
+    // Upload images to S3
+    const uploadedImages = [];
+    for (const file of files) {
+        const uploadResult = await s3Service.uploadFile(file, 'returns');
+        uploadedImages.push(uploadResult.url);
+    }
+
+    // Insert into order_returns table
+    await connection.query(
+        `INSERT INTO order_returns (order_item_id, customer_id, vendor_id, reason, status, images)
+         VALUES (?, ?, ?, ?, 'Requested', ?)`,
+        [itemId, customerId, item.vendor_id, reason, JSON.stringify(uploadedImages)]
+    );
+
+    await connection.commit();
+
+    // Clear caches so vendor panel and admin panel reflect the return request immediately
+    await removeByPattern(`vendor:orders:list:${item.vendor_id}:*`);
+    await removeByPattern(`admin:orders:list:*`);
+    await removeByPattern(`admin:order:detail:${orderId}`);
+
+    return { message: "Return requested successfully", item_id: itemId, status: "Return Requested" };
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+};
+
 
 

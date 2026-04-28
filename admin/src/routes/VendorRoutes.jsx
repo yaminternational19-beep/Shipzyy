@@ -5,6 +5,7 @@ import ProtectedRoute from './ProtectedRoute';
 // Vendor Imports
 import VendorProductPage from '../modules/vendor_products/VendorProductsPage';
 import VendorOrdersPage from '../modules/vendor_orders/VendorOrdersPage';
+import VendorReturnsPage from '../modules/vendor_returns/VendorReturnsPage';
 import { VendorSupportPage } from '../modules/vendor_support';
 import { VendorStaffManagement } from '../modules/vendor_staff';
 import VendorSettingsPage from '../modules/vendor_settings/VendorSettingsPage';
@@ -41,6 +42,15 @@ export const VendorRoutes = [
         element={
             <ProtectedRoute allowedRoles={["VENDOR_OWNER", "VENDOR_STAFF"]}>
                 <VendorOrdersPage />
+            </ProtectedRoute>
+        }
+    />,
+    <Route
+        key="vendor-returns"
+        path="/vendor-returns"
+        element={
+            <ProtectedRoute allowedRoles={["VENDOR_OWNER", "VENDOR_STAFF"]}>
+                <VendorReturnsPage />
             </ProtectedRoute>
         }
     />,

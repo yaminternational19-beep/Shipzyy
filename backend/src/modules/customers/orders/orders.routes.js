@@ -2,7 +2,8 @@ import express from "express";
 import * as ordersController from "./orders.controller.js";
 import customerAuthMiddleware from "../../../middlewares/customer.auth.middleware.js";
 import validate from "../../../middlewares/validate.js";
-import { placeOrderSchema, cancelItemSchema } from "./orders.validator.js";
+import upload from "../../../middlewares/upload.middleware.js";
+import { placeOrderSchema, cancelItemSchema, returnItemSchema } from "./orders.validator.js";
 
 const router = express.Router();
 
@@ -29,6 +30,15 @@ router.put(
   customerAuthMiddleware,
   validate(cancelItemSchema, "body"),
   ordersController.cancelOrderItem
+);
+
+// Return Order Item
+router.post(
+  "/return-item",
+  customerAuthMiddleware,
+  upload.array("images", 5),
+  validate(returnItemSchema, "body"),
+  ordersController.returnOrderItem
 );
 
 export default router;
