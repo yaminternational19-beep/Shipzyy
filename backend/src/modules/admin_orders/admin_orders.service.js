@@ -139,6 +139,7 @@ const getOrders = async (queryParams) => {
             SELECT
                 oi.order_id,
                 oi.product_id,
+                oi.vendor_id,
                 p.name                              AS product_name,
                 cat.name                            AS category_name,
                 sc.name                             AS sub_category_name,
