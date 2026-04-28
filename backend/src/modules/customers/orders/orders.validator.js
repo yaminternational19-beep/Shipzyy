@@ -16,3 +16,14 @@ export const placeOrderSchema = Joi.object({
     "any.required": "Payment method is required",
   }),
 });
+
+export const cancelItemSchema = Joi.object({
+  order_id: Joi.number().integer().required().messages({
+    "number.base": "Order ID must be a number",
+    "any.required": "Order ID is required",
+  }),
+  item_id: Joi.number().integer().required().messages({
+    "number.base": "Item ID must be a number",
+    "any.required": "Item ID is required",
+  }),
+});

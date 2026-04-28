@@ -3,7 +3,7 @@ import ApiError from "../../../utils/ApiError.js";
 import { getCartItems } from "../cart/cart.service.js";
 import { getPagination, getPaginationMeta } from "../../../utils/pagination.js";
 import { createInvoicesForOrder } from "../../invoices/invoices.service.js";
-import { removeFromCache } from "../../../utils/cache.js";
+import { removeFromCache, removeByPattern } from "../../../utils/cache.js";
 
 const formatDate = (date) => {
   if (!date) return null;
@@ -796,4 +796,82 @@ export const getOrderDetails = async (customerId, orderId, itemId = null) => {
     }))
   };
 };
+
+/**
+ * Cancel a specific order item
+ */
+export const cancelOrderItem = async (customerId, orderId, itemId) => {
+  const [orderItems] = await db.query(
+    `SELECT oi.id, oi.item_status, o.customer_id, oi.quantity, oi.product_id, oi.vendor_id
+     FROM order_items oi
+     JOIN orders o ON oi.order_id = o.id
+     WHERE oi.order_id = ? AND oi.id = ? AND o.customer_id = ?`,
+    [orderId, itemId, customerId]
+  );
+
+  if (orderItems.length === 0) {
+    throw new ApiError(404, "Order item not found");
+  }
+
+  const item = orderItems[0];
+
+  if (item.item_status === 'Cancelled') {
+    throw new ApiError(400, "This item has already been cancelled.", "ALREADY_CANCELLED");
+  }
+
+  if (!["Pending", "Confirmed"].includes(item.item_status)) {
+    throw new ApiError(400, "Item cancellation is not available because it is about to delivery soon", "CANCEL_NOT_ALLOWED");
+  }
+
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    // 1. Update item status to Cancelled
+    await connection.query(
+      `UPDATE order_items 
+       SET item_status = 'Cancelled', status_updated_at = NOW() 
+       WHERE id = ?`,
+      [itemId]
+    );
+
+    // 2. Restore stock for the cancelled item
+    await connection.query(
+      `UPDATE product_variants 
+       SET stock = stock + ?, updated_at = NOW()
+       WHERE product_id = ? 
+       LIMIT 1`,
+      [item.quantity, item.product_id]
+    );
+
+    // 3. Check if all items in the order are Cancelled, and if so, update main order status
+    const [allItems] = await connection.query(
+      `SELECT item_status FROM order_items WHERE order_id = ?`,
+      [orderId]
+    );
+
+    const allCancelled = allItems.every(i => i.item_status === 'Cancelled');
+    if (allCancelled) {
+      await connection.query(
+        `UPDATE orders SET order_status = 'Cancelled', updated_at = NOW() WHERE id = ?`,
+        [orderId]
+      );
+    }
+
+    await connection.commit();
+
+    // Clear caches so vendor panel and admin panel reflect the cancellation immediately
+    await removeByPattern(`vendor:orders:list:${item.vendor_id}:*`);
+    await removeByPattern(`admin:orders:list:*`);
+    await removeByPattern(`admin:order:detail:${orderId}`);
+
+    return { message: "Item cancelled successfully", item_id: itemId, status: "Cancelled" };
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+};
+
 

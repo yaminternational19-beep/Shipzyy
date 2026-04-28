@@ -2,7 +2,7 @@ import express from "express";
 import * as ordersController from "./orders.controller.js";
 import customerAuthMiddleware from "../../../middlewares/customer.auth.middleware.js";
 import validate from "../../../middlewares/validate.js";
-import { placeOrderSchema } from "./orders.validator.js";
+import { placeOrderSchema, cancelItemSchema } from "./orders.validator.js";
 
 const router = express.Router();
 
@@ -22,5 +22,13 @@ router.get("/orders-list", customerAuthMiddleware, ordersController.getOrderHist
 
 // Single Order Detail
 router.get("/orders-list/:orderId", customerAuthMiddleware, ordersController.getOrderDetails);
+
+// Cancel Order Item
+router.put(
+  "/cancel-item",
+  customerAuthMiddleware,
+  validate(cancelItemSchema, "body"),
+  ordersController.cancelOrderItem
+);
 
 export default router;

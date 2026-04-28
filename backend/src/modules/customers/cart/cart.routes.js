@@ -20,3 +20,4 @@ router.delete("/cart", optionalCustomerAuth, validate(removeFromCartSchema), car
 router.delete("/cart/all", optionalCustomerAuth, cartController.clearCart);
 
 export default router;
+

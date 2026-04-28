@@ -54,3 +54,16 @@ export const getOrderDetails = asyncHandler(async (req, res) => {
 
   return ApiResponse.success(res, "Order details fetched successfully", result);
 });
+
+export const cancelOrderItem = asyncHandler(async (req, res) => {
+  const customerId = req.user?.id;
+  const { order_id, item_id } = req.body;
+
+  if (!customerId) {
+    throw new ApiError(401, "Authentication required", "AUTH_REQUIRED");
+  }
+
+  const result = await ordersService.cancelOrderItem(customerId, order_id, item_id);
+
+  return ApiResponse.success(res, "Item cancelled successfully", result);
+});

@@ -250,7 +250,7 @@ export const updateOrderStatus = async (vendorId, orderId, status) => {
   const [result] = await db.query(`
         UPDATE order_items 
         SET item_status = ?, status_updated_at = NOW() 
-        WHERE order_id = ? AND vendor_id = ?
+        WHERE order_id = ? AND vendor_id = ? AND item_status != 'Cancelled'
     `, [status, orderId, vendorId]);
 
   if (result.affectedRows === 0) {

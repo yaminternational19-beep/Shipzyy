@@ -5,6 +5,8 @@ import '../../vendor_products/product.css';
 const OrderView = ({ order, onClose }) => {
     if (!order) return null;
 
+    const cancelledItems = order.items?.filter(item => item.status === 'Cancelled' || item.item_status === 'Cancelled') || [];
+
     const formatCurrency = (val) =>
         new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(val || 0);
 
@@ -68,25 +70,49 @@ const OrderView = ({ order, onClose }) => {
                                 <span>Order Items ({order.items.length})</span>
                             </div>
                             <div className="image-scroll-container">
-                                {order.items.map((item, idx) => (
-                                    <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', minWidth: '120px' }}>
-                                        <div className="view-image-card" style={{ minWidth: '110px', height: '110px' }}>
-                                            <img
-                                                src={item.image || `https://api.dicebear.com/7.x/shapes/svg?seed=${item.name}`}
-                                                alt={item.name}
-                                                onError={(e) => { e.target.src = `https://api.dicebear.com/7.x/shapes/svg?seed=${item.name}`; }}
-                                            />
-                                        </div>
-                                        <div style={{ textAlign: 'center' }}>
-                                            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#1e293b', maxWidth: '110px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                {item.name}
+                                {order.items.map((item, idx) => {
+                                    const isCancelled = item.status === 'Cancelled' || item.item_status === 'Cancelled';
+                                    return (
+                                        <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', minWidth: '120px', opacity: isCancelled ? 0.7 : 1 }}>
+                                            <div className="view-image-card" style={{ minWidth: '110px', height: '110px', position: 'relative' }}>
+                                                <img
+                                                    src={item.image || `https://api.dicebear.com/7.x/shapes/svg?seed=${item.name}`}
+                                                    alt={item.name}
+                                                    onError={(e) => { e.target.src = `https://api.dicebear.com/7.x/shapes/svg?seed=${item.name}`; }}
+                                                    style={{ filter: isCancelled ? 'grayscale(100%)' : 'none' }}
+                                                />
+                                                {isCancelled && (
+                                                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255, 255, 255, 0.6)' }}>
+                                                        <span style={{ background: '#ef4444', color: 'white', fontSize: '10px', fontWeight: 'bold', padding: '2px 6px', borderRadius: '4px' }}>CANCELLED</span>
+                                                    </div>
+                                                )}
                                             </div>
-                                            <div style={{ fontSize: '0.75rem', color: '#6366f1', fontWeight: 700 }}>
-                                                Qty: {item.qty} × {formatCurrency(item.price)}
+                                            <div style={{ textAlign: 'center' }}>
+                                                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: isCancelled ? '#ef4444' : '#1e293b', maxWidth: '110px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: isCancelled ? 'line-through' : 'none' }}>
+                                                    {item.name}
+                                                </div>
+                                                <div style={{ fontSize: '0.75rem', color: isCancelled ? '#ef4444' : '#6366f1', fontWeight: 700, textDecoration: isCancelled ? 'line-through' : 'none' }}>
+                                                    Qty: {item.qty} × {formatCurrency(item.price)}
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Cancelled Items Alert Panel */}
+                    {cancelledItems.length > 0 && (
+                        <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', padding: '12px 16px', borderRadius: '8px', marginBottom: '16px', display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                            <div style={{ color: '#ef4444', marginTop: '2px' }}>
+                                <X size={20} />
+                            </div>
+                            <div>
+                                <h4 style={{ margin: '0 0 4px 0', color: '#991b1b', fontSize: '0.9rem', fontWeight: 700 }}>Partial Order Cancellation</h4>
+                                <p style={{ margin: 0, color: '#b91c1c', fontSize: '0.8rem' }}>
+                                    {cancelledItems.length} product(s) in this order have been cancelled. Please do not ship the items marked in red above.
+                                </p>
                             </div>
                         </div>
                     )}
