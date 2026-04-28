@@ -22,7 +22,7 @@ export const rolePermissions = {
         "REPORTS",
         "VENDOR_INVOICES",
         "CUSTOMER_INVOICES",
-        
+
         "REVIEWS"
     ],
 

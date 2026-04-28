@@ -1,5 +1,10 @@
-import React, { useState } from 'react';
-import { Search, Filter, Eye, X, CheckCircle, XCircle, ChevronLeft, ChevronRight, Square, CheckSquare, Calendar } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { 
+    Search, Filter, Eye, X, CheckCircle, XCircle, 
+    ChevronLeft, ChevronRight, Square, CheckSquare, 
+    Calendar, Download, RefreshCw, FileText, 
+    ArrowUpRight, AlertCircle, Clock, Check
+} from 'lucide-react';
 import ExportActions from '../../../components/common/ExportActions';
 
 const RefundsTable = ({ refunds, title, onShowToast }) => {
@@ -15,6 +20,18 @@ const RefundsTable = ({ refunds, title, onShowToast }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedRefunds, setSelectedRefunds] = useState([]);
     const itemsPerPage = 8;
+
+    // Stats Calculation
+    const stats = useMemo(() => {
+        const filtered = localRefunds;
+        return {
+            total: filtered.length,
+            pending: filtered.filter(r => r.status === 'Pending').length,
+            approved: filtered.filter(r => r.status === 'Approved').length,
+            rejected: filtered.filter(r => r.status === 'Rejected').length,
+            totalAmount: filtered.reduce((acc, r) => acc + r.amount, 0)
+        };
+    }, [localRefunds]);
 
     const filteredRefunds = localRefunds.filter(r => {
         const matchesSearch = (r.userName?.toLowerCase() || '').includes(searchQuery.toLowerCase()) || 
@@ -90,280 +107,394 @@ const RefundsTable = ({ refunds, title, onShowToast }) => {
         setActionModal({ open: false, refund: null });
     };
 
+    const handleBulkAction = (status) => {
+        if (selectedRefunds.length === 0) return;
+        
+        setLocalRefunds(prev => prev.map(r => {
+            if (selectedRefunds.includes(r.id)) {
+                return { ...r, status, adminNotes: `Bulk ${status} action performed.` };
+            }
+            return r;
+        }));
+
+        onShowToast(`${selectedRefunds.length} refunds ${status.toLowerCase()} successfully!`, 'success');
+        setSelectedRefunds([]);
+    };
+
     const handleExport = (message, type) => {
         onShowToast(message, type);
     };
 
     const handleDownload = (type) => {
-        onShowToast(`Downloading ${selectedRefunds.length} refunds as ${type.toUpperCase()}...`, 'success');
+        onShowToast(`Downloading ${selectedRefunds.length || filteredRefunds.length} refunds as ${type.toUpperCase()}...`, 'success');
     };
 
     return (
-        <div className="c-table-container">
-            <div className="v-table-controls">
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between', width: '100%' }}>
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-                        <div className="c-search">
-                            <Search className="search-icon" size={16} />
-                            <input
-                                type="text"
-                                placeholder="Search Refunds..."
-                                value={searchQuery}
-                                onChange={(e) => {
-                                    setSearchQuery(e.target.value);
-                                    setCurrentPage(1);
-                                }}
-                            />
-                        </div>
-                        
-                        <div className="input-with-icon" style={{ width: '150px' }}>
-                            <Filter size={15} className="field-icon" />
-                            <select
-                                value={statusFilter}
-                                onChange={(e) => {
-                                    setStatusFilter(e.target.value);
-                                    setCurrentPage(1);
-                                }}
-                                className="filter-select"
-                                style={{ width: '100%', padding: '10px 12px 10px 38px', borderRadius: '10px', border: '1px solid var(--border-color)', background: '#f8fafc', fontSize: '0.9rem' }}
-                            >
-                                <option value="">All Status</option>
-                                <option value="Pending">Pending</option>
-                                <option value="Approved">Approved</option>
-                                <option value="Rejected">Rejected</option>
-                            </select>
-                        </div>
-
-                        <div className="date-filter-group" style={{ display: 'flex', gap: '8px', alignItems: 'center', background: '#f8fafc', padding: '0 12px', borderRadius: '10px', border: '1px solid var(--border-color)', height: '42px' }}>
-                            <Calendar size={15} color="#94a3b8" />
-                            <input 
-                                type="date" 
-                                value={fromDate} 
-                                onChange={(e) => { setFromDate(e.target.value); setCurrentPage(1); }}
-                                style={{ border: 'none', background: 'transparent', fontSize: '0.85rem', color: '#475569', outline: 'none' }}
-                            />
-                            <span style={{ color: '#cbd5e1' }}>-</span>
-                            <input 
-                                type="date" 
-                                value={toDate} 
-                                onChange={(e) => { setToDate(e.target.value); setCurrentPage(1); }}
-                                style={{ border: 'none', background: 'transparent', fontSize: '0.85rem', color: '#475569', outline: 'none' }}
-                            />
-                        </div>
+        <div className="refunds-content">
+            {/* Stats Overview */}
+            <div className="refund-stats-grid">
+                <div className="refund-stat-card">
+                    <div className="stat-icon-wrapper" style={{ background: '#eff6ff', color: '#2563eb' }}>
+                        <FileText size={24} />
                     </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        {selectedRefunds.length > 0 && (
-                            <div style={{ fontSize: '13px', color: 'var(--primary-color)', fontWeight: 700 }}>
-                                {selectedRefunds.length} items selected
-                            </div>
-                        )}
-                        <ExportActions 
-                            selectedCount={selectedRefunds.length} 
-                            onExport={handleExport}
-                            onDownload={handleDownload}
-                        />
+                    <div className="stat-info">
+                        <div className="stat-value">{stats.total}</div>
+                        <div className="stat-label">Total Requests</div>
+                    </div>
+                </div>
+                <div className="refund-stat-card">
+                    <div className="stat-icon-wrapper" style={{ background: '#fffbeb', color: '#d97706' }}>
+                        <Clock size={24} />
+                    </div>
+                    <div className="stat-info">
+                        <div className="stat-value">{stats.pending}</div>
+                        <div className="stat-label">Pending Reviews</div>
+                    </div>
+                </div>
+                <div className="refund-stat-card">
+                    <div className="stat-icon-wrapper" style={{ background: '#ecfdf5', color: '#059669' }}>
+                        <CheckCircle size={24} />
+                    </div>
+                    <div className="stat-info">
+                        <div className="stat-value">{stats.approved}</div>
+                        <div className="stat-label">Processed</div>
+                    </div>
+                </div>
+                <div className="refund-stat-card">
+                    <div className="stat-icon-wrapper" style={{ background: '#fdf2f8', color: '#db2777' }}>
+                        <ArrowUpRight size={24} />
+                    </div>
+                    <div className="stat-info">
+                        <div className="stat-value">₹{stats.totalAmount.toLocaleString()}</div>
+                        <div className="stat-label">Total Value</div>
                     </div>
                 </div>
             </div>
 
-            <div style={{ overflowX: 'auto' }}>
-                <table className="dashboard-table" style={{ minWidth: '1300px' }}>
-                    <thead>
-                        <tr>
-                            <th style={{ width: '48px', textAlign: 'center' }}>
-                                <div onClick={handleSelectAll} style={{ cursor: 'pointer', display: 'inline-flex' }}>
-                                    {allSelectedInCurrentPage ? <CheckSquare size={18} color="var(--primary-color)" /> : <Square size={18} color="#94a3b8" />}
-                                </div>
-                            </th>
-                            <th>Refund ID</th>
-                            <th>Reference ID</th>
-                            <th>User Name / ID</th>
-                            <th>User Type</th>
-                            <th>User Contact</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                            <th>Date Requested</th>
-                            <th className="col-actions">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {currentItems.map(refund => (
-                            <tr key={refund.id} className={selectedRefunds.includes(refund.id) ? 'selected-row' : ''}>
-                                <td style={{ textAlign: 'center' }}>
-                                    <div onClick={() => handleSelectOne(refund.id)} style={{ cursor: 'pointer', display: 'inline-flex' }}>
-                                        {selectedRefunds.includes(refund.id) ? <CheckSquare size={18} color="var(--primary-color)" /> : <Square size={18} color="#94a3b8" />}
-                                    </div>
-                                </td>
-                                <td><span style={{ fontWeight: 700, color: '#1e293b' }}>{refund.id}</span></td>
-                                <td><span style={{ color: '#475569', fontSize: '13px', fontWeight: 600 }}>{refund.orderId}</span></td>
-                                <td>
-                                    <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9rem' }}>{refund.userName}</div>
-                                    <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600, marginTop: '2px' }}>{refund.userId}</div>
-                                </td>
-                                <td>
-                                    <span style={{ 
-                                        padding: '5px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 700,
-                                        background: refund.userType === 'VENDOR' ? '#eff6ff' : refund.userType === 'RIDER' ? '#f0fdf4' : '#fdf2f8',
-                                        color: refund.userType === 'VENDOR' ? '#2563eb' : refund.userType === 'RIDER' ? '#166534' : '#db2777',
-                                        border: `1px solid ${refund.userType === 'VENDOR' ? '#dbeafe' : refund.userType === 'RIDER' ? '#dcfce7' : '#fce7f3'}`
-                                    }}>
-                                        {refund.userType}
-                                    </span>
-                                </td>
-                                <td>
-                                    <div style={{ fontWeight: 700, color: '#111827', fontSize: '0.82rem' }}>{refund.userPhone}</div>
-                                    <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '1px' }}>{refund.userEmail}</div>
-                                </td>
-                                <td><span style={{ fontWeight: 700, color: '#0f172a' }}>${refund.amount.toFixed(2)}</span></td>
-                                <td>
-                                    <span className={`status-badge ${refund.status === 'Approved' ? 'status-approved' : refund.status === 'Rejected' ? 'status-blocked' : 'status-pending'}`}>
-                                        {refund.status}
-                                    </span>
-                                </td>
-                                <td>
-                                    <div style={{ fontSize: '13px', fontWeight: 600 }}>{new Date(refund.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })}</div>
-                                    <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 500 }}>{new Date(refund.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-                                </td>
-                                <td className="col-actions">
-                                    <button 
-                                        onClick={() => handleViewAction(refund)}
-                                        style={{ backgroundColor: 'white', color: '#334155', border: '1px solid #cbd5e1', padding: '7px 14px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 600, transition: 'all 0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}
-                                    >
-                                        <Eye size={14} /> Action
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                        {filteredRefunds.length === 0 && (
-                            <tr>
-                                <td colSpan="10" className="text-center p-4" style={{ color: '#94a3b8', textAlign: 'center', padding: '60px' }}>
-                                    <div style={{ fontSize: '1.2rem', fontWeight: 600 }}>No Refunds Found</div>
-                                    <p style={{ fontSize: '0.9rem' }}>Try adjusting your filters or search terms.</p>
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
-            
-            <div className="c-pagination">
-                <span className="c-pagination-info">
-                    Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, filteredRefunds.length)} of {filteredRefunds.length} entries
-                </span>
-                <div className="c-pagination-btns">
-                    <button 
-                        className="c-page-btn"
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        disabled={currentPage === 1}
-                    >
-                        <ChevronLeft size={14} /> Prev
-                    </button>
-                    
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '0 8px' }}>
-                        {[...Array(totalPages)].map((_, i) => (
-                            <button
-                                key={i + 1}
-                                onClick={() => handlePageChange(i + 1)}
-                                style={{ 
-                                    width: '32px', height: '32px', borderRadius: '8px', border: '1px solid #e2e8f0',
-                                    backgroundColor: currentPage === i + 1 ? 'var(--primary-color)' : 'white',
-                                    color: currentPage === i + 1 ? 'white' : '#64748b',
-                                    fontWeight: 700, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    transition: 'all 0.2s'
-                                }}
-                            >
-                                {i + 1}
-                            </button>
-                        ))}
-                    </span>
-
-                    <button 
-                        className="c-page-btn"
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        disabled={currentPage === totalPages || totalPages === 0}
-                    >
-                        Next <ChevronRight size={14} />
-                    </button>
-                </div>
-            </div>
-
-            {/* Action Modal */}
-            {actionModal.open && actionModal.refund && (
-                <div className="modal-overlay">
-                    <div className="modal-content admin-form-modal" style={{ maxWidth: '500px', width: '90%' }}>
-                        <div className="modal-header">
-                            <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Refund Request Actions</h2>
-                            <button className="close-btn" onClick={() => setActionModal({ open: false, refund: null })}>
-                                <X size={20} />
-                            </button>
-                        </div>
-                        <div className="modal-body">
-                            <div style={{ marginBottom: '20px', padding: '16px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-                                    <div>
-                                        <span style={{ fontSize: '12px', color: '#64748b', display: 'block' }}>Refund ID</span>
-                                        <strong style={{ fontSize: '15px' }}>{actionModal.refund.id}</strong>
-                                    </div>
-                                    <div style={{ textAlign: 'right' }}>
-                                        <span style={{ fontSize: '12px', color: '#64748b', display: 'block' }}>Amount</span>
-                                        <strong style={{ fontSize: '18px', color: '#0f172a' }}>${actionModal.refund.amount.toFixed(2)}</strong>
-                                    </div>
-                                </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                                    <div>
-                                        <span style={{ fontSize: '12px', color: '#64748b', display: 'block' }}>User</span>
-                                        <div style={{ fontSize: '14px', fontWeight: 600 }}>{actionModal.refund.userName}</div>
-                                        <div style={{ fontSize: '12px', color: '#64748b' }}>{actionModal.refund.userId}</div>
-                                    </div>
-                                    <div>
-                                        <span style={{ fontSize: '12px', color: '#64748b', display: 'block' }}>Reference</span>
-                                        <div style={{ fontSize: '14px', fontWeight: 600 }}>{actionModal.refund.orderId}</div>
-                                        <div style={{ fontSize: '12px', color: '#64748b' }}>{new Date(actionModal.refund.date).toLocaleString()}</div>
-                                    </div>
-                                </div>
-                                <div>
-                                    <span style={{ fontSize: '12px', color: '#64748b', display: 'block', marginBottom: '4px' }}>Reason given</span>
-                                    <p style={{ margin: 0, fontSize: '14px', color: '#334155', lineHeight: '1.5', padding: '10px', backgroundColor: 'white', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
-                                        {actionModal.refund.reason}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="form-group" style={{ marginBottom: '10px' }}>
-                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500, color: '#334155' }}>Admin Notes (Required for Action)</label>
-                                <textarea 
-                                    value={adminNotes}
-                                    onChange={(e) => setAdminNotes(e.target.value)}
-                                    placeholder="Enter your notes or justification here..."
-                                    disabled={actionModal.refund.status !== 'Pending'}
-                                    style={{ width: '100%', minHeight: '80px', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', resize: 'vertical', fontFamily: 'inherit', fontSize: '14px', backgroundColor: actionModal.refund.status !== 'Pending' ? '#f1f5f9' : 'white' }}
+            <div className="refund-table-wrapper">
+                <div className="v-table-controls" style={{ padding: '20px', borderBottom: '1px solid #e2e8f0' }}>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between', width: '100%' }}>
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                            <div className="c-search" style={{ minWidth: '300px' }}>
+                                <Search className="search-icon" size={16} />
+                                <input
+                                    type="text"
+                                    placeholder="Search by ID, Order, or Name..."
+                                    value={searchQuery}
+                                    onChange={(e) => {
+                                        setSearchQuery(e.target.value);
+                                        setCurrentPage(1);
+                                    }}
+                                    style={{ border: 'none', width: '100%', outline: 'none', background: 'transparent' }}
                                 />
                             </div>
                             
-                            {actionModal.refund.status !== 'Pending' && (
-                                <div style={{ marginTop: '12px', padding: '10px', borderRadius: '6px', backgroundColor: actionModal.refund.status === 'Approved' ? '#ecfdf5' : '#fef2f2', border: `1px solid ${actionModal.refund.status === 'Approved' ? '#a7f3d0' : '#fecaca'}`, color: actionModal.refund.status === 'Approved' ? '#065f46' : '#991b1b', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    {actionModal.refund.status === 'Approved' ? <CheckCircle size={16} /> : <XCircle size={16} />}
-                                    This refund has been {actionModal.refund.status.toLowerCase()}.
-                                </div>
-                            )}
+                            <div className="input-with-icon" style={{ width: '160px' }}>
+                                <Filter size={15} className="field-icon" style={{ left: '12px' }} />
+                                <select
+                                    value={statusFilter}
+                                    onChange={(e) => {
+                                        setStatusFilter(e.target.value);
+                                        setCurrentPage(1);
+                                    }}
+                                    className="filter-select"
+                                    style={{ paddingLeft: '36px' }}
+                                >
+                                    <option value="">All Status</option>
+                                    <option value="Pending">Pending</option>
+                                    <option value="Approved">Approved</option>
+                                    <option value="Rejected">Rejected</option>
+                                </select>
+                            </div>
+
+                            <div className="date-filter-group" style={{ display: 'flex', gap: '8px', alignItems: 'center', background: '#f8fafc', padding: '0 12px', borderRadius: '10px', border: '1px solid #e2e8f0', height: '42px' }}>
+                                <Calendar size={15} color="#94a3b8" />
+                                <input 
+                                    type="date" 
+                                    value={fromDate} 
+                                    onChange={(e) => { setFromDate(e.target.value); setCurrentPage(1); }}
+                                    style={{ border: 'none', background: 'transparent', fontSize: '0.85rem', color: '#475569', outline: 'none' }}
+                                />
+                                <span style={{ color: '#cbd5e1' }}>-</span>
+                                <input 
+                                    type="date" 
+                                    value={toDate} 
+                                    onChange={(e) => { setToDate(e.target.value); setCurrentPage(1); }}
+                                    style={{ border: 'none', background: 'transparent', fontSize: '0.85rem', color: '#475569', outline: 'none' }}
+                                />
+                            </div>
                         </div>
-                        <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between', padding: '16px 24px', borderTop: '1px solid #e2e8f0' }}>
-                            <button className="btn btn-secondary" onClick={() => setActionModal({ open: false, refund: null })}>Close</button>
-                            {actionModal.refund.status === 'Pending' && (
-                                <div style={{ display: 'flex', gap: '12px' }}>
-                                    <button 
-                                        className="btn btn-danger" 
-                                        onClick={() => handleProcessRefund('Rejected')}
-                                    >
-                                        Reject Request
-                                    </button>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            {selectedRefunds.length > 0 ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <button 
                                         className="btn btn-primary" 
-                                        onClick={() => handleProcessRefund('Approved')}
+                                        onClick={() => handleBulkAction('Approved')}
+                                        style={{ padding: '8px 16px', fontSize: '12px', background: '#10b981' }}
                                     >
-                                        Approve Refund
+                                        Approve ({selectedRefunds.length})
                                     </button>
+                                    <button 
+                                        className="btn btn-danger" 
+                                        onClick={() => handleBulkAction('Rejected')}
+                                        style={{ padding: '8px 16px', fontSize: '12px' }}
+                                    >
+                                        Reject
+                                    </button>
+                                </div>
+                            ) : (
+                                <ExportActions 
+                                    selectedCount={selectedRefunds.length} 
+                                    onExport={handleExport}
+                                    onDownload={handleDownload}
+                                />
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                <div style={{ overflowX: 'auto' }}>
+                    <table className="dashboard-table">
+                        <thead>
+                            <tr>
+                                <th style={{ width: '50px', textAlign: 'center' }}>
+                                    <div onClick={handleSelectAll} style={{ cursor: 'pointer', display: 'inline-flex' }}>
+                                        {allSelectedInCurrentPage ? <CheckSquare size={18} color="var(--primary)" /> : <Square size={18} color="#94a3b8" />}
+                                    </div>
+                                </th>
+                                <th>Transaction</th>
+                                <th>User Details</th>
+                                <th>Reason</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Date Requested</th>
+                                <th style={{ textAlign: 'right' }}>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {currentItems.map(refund => (
+                                <tr key={refund.id} className={selectedRefunds.includes(refund.id) ? 'selected-row' : ''}>
+                                    <td style={{ textAlign: 'center' }}>
+                                        <div onClick={() => handleSelectOne(refund.id)} style={{ cursor: 'pointer', display: 'inline-flex' }}>
+                                            {selectedRefunds.includes(refund.id) ? <CheckSquare size={18} color="var(--primary)" /> : <Square size={18} color="#94a3b8" />}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.85rem' }}>{refund.id}</div>
+                                        <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>Ref: {refund.orderId}</div>
+                                    </td>
+                                    <td>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <div style={{ 
+                                                width: '32px', height: '32px', borderRadius: '8px', 
+                                                background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                fontSize: '12px', fontWeight: 700, color: '#475569'
+                                            }}>
+                                                {refund.userName.charAt(0)}
+                                            </div>
+                                            <div>
+                                                <div style={{ fontWeight: 700, color: '#1e293b', fontSize: '0.85rem' }}>{refund.userName}</div>
+                                                <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{refund.userPhone}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div style={{ fontSize: '0.85rem', color: '#334155', maxWidth: '250px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 600 }}>
+                                            {refund.reasonCategory || 'General'}
+                                        </div>
+                                        <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{refund.reason}</div>
+                                    </td>
+                                    <td>
+                                        <div style={{ fontWeight: 800, color: '#0f172a' }}>₹{refund.amount.toLocaleString()}</div>
+                                    </td>
+                                    <td>
+                                        <span className={`status-badge ${refund.status === 'Approved' ? 'status-approved' : refund.status === 'Rejected' ? 'status-blocked' : 'status-pending'}`}>
+                                            {refund.status === 'Pending' && <Clock size={12} />}
+                                            {refund.status === 'Approved' && <Check size={12} />}
+                                            {refund.status === 'Rejected' && <AlertCircle size={12} />}
+                                            {refund.status}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155' }}>
+                                            {new Date(refund.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                                        </div>
+                                        <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                                            {new Date(refund.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </div>
+                                    </td>
+                                    <td style={{ textAlign: 'right' }}>
+                                        <button 
+                                            onClick={() => handleViewAction(refund)}
+                                            className="action-btn-view"
+                                            style={{ 
+                                                padding: '8px 12px', borderRadius: '10px', border: '1px solid #e2e8f0',
+                                                background: 'white', color: '#475569', cursor: 'pointer',
+                                                display: 'inline-flex', alignItems: 'center', gap: '6px',
+                                                fontSize: '0.75rem', fontWeight: 700, transition: 'all 0.2s'
+                                            }}
+                                        >
+                                            <Eye size={14} /> View
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div className="c-pagination" style={{ padding: '16px 20px', background: '#f8fafc' }}>
+                    <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>
+                        Showing <strong>{indexOfFirstItem + 1}</strong>-<strong>{Math.min(indexOfLastItem, filteredRefunds.length)}</strong> of <strong>{filteredRefunds.length}</strong>
+                    </span>
+                    <div className="c-pagination-btns">
+                        <button 
+                            className="c-page-btn"
+                            onClick={() => handlePageChange(currentPage - 1)}
+                            disabled={currentPage === 1}
+                        >
+                            <ChevronLeft size={14} />
+                        </button>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                            {[...Array(totalPages)].map((_, i) => (
+                                <button
+                                    key={i + 1}
+                                    onClick={() => handlePageChange(i + 1)}
+                                    className={currentPage === i + 1 ? 'active' : ''}
+                                    style={{ 
+                                        width: '32px', height: '32px', borderRadius: '8px', border: 'none',
+                                        background: currentPage === i + 1 ? 'var(--primary)' : 'transparent',
+                                        color: currentPage === i + 1 ? 'white' : '#64748b',
+                                        fontWeight: 700, cursor: 'pointer'
+                                    }}
+                                >
+                                    {i + 1}
+                                </button>
+                            ))}
+                        </div>
+                        <button 
+                            className="c-page-btn"
+                            onClick={() => handlePageChange(currentPage + 1)}
+                            disabled={currentPage === totalPages || totalPages === 0}
+                        >
+                            <ChevronRight size={14} />
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Premium Action Modal */}
+            {actionModal.open && actionModal.refund && (
+                <div className="modal-overlay" onClick={() => setActionModal({ open: false, refund: null })}>
+                    <div className="modal-content admin-form-modal" style={{ maxWidth: '600px', width: '95%' }} onClick={e => e.stopPropagation()}>
+                        <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                                <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>Refund Request Details</h2>
+                                <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '2px 0 0' }}>Review and settle the refund claim</p>
+                            </div>
+                            <button className="close-btn" onClick={() => setActionModal({ open: false, refund: null })} style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                                <X size={18} />
+                            </button>
+                        </div>
+                        
+                        <div className="modal-body" style={{ padding: '24px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
+                                <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                                    <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#94a3b8', fontWeight: 800 }}>Reference Details</span>
+                                    <div style={{ marginTop: '8px' }}>
+                                        <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>{actionModal.refund.id}</div>
+                                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Order: {actionModal.refund.orderId}</div>
+                                    </div>
+                                </div>
+                                <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                                    <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#94a3b8', fontWeight: 800 }}>Refund Amount</span>
+                                    <div style={{ marginTop: '8px' }}>
+                                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>₹{actionModal.refund.amount.toLocaleString()}</div>
+                                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Item-level partial refund</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Itemized Detail */}
+                            <div style={{ marginBottom: '24px' }}>
+                                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569' }}>REFUNDED ITEMS</span>
+                                {actionModal.refund.items?.map((item, idx) => (
+                                    <div key={idx} className="item-preview-card">
+                                        {item.image ? (
+                                            <img src={item.image} alt="" className="item-img-small" />
+                                        ) : (
+                                            <div className="item-img-small" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <AlertCircle size={20} color="#cbd5e1" />
+                                            </div>
+                                        )}
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b' }}>{item.name}</div>
+                                            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Qty: {item.qty} × ₹{item.price.toLocaleString()}</div>
+                                        </div>
+                                        <div style={{ textAlign: 'right' }}>
+                                            <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#0f172a' }}>₹{(item.qty * item.price).toLocaleString()}</div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div style={{ marginBottom: '24px' }}>
+                                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569' }}>CLAIM REASON</span>
+                                <div style={{ marginTop: '8px', padding: '12px', background: '#fffbeb', border: '1px solid #fef3c7', borderRadius: '10px', color: '#92400e', fontSize: '0.85rem', lineHeight: '1.5' }}>
+                                    <strong style={{ display: 'block', marginBottom: '4px' }}>{actionModal.refund.reasonCategory}</strong>
+                                    {actionModal.refund.reason}
+                                </div>
+                            </div>
+
+                            <div className="form-group">
+                                <label style={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569', marginBottom: '8px', display: 'block' }}>ADMIN SETTLEMENT NOTES</label>
+                                <textarea 
+                                    value={adminNotes}
+                                    onChange={(e) => setAdminNotes(e.target.value)}
+                                    placeholder="Provide detailed justification for approval or rejection..."
+                                    disabled={actionModal.refund.status !== 'Pending'}
+                                    style={{ 
+                                        width: '100%', minHeight: '100px', padding: '12px', borderRadius: '12px', 
+                                        border: '1px solid #e2e8f0', background: actionModal.refund.status !== 'Pending' ? '#f8fafc' : 'white',
+                                        fontSize: '0.85rem', outline: 'none', transition: 'border-color 0.2s'
+                                    }}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="modal-footer" style={{ padding: '20px 24px', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <button 
+                                className="btn" 
+                                onClick={() => setActionModal({ open: false, refund: null })}
+                                style={{ background: 'white', border: '1px solid #e2e8f0', color: '#64748b', fontWeight: 700, padding: '10px 20px' }}
+                            >
+                                Back to List
+                            </button>
+                            
+                            {actionModal.refund.status === 'Pending' ? (
+                                <div style={{ display: 'flex', gap: '12px' }}>
+                                    <button 
+                                        onClick={() => handleProcessRefund('Rejected')}
+                                        style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fee2e2', fontWeight: 800, padding: '10px 24px', borderRadius: '10px', cursor: 'pointer' }}
+                                    >
+                                        Reject Claim
+                                    </button>
+                                    <button 
+                                        onClick={() => handleProcessRefund('Approved')}
+                                        style={{ background: 'var(--primary)', color: 'white', border: 'none', fontWeight: 800, padding: '10px 24px', borderRadius: '10px', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                    >
+                                        Settle Refund
+                                    </button>
+                                </div>
+                            ) : (
+                                <div style={{ 
+                                    display: 'flex', alignItems: 'center', gap: '8px', 
+                                    color: actionModal.refund.status === 'Approved' ? '#059669' : '#dc2626',
+                                    fontWeight: 800, fontSize: '0.9rem'
+                                }}>
+                                    {actionModal.refund.status === 'Approved' ? <CheckCircle size={20} /> : <XCircle size={20} />}
+                                    Settled as {actionModal.refund.status}
                                 </div>
                             )}
                         </div>

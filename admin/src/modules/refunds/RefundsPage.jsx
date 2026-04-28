@@ -30,7 +30,7 @@ const RefundsPage = () => {
                 </div>
             </div>
 
-            <div className="tab-group-pills">
+            {/* <div className="tab-group-pills">
                 <button
                     className={activeTab === 'customer' ? 'active' : ''}
                     onClick={() => setActiveTab('customer')}
@@ -45,7 +45,7 @@ const RefundsPage = () => {
                     <Bike size={14} />
                     Rider Refunds
                 </button>
-            </div>
+            </div> */}
 
             {activeTab === 'customer' && <CustomerRefunds onShowToast={showToast} />}
             {activeTab === 'rider' && <RiderRefunds onShowToast={showToast} />}
