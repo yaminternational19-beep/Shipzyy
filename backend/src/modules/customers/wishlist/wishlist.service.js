@@ -59,7 +59,7 @@ const getWishlist = async (customerId) => {
             p.country_of_origin AS made_in,
             p.return_allowed,
             p.return_days,
-            pi.image_url AS product_image,
+            COALESCE(NULLIF(pi.image_url, ''), 'https://shipzzy-files-094794931012-ap-south-1-an.s3.ap-south-1.amazonaws.com/placeholders/no-image.png') AS product_image,
             pv.min_price AS offer_price,
             pv.max_mrp AS mrp,
             pv.discount_percentage,

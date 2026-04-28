@@ -49,8 +49,13 @@ const getTickets = async (queryParams) => {
     const vendorSelect = `
         SELECT 
             vst.id, vst.support_ticket_id, vst.subject, vst.message, vst.admin_reply, vst.status, vst.created_at,
-            'VENDOR' as userType, v.id as userId, v.owner_name as userName, v.email as userEmail, CONCAT(v.country_code, ' ', v.mobile) as userPhone,
-            hsc.name as recipientName, hsc.email as recipientEmail, CONCAT(hsc.country_code, ' ', hsc.phone_number) as recipientPhone
+            'VENDOR' as userType, v.id as userId, 
+            COALESCE(NULLIF(v.owner_name, ''), 'Shipzyy User') as userName, 
+            COALESCE(NULLIF(v.email, ''), 'noemail') as userEmail, 
+            COALESCE(NULLIF(CONCAT(v.country_code, ' ', v.mobile), ' '), 'No Phone') as userPhone,
+            hsc.name as recipientName, 
+            COALESCE(NULLIF(hsc.email, ''), 'noemail') as recipientEmail, 
+            COALESCE(NULLIF(CONCAT(hsc.country_code, ' ', hsc.phone_number), ' '), 'No Phone') as recipientPhone
         FROM vendor_support_tickets vst
         LEFT JOIN vendors v ON vst.vendor_id = v.id
         LEFT JOIN help_support_contacts hsc ON vst.support_contact_id = hsc.id
@@ -60,8 +65,13 @@ const getTickets = async (queryParams) => {
     const customerSelect = `
         SELECT 
             cst.id, cst.support_ticket_id, cst.subject, cst.message, cst.admin_reply, cst.status, cst.created_at,
-            'CUSTOMER' as userType, c.id as userId, c.name as userName, c.email as userEmail, CONCAT(c.country_code, ' ', c.mobile) as userPhone,
-            hsc.name as recipientName, hsc.email as recipientEmail, CONCAT(hsc.country_code, ' ', hsc.phone_number) as recipientPhone
+            'CUSTOMER' as userType, c.id as userId, 
+            COALESCE(NULLIF(c.name, ''), 'Shipzyy User') as userName, 
+            COALESCE(NULLIF(c.email, ''), 'noemail') as userEmail, 
+            COALESCE(NULLIF(CONCAT(c.country_code, ' ', c.mobile), ' '), 'No Phone') as userPhone,
+            hsc.name as recipientName, 
+            COALESCE(NULLIF(hsc.email, ''), 'noemail') as recipientEmail, 
+            COALESCE(NULLIF(CONCAT(hsc.country_code, ' ', hsc.phone_number), ' '), 'No Phone') as recipientPhone
         FROM customer_support_tickets cst
         LEFT JOIN customers c ON cst.customer_id = c.id
         LEFT JOIN help_support_contacts hsc ON cst.support_contact_id = hsc.id

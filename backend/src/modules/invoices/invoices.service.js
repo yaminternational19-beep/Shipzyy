@@ -13,7 +13,11 @@ export const createInvoicesForOrder = async (orderId) => {
 
         // 1. Fetch Order Details with Customer and Items
         const [orderRows] = await connection.query(`
-            SELECT o.*, c.name, c.email, c.mobile, ca.address_line_1, ca.address_line_2, ca.city, ca.state, ca.pincode
+            SELECT o.*, 
+                   COALESCE(NULLIF(c.name, ''), 'Shipzyy User') as name, 
+                   COALESCE(NULLIF(c.email, ''), 'noemail') as email, 
+                   COALESCE(NULLIF(c.mobile, ''), 'No Phone') as mobile, 
+                   ca.address_line_1, ca.address_line_2, ca.city, ca.state, ca.pincode
             FROM orders o
             JOIN customers c ON o.customer_id = c.id
             JOIN customers_addresses ca ON o.address_id = ca.id
@@ -25,7 +29,10 @@ export const createInvoicesForOrder = async (orderId) => {
 
         // 2. Fetch Order Items
         const [items] = await connection.query(`
-            SELECT oi.*, p.name as product_name, v.business_name as vendor_name, v.email as vendor_email, v.owner_name as vendor_owner, v.commission_percent
+            SELECT oi.*, p.name as product_name, v.business_name as vendor_name, 
+                   COALESCE(NULLIF(v.email, ''), 'noemail') as vendor_email, 
+                   COALESCE(NULLIF(v.owner_name, ''), 'Shipzyy User') as vendor_owner, 
+                   v.commission_percent
             FROM order_items oi
             JOIN products p ON oi.product_id = p.id
             JOIN vendors v ON oi.vendor_id = v.id

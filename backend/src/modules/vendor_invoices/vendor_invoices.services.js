@@ -65,9 +65,10 @@ export const listVendorInvoices = async (vendorId, queryParams = {}) => {
             vi.*,
             o.order_number,
             c.id AS cust_id,
+            COALESCE(NULLIF(c.name, ''), 'Shipzyy User') as customer_name,
             c.country_code AS customer_country_code,
             c.mobile AS customer_phone,
-            c.profile_image,
+            COALESCE(NULLIF(c.profile_image, ''), 'https://shipzzy-files-094794931012-ap-south-1-an.s3.ap-south-1.amazonaws.com/placeholders/user-avatar.png') as profile_image,
             (SELECT COUNT(*) FROM order_items WHERE order_id = vi.order_id AND vendor_id = vi.vendor_id) as item_count
         FROM vendor_invoices vi
         JOIN orders o ON vi.order_id = o.id
@@ -84,8 +85,9 @@ export const listVendorInvoices = async (vendorId, queryParams = {}) => {
         dbId: row.id,
         invoice_id: row.invoice_id, // Frontend uses id for display
         customerId: `CUST-${row.cust_id}`,
+        customerName: row.customer_name,
         customerPhone: `${row.customer_country_code}${row.customer_phone}`,
-        profile: row.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(row.customer_phone)}&background=random`,
+        profile: row.profile_image,
         orderId: row.order_number,
         itemCount: row.item_count,
         amount: parseFloat(row.amount),

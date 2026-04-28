@@ -75,10 +75,9 @@ export const getAllOrders = async (vendorId, queryParams = {}) => {
       o.payment_status as global_payment_status,
       o.created_at,
       o.updated_at,
-      c.name as customerName,
-      c.id as customerId,
-      c.mobile as customerPhone,
-      c.email as customerEmail,
+      COALESCE(NULLIF(c.name, ''), 'Shipzyy User') as customerName,
+      COALESCE(NULLIF(c.mobile, ''), 'No Phone') as customerPhone,
+      COALESCE(NULLIF(c.email, ''), 'noemail') as customerEmail,
       ca.address_line_1,
       ca.address_line_2,
       ca.city,
@@ -138,7 +137,8 @@ export const getAllOrders = async (vendorId, queryParams = {}) => {
             oi.price,
             oi.item_status as status,
             oi.payment_status as paymentStatus,
-            (SELECT image_url FROM product_images WHERE product_id = p.id ORDER BY is_primary DESC LIMIT 1) as image
+            (SELECT COALESCE(NULLIF(image_url, ''), 'https://shipzzy-files-094794931012-ap-south-1-an.s3.ap-south-1.amazonaws.com/placeholders/no-image.png') 
+         FROM product_images WHERE product_id = p.id ORDER BY is_primary DESC LIMIT 1) as image
         FROM order_items oi
         JOIN products p ON oi.product_id = p.id
         WHERE oi.order_id = ? AND oi.vendor_id = ?

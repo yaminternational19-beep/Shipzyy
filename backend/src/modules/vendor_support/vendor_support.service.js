@@ -129,19 +129,19 @@ export const listTickets = async (vendorId, queryParams) => {
         vst.created_at,
 
         -- User Info (Vendor owner or staff)
-        CASE WHEN vst.created_by_type = 'VENDOR' THEN v.owner_name ELSE vs.name END AS userName,
+        COALESCE(NULLIF(CASE WHEN vst.created_by_type = 'VENDOR' THEN v.owner_name ELSE vs.name END, ''), 'Shipzyy User') AS userName,
         CASE WHEN vst.created_by_type = 'VENDOR' THEN v.id ELSE vs.id END AS userId,
         vst.created_by_type AS userType,
-        CASE
+        COALESCE(NULLIF(CASE
           WHEN vst.created_by_type = 'VENDOR' THEN CONCAT(v.country_code, ' ', v.mobile)
           ELSE CONCAT(vs.country_code, ' ', vs.mobile)
-        END AS userPhone,
-        CASE WHEN vst.created_by_type = 'VENDOR' THEN v.email ELSE vs.email END AS userEmail,
+        END, ' '), 'No Phone') AS userPhone,
+        COALESCE(NULLIF(CASE WHEN vst.created_by_type = 'VENDOR' THEN v.email ELSE vs.email END, ''), 'noemail') AS userEmail,
 
         -- Support Contact Info
-        hsc.name AS recipientName,
-        CONCAT(hsc.country_code, ' ', hsc.phone_number) AS recipientPhone,
-        hsc.email AS recipientEmail
+        COALESCE(NULLIF(hsc.name, ''), 'Shipzyy User') AS recipientName,
+        COALESCE(NULLIF(CONCAT(hsc.country_code, ' ', hsc.phone_number), ' '), 'No Phone') AS recipientPhone,
+        COALESCE(NULLIF(hsc.email, ''), 'noemail') AS recipientEmail
 
      FROM vendor_support_tickets vst
 

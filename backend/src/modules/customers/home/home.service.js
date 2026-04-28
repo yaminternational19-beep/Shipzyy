@@ -107,7 +107,7 @@ export const getHomeData = async (customerId, queryParams = {}) => {
           SELECT 
             p.id, p.name, p.description, p.category_id, c.name AS category_name,
             p.subcategory_id, sc.name AS subcategory_name,
-            pi.image_url AS product_image, pv.min_price AS offer_price,
+            COALESCE(NULLIF(pi.image_url, ''), 'https://shipzzy-files-094794931012-ap-south-1-an.s3.ap-south-1.amazonaws.com/placeholders/no-image.png') AS product_image, pv.min_price AS offer_price,
             pv.max_mrp AS mrp, pv.discount_percentage,
             IF(cw.id IS NOT NULL, 1, 0) AS is_liked,
             IF(cc.id IS NOT NULL, 1, 0) AS is_in_cart,
@@ -184,7 +184,7 @@ export const getHomeData = async (customerId, queryParams = {}) => {
         SELECT 
           p.id, p.name, p.description, p.category_id, c.name AS category_name,
           p.subcategory_id, sc.name AS subcategory_name,
-          pi.image_url AS product_image, pv.min_price AS offer_price,
+          COALESCE(NULLIF(pi.image_url, ''), 'https://shipzzy-files-094794931012-ap-south-1-an.s3.ap-south-1.amazonaws.com/placeholders/no-image.png') AS product_image, pv.min_price AS offer_price,
           pv.max_mrp AS mrp, pv.discount_percentage,
           IF(cw.id IS NOT NULL, 1, 0) AS is_liked,
           IF(cc.id IS NOT NULL, 1, 0) AS is_in_cart,
@@ -337,7 +337,7 @@ const getProducts = async (customerId, queryParams = {}) => {
         p.country_of_origin AS made_in,
         p.return_allowed,
         p.return_days,
-        pi.image_url AS product_image,
+        COALESCE(NULLIF(pi.image_url, ''), 'https://shipzzy-files-094794931012-ap-south-1-an.s3.ap-south-1.amazonaws.com/placeholders/no-image.png') AS product_image,
         pv.min_price AS offer_price,
         pv.max_mrp AS mrp,
         pv.discount_percentage,
@@ -408,7 +408,7 @@ const getProductById = async (customerId, productId, queryParams = {}) => {
         p.return_allowed, p.return_days,
         p.vendor_id, v.business_name AS vendor_name,
         p.brand_id, p.custom_brand, COALESCE(b.name, p.custom_brand) AS brand_name,
-        pi.image_url AS primary_image,
+        COALESCE(NULLIF(pi.image_url, ''), 'https://shipzzy-files-094794931012-ap-south-1-an.s3.ap-south-1.amazonaws.com/placeholders/no-image.png') AS primary_image,
         pv.min_price, pv.max_mrp, pv.total_stock, pv.variant_name, pv.unit, pv.discount_percentage,
         IF(cw.id IS NOT NULL, 1, 0) AS is_liked,
         IF(cc.id IS NOT NULL, 1, 0) AS is_in_cart,
@@ -475,7 +475,7 @@ const getProductById = async (customerId, productId, queryParams = {}) => {
     const [reviews] = await db.query(`
       SELECT 
         r.id, r.rating, r.review, r.images, r.created_at,
-        c.name as customer_name
+        COALESCE(NULLIF(c.name, ''), 'Shipzyy User') as customer_name
       FROM customer_reviews r
       JOIN customers c ON r.customer_id = c.id
       WHERE r.product_id = ?
@@ -518,7 +518,7 @@ const getProductById = async (customerId, productId, queryParams = {}) => {
         p.category_id, c.name AS category_name,
         p.subcategory_id, sc.name AS subcategory_name,
         p.brand_id, COALESCE(b.name, p.custom_brand) AS brand_name,
-        pi.image_url AS product_image,
+        COALESCE(NULLIF(pi.image_url, ''), 'https://shipzzy-files-094794931012-ap-south-1-an.s3.ap-south-1.amazonaws.com/placeholders/no-image.png') AS product_image,
         pv.min_price AS offer_price, 
         pv.max_mrp AS mrp, 
         pv.discount_percentage,

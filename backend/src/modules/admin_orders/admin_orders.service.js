@@ -126,9 +126,9 @@ const getOrders = async (queryParams) => {
 
             MAX(fi.vendor_id)               AS vendorId,
             MAX(fi.vendor_business_name)    AS vendorCompanyName,
-            MAX(fi.vendor_owner_name)       AS vendorName,
-            MAX(fi.vendor_email)            AS vendorEmail,
-            MAX(fi.vendor_phone)            AS vendorPhone,
+            COALESCE(NULLIF(MAX(fi.vendor_owner_name), ''), 'Shipzyy User') AS vendorName,
+            COALESCE(NULLIF(MAX(fi.vendor_email), ''), 'noemail') AS vendorEmail,
+            COALESCE(NULLIF(MAX(fi.vendor_phone), ''), 'No Phone') AS vendorPhone,
             MAX(fi.vendor_country_code)     AS vendorCountryCode,
 
             (SELECT COUNT(*)           FROM order_items WHERE order_id = o.id) AS totalItems,
@@ -143,17 +143,16 @@ const getOrders = async (queryParams) => {
                 cat.name                            AS category_name,
                 sc.name                             AS sub_category_name,
                 COALESCE(b.name, p.custom_brand)    AS brand_name,
-                (
-                    SELECT image_url FROM product_images pi2
-                    WHERE pi2.product_id = p.id AND pi2.is_primary = 1
-                    LIMIT 1
-                )                                   AS image_url,
-                v.id                                AS vendor_id,
                 v.business_name                     AS vendor_business_name,
                 v.owner_name                        AS vendor_owner_name,
                 v.email                             AS vendor_email,
                 v.mobile                            AS vendor_phone,
                 v.country_code                      AS vendor_country_code,
+                COALESCE(NULLIF((
+                    SELECT image_url FROM product_images pi2
+                    WHERE pi2.product_id = p.id AND pi2.is_primary = 1
+                    LIMIT 1
+                ), ''), 'https://shipzzy-files-094794931012-ap-south-1-an.s3.ap-south-1.amazonaws.com/placeholders/no-image.png') AS image_url,
                 ROW_NUMBER() OVER (
                     PARTITION BY oi.order_id ORDER BY oi.id ASC
                 )                                   AS rn
@@ -237,9 +236,9 @@ const getOrderById = async (orderId) => {
             o.updated_at,
 
             c.id             AS customerId,
-            c.name           AS customerName,
-            c.email          AS customerEmail,
-            c.mobile         AS customerPhone,
+            COALESCE(NULLIF(c.name, ''), 'Shipzyy User') AS customerName,
+            COALESCE(NULLIF(c.email, ''), 'noemail')     AS customerEmail,
+            COALESCE(NULLIF(c.mobile, ''), 'No Phone')    AS customerPhone,
             c.country_code   AS customerCountryCode,
 
             ca.address_line_1,
@@ -284,11 +283,11 @@ const getOrderById = async (orderId) => {
             oi.item_status                      AS itemStatus,
             oi.payment_status                   AS paymentStatus,
             oi.status_updated_at                AS itemStatusAt,
-            (
+            COALESCE(NULLIF((
                 SELECT image_url FROM product_images
                 WHERE product_id = p.id AND is_primary = 1
                 LIMIT 1
-            )                                   AS productImage
+            ), ''), 'https://shipzzy-files-094794931012-ap-south-1-an.s3.ap-south-1.amazonaws.com/placeholders/no-image.png') AS productImage
          FROM order_items oi
          JOIN  products p   ON p.id  = oi.product_id
          JOIN  vendors  v   ON v.id  = oi.vendor_id

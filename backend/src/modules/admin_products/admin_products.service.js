@@ -89,16 +89,14 @@ const getProducts = async (queryParams) => {
     
 
     v.business_name AS BusinessName,
-    v.owner_name AS vendorName,
-    v.email AS vendorEmail,
+    COALESCE(NULLIF(v.owner_name, ''), 'Shipzyy User') AS vendorName,
+    COALESCE(NULLIF(v.email, ''), 'noemail') AS vendorEmail,
     v.country_code AS vendorCountryCode,
-    v.mobile AS vendorMobile,
-
+    COALESCE(NULLIF(v.mobile, ''), 'No Phone') AS vendorMobile,
     pv.mrp,
     pv.sale_price,
     pv.stock,
-
-    pi.image_url AS primaryImage
+    COALESCE(NULLIF(pi.image_url, ''), 'https://shipzzy-files-094794931012-ap-south-1-an.s3.ap-south-1.amazonaws.com/placeholders/no-image.png') AS primaryImage
 
 FROM products p
 
@@ -188,12 +186,11 @@ const getProductById = async (productId) => {
             p.is_live, p.is_active, p.view_count, p.sold_count,
             p.created_at, p.updated_at,
 
-            v.business_name as vendor_name,
-            v.owner_name as vendor_owner_name,
-            v.email as vendor_email,
+            COALESCE(NULLIF(v.business_name, ''), 'Shipzyy User') as vendor_name,
+            COALESCE(NULLIF(v.owner_name, ''), 'Shipzyy User') as vendor_owner_name,
+            COALESCE(NULLIF(v.email, ''), 'noemail') as vendor_email,
             v.country_code as vendor_country_code,
-            v.mobile as vendor_mobile,
-
+            COALESCE(NULLIF(v.mobile, ''), 'No Phone') as vendor_mobile,
             c.name as category_name,
             sc.name as subcategory_name,
             COALESCE(b.name, p.custom_brand) as brand_name

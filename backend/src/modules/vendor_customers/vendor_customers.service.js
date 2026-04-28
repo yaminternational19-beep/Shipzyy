@@ -76,7 +76,9 @@ const getCustomers = async (vendorId, queryParams) => {
     // Data query
     const dataQuery = `
         SELECT 
-            c.id, c.name, c.email, c.full_phone, c.profile_image, c.status, c.created_at,
+            c.id, COALESCE(NULLIF(c.name, ''), 'Shipzyy User') as name, COALESCE(NULLIF(c.email, ''), 'noemail') as email, c.full_phone, 
+            COALESCE(NULLIF(c.profile_image, ''), 'https://shipzzy-files-094794931012-ap-south-1-an.s3.ap-south-1.amazonaws.com/placeholders/user-avatar.png') as profile_image, 
+            c.status, c.created_at,
             (SELECT COUNT(DISTINCT o.id) 
              FROM orders o JOIN order_items oi ON oi.order_id = o.id 
              WHERE o.customer_id = c.id AND oi.vendor_id = ?) as orders_count,
@@ -132,7 +134,9 @@ const getCustomerDetails = async (vendorId, customerId) => {
     }
 
     const [rows] = await db.query(
-        `SELECT c.id, c.name, c.email, c.full_phone, c.profile_image, c.status, c.created_at,
+        `SELECT c.id, COALESCE(NULLIF(c.name, ''), 'Shipzyy User') as name, COALESCE(NULLIF(c.email, ''), 'noemail') as email, c.full_phone, 
+                COALESCE(NULLIF(c.profile_image, ''), 'https://shipzzy-files-094794931012-ap-south-1-an.s3.ap-south-1.amazonaws.com/placeholders/user-avatar.png') as profile_image, 
+                c.status, c.created_at,
                 a.address_line_1, a.address_line_2, a.city, a.state, a.pincode, a.country
          FROM customers c
          LEFT JOIN customers_addresses a ON a.id = c.default_address_id

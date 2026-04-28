@@ -288,8 +288,8 @@ const getAllProducts = async (queryParams) => {
       p.is_live, p.is_active, p.view_count, p.sold_count,
       DATE_FORMAT(p.created_at, '%Y-%m-%d') as created_at,
       DATE_FORMAT(p.updated_at, '%Y-%m-%d') as updated_at,
-      DATe_FORMAT(p.rejected_at, '%Y-%m-%d') as rejected_at,
-      v.business_name as vendor_name,
+      DATE_FORMAT(p.rejected_at, '%Y-%m-%d') as rejected_at,
+      COALESCE(NULLIF(v.business_name, ''), 'Shipzyy User') as vendor_name,
       c.name as category_name,
       sc.name as subcategory_name,
       COALESCE(b.name, p.custom_brand) as brand_name
@@ -377,7 +377,7 @@ const getAllProducts = async (queryParams) => {
           sku: v.sku || '',
           variant_name: v.variant_name || 'Standard'
       }; 
-      p.primary_image = imagesMap[p.id]?.[0] || '';
+      p.primary_image = imagesMap[p.id]?.[0] || 'https://shipzzy-files-094794931012-ap-south-1-an.s3.ap-south-1.amazonaws.com/placeholders/no-image.png';
       p.all_images = (imagesMap[p.id] || []).map(url => ({ image_url: url }));
 
       // Flat keys for extra compatibility

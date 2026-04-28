@@ -1,7 +1,12 @@
 import db from '../../config/db.js';
 
 export const getContactsService = async (role) => {
-    let query = 'SELECT * FROM help_support_contacts';
+    let query = `SELECT id, role, name, 
+                 COALESCE(NULLIF(email, ''), 'noemail') as email, 
+                 country_code, 
+                 COALESCE(NULLIF(phone_number, ''), 'No Phone') as phone_number, 
+                 working_hours 
+                 FROM help_support_contacts`;
     const values = [];
     
     if (role) {
@@ -28,8 +33,8 @@ export const updateContactsService = async (role, contacts) => {
         if (contacts && contacts.length > 0) {
             const values = contacts.map(c => [
                 role,
-                c.name,
-                c.email,
+                c.name || 'Shipzyy User',
+                c.email || 'noemail',
                 c.country_code,     // ✅ NEW
                 c.phone_number,     // ✅ NEW
                 c.working_hours   

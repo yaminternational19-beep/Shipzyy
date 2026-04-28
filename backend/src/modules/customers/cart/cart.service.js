@@ -20,7 +20,8 @@ export const getCartItems = async (customerId) => {
       p.name,
       p.slug,
       p.description,
-      (SELECT image_url FROM product_images WHERE product_id = p.id ORDER BY is_primary DESC LIMIT 1) AS product_image,
+      (SELECT COALESCE(NULLIF(image_url, ''), 'https://shipzzy-files-094794931012-ap-south-1-an.s3.ap-south-1.amazonaws.com/placeholders/no-image.png') 
+       FROM product_images WHERE product_id = p.id ORDER BY is_primary DESC LIMIT 1) AS product_image,
       (SELECT COALESCE(AVG(rating), 0) FROM customer_reviews WHERE product_id = p.id) AS avg_rating,
       pv.sale_price AS live_price,
       pv.mrp AS live_mrp,

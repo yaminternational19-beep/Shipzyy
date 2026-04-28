@@ -5,7 +5,8 @@ import formatCustomerDates from "../../../utils/formatCustomerDates.js";
 
 const getHelpSupport = async () => {
   const [rows] = await db.query(
-    `SELECT id, name, email, country_code, phone_number, working_hours
+    `SELECT id, name, COALESCE(NULLIF(email, ''), 'noemail') as email, 
+            country_code, COALESCE(NULLIF(phone_number, ''), 'No Phone') as phone_number, working_hours
      FROM help_support_contacts
      WHERE role = ?`,
     ['customer']

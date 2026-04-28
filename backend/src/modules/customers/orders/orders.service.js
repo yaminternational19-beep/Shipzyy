@@ -593,7 +593,8 @@ export const getOrderHistory = async (customerId, queryParams = {}) => {
         oi.item_status as status, oi.payment_status,
         p.name as product_name, p.return_allowed as is_return_allowed, p.return_days,
         v.business_name as vendor_name,
-        (SELECT image_url FROM product_images WHERE product_id = p.id ORDER BY is_primary DESC LIMIT 1) as image,
+        (SELECT COALESCE(NULLIF(image_url, ''), 'https://shipzzy-files-094794931012-ap-south-1-an.s3.ap-south-1.amazonaws.com/placeholders/no-image.png') 
+         FROM product_images WHERE product_id = p.id ORDER BY is_primary DESC LIMIT 1) as image,
         IF(r.id IS NOT NULL, 1, 0) as is_reviewed,
         r.id as review_id,
         r.rating as review_rating,
@@ -709,7 +710,8 @@ export const getOrderDetails = async (customerId, orderId, itemId = null) => {
       p.return_allowed as is_return_allowed, p.return_days,
       v.business_name AS vendor_name,
       pv.mrp, pv.discount_percentage,
-      (SELECT image_url FROM product_images WHERE product_id = p.id ORDER BY is_primary DESC LIMIT 1) as product_image,
+      (SELECT COALESCE(NULLIF(image_url, ''), 'https://shipzzy-files-094794931012-ap-south-1-an.s3.ap-south-1.amazonaws.com/placeholders/no-image.png') 
+       FROM product_images WHERE product_id = p.id ORDER BY is_primary DESC LIMIT 1) as product_image,
       IF(cw.id IS NOT NULL, 1, 0) AS is_liked,
       IF(cc.id IS NOT NULL, 1, 0) AS is_in_cart,
       IF(r.id IS NOT NULL, 1, 0) AS is_reviewed,

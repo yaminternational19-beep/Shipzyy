@@ -12,8 +12,12 @@ export const getVendorReturns = async (vendorId, filters = {}) => {
     SELECT r.id as return_id, r.reason, r.status as return_status, r.created_at as return_requested_at, r.images,
            oi.id as item_id, oi.quantity, oi.price, oi.item_status,
            o.order_number, o.created_at as order_date,
-           p.name as product_name, p.slug as product_slug, (SELECT image_url FROM product_images WHERE product_id = p.id ORDER BY is_primary DESC LIMIT 1) as featured_image,
-           c.name as customer_name, c.email as customer_email, c.full_phone as customer_phone
+           p.name as product_name, p.slug as product_slug, 
+           (SELECT COALESCE(NULLIF(image_url, ''), 'https://shipzzy-files-094794931012-ap-south-1-an.s3.ap-south-1.amazonaws.com/placeholders/no-image.png') 
+            FROM product_images WHERE product_id = p.id ORDER BY is_primary DESC LIMIT 1) as featured_image,
+           COALESCE(NULLIF(c.name, ''), 'Shipzyy User') as customer_name, 
+           COALESCE(NULLIF(c.email, ''), 'noemail') as customer_email, 
+           c.full_phone as customer_phone
     FROM order_returns r
     JOIN order_items oi ON r.order_item_id = oi.id
     JOIN orders o ON oi.order_id = o.id
