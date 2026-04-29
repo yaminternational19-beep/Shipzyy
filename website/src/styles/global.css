@@ -1,0 +1,222 @@
+
+
+/* ---------- GOOGLE FONT ---------- */
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700;800;900&display=swap");
+
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =========================================================
+   DESIGN TOKENS (LIGHT MODE DEFAULT)
+========================================================= */
+
+:root {
+
+  /* --- CORE BRAND COLORS --- */
+  --primary: #005f73;
+  --primary-hover: #0a9396;
+  --secondary: #fcffff;
+
+  /* --- SEMANTIC COLORS --- */
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --pink-heart: #ec4899;
+
+  /* --- GRADIENTS --- */
+  --brand-gradient: linear-gradient(135deg, #005f73 0%, #14b8a6 100%);
+  --sunset-gradient: linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%);
+  --candy-gradient: linear-gradient(135deg, #6366f1 0%, #ec4899 100%);
+  --card-gradient: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+
+  /* --- TEXT COLORS --- */
+  --text-main: #1e293b;      /* Strong readable dark */
+  --text-light: #475569;
+  --text-muted: #64748b;
+
+
+  /* --- BACKGROUNDS --- */
+  --bg: #ffffff;
+  --bg-soft: #f1f5f9;
+  --card-bg: #ffffff;
+  --border: #e2e8f0;
+
+  /* --- GLASS --- */
+  --glass-bg: rgba(255, 255, 255, 0.75);
+  --glass-dropdown: rgba(255, 255, 255, 0.9);
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  --glass-overlay: rgba(0, 95, 115, 0.6);
+
+  /* --- SHADOWS --- */
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 10px 24px rgba(0, 0, 0, 0.08);
+  --shadow-float: 0 20px 40px -10px rgba(0, 95, 115, 0.15);
+  --shadow-glass: 0 8px 32px rgba(31, 38, 135, 0.07);
+
+  /* --- RADIUS --- */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-pill: 50px;
+
+  --container-width: 1200px;
+}
+
+
+/* =========================================================
+   DARK THEME
+========================================================= */
+
+[data-theme="dark"] {
+
+  --bg: #0f172a;
+  --bg-soft: #1e293b;
+  --card-bg: #162032;
+  --border: #334155;
+
+  --text-main: #ffffff;      /* IMPORTANT */
+  --text-light: #cbd5e1;
+  --text-muted: #94a3b8;
+
+  --card-gradient: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+
+  --glass-bg: rgba(15, 23, 42, 0.85);
+  --glass-dropdown: rgba(30, 41, 59, 0.95);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --glass-overlay: rgba(15, 23, 42, 0.85);
+
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 10px 24px rgba(0, 0, 0, 0.5);
+  --shadow-float: 0 20px 40px -10px rgba(0, 0, 0, 0.6);
+  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+
+/* =========================================================
+   GLOBAL RESET
+========================================================= */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* 🔥 IMPORTANT FIX */
+body {
+  font-family: "Noto Sans", sans-serif;
+  background-image: url("../../src/assets/bannerimages/WhatsApp Image 2026-03-06 at 8.43.48 PM.jpeg");
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  scroll-behavior: smooth;
+  line-height: 1.6;
+}
+
+/* Make sure headings inherit correct color */
+h1, h2, h3, h4, h5, h6 {
+  color:inherit; /* Dark background ke liye white */
+  line-height: 1.2;
+  margin-bottom: 0.5em;
+}
+
+h1 { font-size: 2.5rem; } /* ~40px */
+h2 { font-size: 2rem; }   /* ~32px */
+h3 { font-size: 1.75rem; } /* ~28px */
+h4 { font-size: 1.5rem; }  /* ~24px */
+h5 { font-size: 1.25rem; } /* ~20px */
+h6 { font-size: 1rem; }    /* ~16px */
+
+p {
+  color: inherit;
+}
+
+.container {
+  max-width: var(--container-width);
+  margin: 0 auto;
+  padding: 0 20px;
+  /* width: 100%; */
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+
+/* =========================================
+   GLOBAL RESPONSIVE OVERRIDES
+========================================= */
+
+@media (max-width: 1024px) {
+  .cart-grid, .checkout-max-width {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+  .cart-summary, .invoice-container {
+    position: relative;
+    top: 0;
+    order: -1; /* Total summary comes first on mobile */
+  }
+}
+
+@media (max-width: 600px) {
+  .cart-card {
+    flex-direction: column;
+    text-align: center;
+    padding: 20px;
+  }
+  .cart-card img {
+    width: 150px;
+    height: 150px;
+  }
+  .price { font-size: 26px; }
+  .summary-total { font-size: 32px; }
+  .form-surface { padding: 30px 20px; }
+  .input-grid { grid-template-columns: 1fr; }
+  .full-width { grid-column: span 1; }
+}
+
+@media (max-width:768px){
+  body{
+    background-attachment: scroll;
+  }
+}
+@media (min-width:1600px){
+  .container{
+    max-width:1400px;
+  }
+}
+
+@media (min-width:1800px){
+  .container{
+    max-width:1500px;
+  }
+}
+
+/* =========================================================
+   GLOBAL UTILITIES
+========================================================= */
+
+.text-gradient {
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 800;
+  font-size: 30px;
+}
+
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-glass), var(--glass-highlight);
+}
+
+

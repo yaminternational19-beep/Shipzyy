@@ -1,87 +1,139 @@
-import heroImg from './assets/hero.png'
-import './App.css'
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import MainLayout from "./layout/Mainlayout";
+import AuthLayout from "./layout/Authlayout";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import ErrorFallback from "./components/common/ErrorFallback";
+import Help from "./pages/Help/Help";
+import Home from "./pages/Home/Home";
+import LoginRegister from "./pages/auth/Login-Register/Login-Register";
+import Verify from "./pages/auth/OTP/OTP-Verify";
+import VendorRegister from "./pages/auth/vendor/VendorRegister";
+
+import ProductDetails from "./components/Product/ProductDetails/ProductDetails";
+import CategoryPage from "./pages/CategoryPage/CategoryPage";
+import Notfound from "./pages/Not-found/Not-found";
+
+import WishlistPage from "./pages/wishlist/WishlistPage";
+import CartPage from "./pages/cart/CartPage";
+import CheckoutPage from "./pages/cart/CheckoutPage";
+import OrderHistory from "./pages/cart/OrderHistory";
+import Profile from "./pages/Profile/Profile";
+import { useState,useEffect } from "react";
+import { CartProvider } from "./pages/cart/CartContext";
+import { WishlistProvider } from "./pages/wishlist/WishlistContext";
+import { OrdersProvider } from "./pages/cart/OrdersContext";
+import { AuthProvider } from "./context/AuthContext";
+import ScrollToTop from "./components/common/ScrollToTop";
+import OrderSuccess from "./pages/cart/OrderSuccess";
 
 function App() {
+ const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [serverError, setServerError] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false); 
+
+  useEffect(() => {
+    const goOnline = () => {
+      setIsOffline(false);
+      setServerError(false);
+    };
+    const goOffline = () => setIsOffline(true);
+    const handleServerError = () => setServerError(true);
+
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    window.addEventListener("server-error", handleServerError);
+
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+      window.removeEventListener("server-error", handleServerError);
+    };
+  }, []);
+
+  const handleRetry = () => {
+    setIsRetrying(true);
+
+    setTimeout(() => {
+      if (navigator.onLine) {
+        setIsOffline(false);
+        setServerError(false);
+        setIsRetrying(false);
+        window.location.href = "/"; 
+      } else {
+        setIsRetrying(false);
+        console.log("Still no internet...");
+      }
+    }, 1500);
+  };
+
+  if (isOffline) {
+    return (
+      <ErrorFallback 
+        type="offline" 
+        isRetrying={isRetrying} 
+        retryAction={handleRetry} 
+      />
+    );
+  }
+
+  if (serverError) {
+    return (
+      <ErrorFallback 
+        type="server" 
+        isRetrying={isRetrying} 
+        retryAction={handleRetry} 
+      />
+    );
+  }
   return (
-    <main className="landing">
-      <header className="landing__header">
-        <div className="landing__brand">Shipzyy</div>
-        <nav className="landing__nav">
-          <a href="#features">Features</a>
-          <a href="#pricing">Pricing</a>
-          <a href="#contact">Contact</a>
-        </nav>
-      </header>
+    <BrowserRouter>
+      <ScrollToTop />
+      <AuthProvider>
+        <ToastContainer position="top-right" autoClose={2000} />
 
-      <section className="landing__hero">
-        <div className="hero__content">
-          <span className="hero__eyebrow">Modern shipping for online stores</span>
-          <h1>Ship faster, track smarter, and delight customers.</h1>
-          <p>
-            Shipzyy gives your business a powerful shipping dashboard with
-automations, delivery tracking, and customer notifications in one place.
-          </p>
+        <OrdersProvider>
+          <WishlistProvider>
+            <CartProvider>
+              <Routes>
 
-          <div className="hero__actions">
-            <a className="button button--primary" href="#pricing">
-              Start free trial
-            </a>
-            <a className="button button--secondary" href="#features">
-              Explore features
-            </a>
-          </div>
+                {/* AUTH ROUTES */}
+                <Route element={<AuthLayout />}>
+                  <Route path="/login" element={<LoginRegister />} />
+                  <Route path="/register" element={<LoginRegister />} />
+                  <Route path="/verify-otp" element={<Verify />} />
+                </Route>
 
-          <div className="hero__stats">
-            <div>
-              <strong>99.9%</strong>
-              <span>on-time delivery</span>
-            </div>
-            <div>
-              <strong>30k+</strong>
-              <span>stores powered</span>
-            </div>
-            <div>
-              <strong>24/7</strong>
-              <span>live support</span>
-            </div>
-          </div>
-        </div>
+                {/* MAIN ROUTES */}
+                <Route element={<MainLayout />}>
 
-        <div className="hero__visual">
-          <img src={heroImg} alt="Shipping dashboard illustration" />
-        </div>
-      </section>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/product/:id" element={<ProductDetails />} />
+                  <Route path="/shop" element={<CategoryPage />} />
+                  <Route path="/cart" element={<CartPage />} />
+                  <Route path="/checkout" element={<CheckoutPage />} />
+                  <Route path="/orders" element={<OrderHistory />} />
+                  <Route path="/wishlist" element={<WishlistPage />} />
+                  <Route path="/help" element={<Help />} />
 
-      <section id="features" className="landing__features">
-        <article className="feature-card">
-          <h2>Automate every shipment</h2>
-          <p>Connect stores, print labels, and send delivery updates automatically.</p>
-        </article>
-        <article className="feature-card">
-          <h2>Live tracking at a glance</h2>
-          <p>See shipment status, maps, and exceptions in one dashboard.</p>
-        </article>
-        <article className="feature-card">
-          <h2>Customer-first notifications</h2>
-          <p>Keep buyers informed with branded email and SMS alerts.</p>
-        </article>
-      </section>
+                  {/* 🔥 Vendor moved here */}
+                  <Route path="/vendor-register" element={<VendorRegister />} />
 
-      <section id="pricing" className="landing__cta">
-        <div className="cta-card">
-          <h2>Ready to power your shipping?</h2>
-          <p>Launch your first shipment workflow in minutes with Shipzyy.</p>
-          <a className="button button--primary" href="mailto:support@shipzyy.com">
-            Book a demo
-          </a>
-        </div>
-      </section>
+                </Route>
 
-      <footer id="contact" className="landing__footer">
-        <p>Shipzyy — modern shipping orchestration for e-commerce teams.</p>
-      </footer>
-    </main>
-  )
+                <Route path="*" element={<Notfound />} />
+                <Route path="/order-success" element={
+                  <OrderSuccess/>
+                }/>
+              </Routes>
+            </CartProvider>
+          </WishlistProvider>
+        </OrdersProvider>
+
+      </AuthProvider>
+    </BrowserRouter>
+  );
 }
 
-export default App
+export default App;

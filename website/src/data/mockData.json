@@ -1,0 +1,37 @@
+{
+  "user": {
+    "id": 101,
+    "name": "Rahul Sharma",
+    "email": "rahul.sharma@example.com",
+    "avatar": "https://i.pravatar.cc/150?img=12",
+    "isLoggedIn": true
+  },
+  "cart": {
+    "count": 2,
+    "total": 450.00,
+    "currency": "₹"
+  },
+  "locations": [
+    {
+      "id": 1,
+      "label": "Home",
+      "address": "Sector 45, Gurgaon",
+      "zip": "122003",
+      "icon": "home"
+    },
+    {
+      "id": 2,
+      "label": "Office",
+      "address": "Cyber City, DLF Phase 2",
+      "zip": "122002",
+      "icon": "office"
+    },
+    {
+      "id": 3,
+      "label": "Parents House",
+      "address": "Rohini Sector 12, Delhi",
+      "zip": "110085",
+      "icon": "home"
+    }
+  ]
+}

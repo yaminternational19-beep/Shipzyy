@@ -1,0 +1,141 @@
+/* =========================================
+   MY ORDERS — ULTRA CLEAN GRID UI
+========================================= */
+
+.orders-page {
+  padding: 60px 20px 100px;
+  min-height: 100vh;
+  /* background: #f8fafc; */
+}
+
+.orders-header-wrapper {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.page-main-title {
+  font-size: 32px;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+/* ================= SECTIONS ================= */
+.orders-grid-clean {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  max-width: 950px;
+  margin: 0 auto;
+}
+
+.orders-section {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+}
+
+.section-header-clean {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 24px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.section-header-clean h2 {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.badge-count {
+  background: #00f2fe;
+  color: #0f172a;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 800;
+}
+.badge-count.history { background: #f1f5f9; color: #475569; }
+
+/* ================= CLEAN GRID ROWS ================= */
+.orders-list-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.clean-order-row {
+  display: grid;
+  grid-template-columns: 1.2fr 2.5fr 1fr 1fr; /* Perfect alignment magically */
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #f8fafc;
+  transition: background 0.2s ease;
+}
+
+.clean-order-row:last-child { border-bottom: none; }
+.clean-order-row:hover { background: #fdfdfd; }
+
+/* Column 1: Info */
+.col-info { display: flex; flex-direction: column; gap: 4px; }
+.clean-id { font-size: 15px; font-weight: 800; color: #0f172a; }
+.clean-date { font-size: 13px; color: #64748b; font-weight: 500; }
+
+/* Column 2: Items */
+.col-items { display: flex; align-items: center; gap: 15px; }
+.clean-img-box {
+  width: 48px; height: 48px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #f1f5f9;
+  display: flex; align-items: center; justify-content: center;
+  padding: 4px; flex-shrink: 0;
+}
+.clean-img-box img { width: 100%; height: 100%; object-fit: contain; }
+.clean-item-text {
+  font-size: 14px; color: #475569; font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* Column 3: Status */
+.col-status { display: flex; justify-content: center; }
+.clean-pill {
+  padding: 6px 12px; border-radius: 6px;
+  font-size: 11px; font-weight: 800; text-transform: uppercase;
+}
+
+/* Status Colors */
+.placed { background: #fffbeb; color: #d97706; }
+.shipped { background: #eff6ff; color: #2563eb; }
+.out-for-delivery { background: #f5f3ff; color: #7c3aed; }
+.delivered { background: #ecfdf5; color: #059669; }
+.cancelled { background: #fef2f2; color: #dc2626; }
+
+/* Column 4: Total */
+.col-total { display: flex; justify-content: flex-end; }
+.clean-amount { font-size: 16px; font-weight: 800; color: #0f172a; }
+
+/* Empty State */
+.empty-clean { padding: 30px; text-align: center; color: #94a3b8; font-size: 14px; font-weight: 500; }
+
+/* ================= RESPONSIVE (MOBILE) ================= */
+@media (max-width: 850px) {
+  .clean-order-row {
+    grid-template-columns: 1fr 1fr; /* Switch to 2 columns */
+    row-gap: 15px;
+  }
+  .col-items { grid-column: span 2; order: -1; } /* Image & text goes on top */
+  .col-info { justify-content: flex-start; }
+  .col-status { justify-content: flex-end; }
+  .col-total { justify-content: flex-end; }
+}
+
+@media (max-width: 480px) {
+  .clean-order-row {
+    grid-template-columns: 1fr; /* Single column stack */
+  }
+  .col-items { grid-column: span 1; }
+  .col-status, .col-total { justify-content: flex-start; }
+}
