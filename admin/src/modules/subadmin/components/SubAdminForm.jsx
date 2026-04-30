@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Camera, MapPin, User, Mail, Globe, ShieldAlert, BadgeCheck, Activity, Hash, Lock, Eye, EyeOff } from 'lucide-react';
 import { Country, State } from 'country-state-city';
+import { getSafeImage } from '../../../utils/imageUtils';
 
 
 import PhoneInput from 'react-phone-input-2';
@@ -186,7 +187,7 @@ const SubAdminForm = ({ user, onClose, onSave }) => {
                         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
                             <div className={`profile-photo-upload ${errors.profilePhoto ? 'profile-photo-error' : ''}`}>
                                 {formData.profilePhoto ? (
-                                    <img src={formData.profilePhoto} alt="Profile" className="preview-photo" />
+                                    <img src={getSafeImage(formData.profilePhoto, 'USER')} alt="Profile" className="preview-photo" />
                                 ) : (
                                     <div className="photo-placeholder"><User size={40} /></div>
                                 )}

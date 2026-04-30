@@ -2,6 +2,7 @@ import React from 'react';
 import { Search, MapPin, ChevronLeft, ChevronRight, X, Shield, UserX, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
 import ActionButtons from '../../../components/common/ActionButtons';
 import ExportActions from '../../../components/common/ExportActions';
+import { getSafeImage } from '../../../utils/imageUtils';
 
 const RiderList = ({
     riders,
@@ -189,8 +190,12 @@ const RiderList = ({
                                         </div>
                                     </td>
                                     <td>
-                                        <div className="profile-initials">
-                                            {rider.name.split(' ').map(n => n[0]).join('')}
+                                        <div className="profile-initials" style={{ width: '36px', height: '36px', borderRadius: '50%', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                                            <img 
+                                                src={getSafeImage(rider.profile_image, 'USER')} 
+                                                alt={rider.name} 
+                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                            />
                                         </div>
                                     </td>
                                     <td><span className="rider-id-badge">{rider.id}</span></td>

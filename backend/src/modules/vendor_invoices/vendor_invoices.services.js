@@ -68,7 +68,7 @@ export const listVendorInvoices = async (vendorId, queryParams = {}) => {
             COALESCE(NULLIF(c.name, ''), 'Shipzyy User') as customer_name,
             c.country_code AS customer_country_code,
             c.mobile AS customer_phone,
-            COALESCE(NULLIF(c.profile_image, ''), 'https://shipzzy-files-094794931012-ap-south-1-an.s3.ap-south-1.amazonaws.com/placeholders/user-avatar.png') as profile_image,
+            c.profile_image,
             (SELECT COUNT(*) FROM order_items WHERE order_id = vi.order_id AND vendor_id = vi.vendor_id) as item_count
         FROM vendor_invoices vi
         JOIN orders o ON vi.order_id = o.id

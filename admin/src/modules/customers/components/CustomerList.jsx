@@ -2,6 +2,7 @@ import React from 'react';
 import { Search, MapPin, ChevronLeft, ChevronRight, X, Square, CheckSquare, Eye, Trash2, Ban, UserX } from 'lucide-react';
 import ActionButton from '../../../components/common/ActionButton/ActionButton';
 import ExportActions from '../../../components/common/ExportActions';
+import { getSafeImage } from '../../../utils/imageUtils';
 
 const CustomerList = ({
     customers,
@@ -171,14 +172,9 @@ const CustomerList = ({
                                             {customer.profile_image ? (
                                                 <div style={{ width: '36px', height: '36px', borderRadius: '50%', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
                                                     <img 
-                                                        src={customer.profile_image} 
+                                                        src={getSafeImage(customer.profile_image, 'USER')} 
                                                         alt={customer.name} 
                                                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                                        onError={(e) => {
-                                                            e.target.onerror = null;
-                                                            e.target.style.display = 'none';
-                                                            e.target.nextSibling.style.display = 'flex';
-                                                        }}
                                                     />
                                                     <div className="profile-initials" style={{ width: '100%', height: '100%', display: 'none', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9', color: '#475569', fontWeight: 600, fontSize: '0.8rem' }}>
                                                         {customer.name ? customer.name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase() : '?'}

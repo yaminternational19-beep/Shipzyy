@@ -6,6 +6,7 @@ import { Country, State } from 'country-state-city';
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
 import { menuItems } from '../../../utils/menuConfig';
+import { getSafeImage } from '../../../utils/imageUtils';
 
 
 const VendorStaffForm = ({ user, onClose, onSave }) => {
@@ -186,7 +187,7 @@ const VendorStaffForm = ({ user, onClose, onSave }) => {
                         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
                             <div className={`profile-photo-upload ${errors.profilePhoto ? 'profile-photo-error' : ''}`}>
                                 {formData.profilePhoto ? (
-                                    <img src={formData.profilePhoto} alt="Profile" className="preview-photo" />
+                                    <img src={getSafeImage(formData.profilePhoto, 'USER')} alt="Profile" className="preview-photo" />
                                 ) : (
                                     <div className="photo-placeholder"><User size={40} /></div>
                                 )}

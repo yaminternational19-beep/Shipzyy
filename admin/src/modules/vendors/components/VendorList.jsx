@@ -5,6 +5,7 @@ import ExportActions from '../../../components/common/ExportActions';
 import ActionButtons from '../../../components/common/ActionButtons';
 import { getVendorsApi, updateVendorStatusApi, updateVendorAutoApproveApi } from '../../../api/vendor.api';
 import { exportVendorsToPDF, exportVendorsToExcel } from '../services/export.service';
+import { getSafeImage } from '../../../utils/imageUtils';
 
 const VendorList = ({ onEdit, onDelete, showToast, onTabChange, onStatsUpdate }) => {
     const [vendors, setVendors] = useState([]);
@@ -217,17 +218,9 @@ const VendorList = ({ onEdit, onDelete, showToast, onTabChange, onStatsUpdate })
                                 <td style={{ textAlign: 'center' }}>
                                     <div style={{ width: '44px', height: '44px', borderRadius: '10px', overflow: 'hidden', border: '2px solid #e2e8f0', margin: '0 auto' }}>
                                         <img
-                                            src={
-                                                vendor.profile_photo
-                                                    ? vendor.profile_photo
-                                                    : `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(vendor.business_name)}&backgroundColor=6366f1`
-                                            }
+                                            src={getSafeImage(vendor.profile_photo, 'BRAND')}
                                             alt={vendor.business_name}
                                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                            onError={(e) => {
-                                                e.target.onerror = null; // prevent infinite loop
-                                                e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(vendor.business_name)}&backgroundColor=6366f1`;
-                                            }}
                                         />
                                     </div>
                                 </td>

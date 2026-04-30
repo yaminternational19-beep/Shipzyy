@@ -3,6 +3,7 @@ import { X, Receipt, Package, Eye, Download, ChevronLeft, ChevronRight, Loader2,
 import { getVendorInvoicesApi } from '../../../api/vendor_invoices.api';
 import ExportActions from '../../../components/common/ExportActions';
 import { exportInvoicesToPDF, exportInvoicesToExcel } from '../services/export.service';
+import { getSafeImage } from '../../../utils/imageUtils';
 import './CustomerOrderHistoryModal.css';
 
 const CustomerOrderHistoryModal = ({ customerId, customerName, customerPhone, customerAvatar, onDownload, onClose, showToast }) => {
@@ -149,7 +150,7 @@ const CustomerOrderHistoryModal = ({ customerId, customerName, customerPhone, cu
                 <div className="modal-header">
                     <div className="modal-header-profile">
                         <div className="modal-header-avatar">
-                            <img src={customerAvatar} alt={customerName} />
+                            <img src={getSafeImage(customerAvatar, 'USER')} alt={customerName} />
                         </div>
                         <div className="modal-header-info">
                             <h2>{customerName}</h2>
@@ -329,7 +330,7 @@ const CustomerOrderHistoryModal = ({ customerId, customerName, customerPhone, cu
                     <div className="payslip-body">
                         {/* Customer Info */}
                         <div className="payslip-cust-info">
-                            <img src={customerAvatar} alt={customerName} style={{ width: '44px', height: '44px', borderRadius: '50%', border: '2px solid #e2e8f0' }} />
+                            <img src={getSafeImage(customerAvatar, 'USER')} alt={customerName} style={{ width: '44px', height: '44px', borderRadius: '50%', border: '2px solid #e2e8f0' }} />
                             <div>
                                 <p style={{ margin: 0, fontWeight: 700, color: '#1e293b', fontSize: '0.95rem' }}>{customerName}</p>
                                 <p className="inv-val-phone" style={{ fontSize: '0.82rem' }}>{customerPhone}</p>

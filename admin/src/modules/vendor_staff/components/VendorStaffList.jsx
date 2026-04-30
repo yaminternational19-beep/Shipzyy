@@ -4,6 +4,7 @@ import ExportActions from '../../../components/common/ExportActions';
 import ActionButtons from '../../../components/common/ActionButtons';
 import { getVendorStaffApi } from '../../../api/vendor_staff.api';
 import { exportVendorStaffToPDF, exportVendorStaffToExcel } from '../services/export.service';
+import { getSafeImage } from '../../../utils/imageUtils';
 
 import { menuItems } from '../../../utils/menuConfig';
 
@@ -211,7 +212,7 @@ const VendorStaffList = ({ onEdit, onEditPermissions, onDeactivate, onDelete, on
                                 <td>
                                     <div className="user-avatar-sm" style={{ width: '36px', height: '36px', border: '1px solid #e2e8f0', borderRadius: '50%', overflow: 'hidden' }}>
                                         <img
-                                            src={user.profilePhoto || user.photo || `https://api.dicebear.com/7.x/initials/svg?seed=${user.name || user.id}`}
+                                            src={getSafeImage(user.profilePhoto || user.photo, 'USER')}
                                             alt={user.name}
                                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                             onError={(e) => {

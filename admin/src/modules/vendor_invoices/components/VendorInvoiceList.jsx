@@ -1,6 +1,7 @@
 import React from 'react';
 import { Search, ChevronLeft, ChevronRight, Square, CheckSquare, Download, Eye } from 'lucide-react';
 import ExportActions from '../../../components/common/ExportActions';
+import { getSafeImage } from '../../../utils/imageUtils';
 import '../../invoices/components/InvoiceList.css';
 
 const VendorInvoiceList = ({
@@ -118,7 +119,7 @@ const VendorInvoiceList = ({
                                     {/* Customer avatar first */}
                                     <td className="inv-td-center">
                                         <div className="inv-avatar">
-                                            <img src={invoice.customerAvatar} alt={invoice.customerId} />
+                                            <img src={getSafeImage(invoice.customerAvatar, 'USER')} alt={invoice.customerId} />
                                         </div>
                                     </td>
 

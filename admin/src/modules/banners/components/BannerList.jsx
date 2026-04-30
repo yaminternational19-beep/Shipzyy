@@ -1,6 +1,7 @@
 import React from 'react';
 import { Search, Edit2, Trash2, ChevronLeft, ChevronRight, Square, CheckSquare, Image as ImageIcon } from 'lucide-react';
 import ActionButton from '../../../components/common/ActionButton/ActionButton';
+import { getSafeImage } from '../../../utils/imageUtils';
 
 const BannerList = ({
     banners,
@@ -89,11 +90,7 @@ const BannerList = ({
                                         />
                                     </div>
 
-                                    {item.banner_image ? (
-                                        <img src={item.banner_image} alt={item.banner_name} />
-                                    ) : (
-                                        <ImageIcon size={48} color="#94a3b8" />
-                                    )}
+                                    <img src={getSafeImage(item.banner_image, 'BANNER')} alt={item.banner_name} />
                                 </div>
 
                                 <div className="banner-card-content">

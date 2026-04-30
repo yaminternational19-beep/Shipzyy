@@ -6,6 +6,7 @@ import {
 import ActionButtons from '../../../components/common/ActionButtons';
 import ExportActions from '../../../components/common/ExportActions';
 import { exportSubCategoriesToPDF, exportSubCategoriesToExcel } from '../services/export.service';
+import { getSafeImage } from '../../../utils/imageUtils';
 
 const SubCategoryList = ({
     subcategories = [],
@@ -201,11 +202,7 @@ const SubCategoryList = ({
                                 {/* Icon */}
                                 <td>
                                     <div className="vendor-sc-icon-box">
-                                        {item.icon ? (
-                                            <img src={item.icon} alt="" className="vendor-sc-icon-img" />
-                                        ) : (
-                                            '📁'
-                                        )}
+                                        <img src={getSafeImage(item.icon, 'CATEGORY')} alt="" className="vendor-sc-icon-img" />
                                     </div>
                                 </td>
 

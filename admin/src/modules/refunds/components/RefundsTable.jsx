@@ -6,6 +6,7 @@ import {
     ArrowUpRight, AlertCircle, Clock, Check
 } from 'lucide-react';
 import ExportActions from '../../../components/common/ExportActions';
+import { getSafeImage } from '../../../utils/imageUtils';
 
 const RefundsTable = ({ refunds, title, onShowToast }) => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -421,13 +422,7 @@ const RefundsTable = ({ refunds, title, onShowToast }) => {
                                 <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569' }}>REFUNDED ITEMS</span>
                                 {actionModal.refund.items?.map((item, idx) => (
                                     <div key={idx} className="item-preview-card">
-                                        {item.image ? (
-                                            <img src={item.image} alt="" className="item-img-small" />
-                                        ) : (
-                                            <div className="item-img-small" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                <AlertCircle size={20} color="#cbd5e1" />
-                                            </div>
-                                        )}
+                                        <img src={getSafeImage(item.image, 'PRODUCT')} alt="" className="item-img-small" />
                                         <div style={{ flex: 1 }}>
                                             <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b' }}>{item.name}</div>
                                             <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Qty: {item.qty} × ₹{item.price.toLocaleString()}</div>

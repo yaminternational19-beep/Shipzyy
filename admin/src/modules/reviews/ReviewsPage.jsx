@@ -5,6 +5,7 @@ import ExportActions from '../../components/common/ExportActions';
 import { exportReviewsToPDF, exportReviewsToExcel } from './services/review_export.service';
 import * as adminReviewsService from './services/admin_reviews.service';
 import { getVendorsApi } from '../../api/vendor.api';
+import { getSafeImage } from '../../utils/imageUtils';
 import './Reviews.css';
 
 const ReviewsPage = () => {
@@ -250,7 +251,7 @@ const ReviewsPage = () => {
                                     </td>
                                     <td style={{ padding: '16px 12px', textAlign: 'center' }}>
                                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                                            <img src={review.product_image} alt="" style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover' }} />
+                                            <img src={getSafeImage(review.product_image, 'PRODUCT')} alt="" style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover' }} />
                                             <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{review.product_name}</span>
                                         </div>
                                     </td>
@@ -269,7 +270,7 @@ const ReviewsPage = () => {
                                     <td style={{ padding: '16px 12px', textAlign: 'center' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
                                             {review.profile_image ? (
-                                                <img src={review.profile_image} alt="" style={{ width: '38px', height: '38px', borderRadius: '50%', objectFit: 'cover' }} />
+                                                <img src={getSafeImage(review.profile_image, 'USER')} alt="" style={{ width: '38px', height: '38px', borderRadius: '50%', objectFit: 'cover' }} />
                                             ) : (
                                                 <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: '#f1f5f9', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#64748b' }}>
                                                     {review.customer_name?.charAt(0) || '?'}
@@ -292,7 +293,7 @@ const ReviewsPage = () => {
                                             {review.images && review.images.length > 0 && (
                                                 <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
                                                     {review.images.map((img, i) => (
-                                                        <img key={i} src={img} alt="" style={{ width: '24px', height: '24px', borderRadius: '4px' }} />
+                                                        <img key={i} src={getSafeImage(img, 'PRODUCT')} alt="" style={{ width: '24px', height: '24px', borderRadius: '4px' }} />
                                                     ))}
                                                 </div>
                                             )}

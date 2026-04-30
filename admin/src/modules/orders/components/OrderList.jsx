@@ -1,6 +1,7 @@
 import React from 'react';
 import { Eye, Package, CheckSquare, Square } from 'lucide-react';
 import ActionButton from '../../../components/common/ActionButton/ActionButton';
+import { getSafeImage } from '../../../utils/imageUtils';
 
 const STATUS_CLASS = (status = '') => status.toLowerCase().replace(/\s+/g, '-');
 
@@ -65,7 +66,7 @@ const OrderList = ({ orders, onAction, selectedRows, onSelectRow, onSelectAll })
                             <td>
                                 {order.productImage ? (
                                     <div style={{
-                                        backgroundImage: `url(${order.productImage})`,
+                                        backgroundImage: `url(${getSafeImage(order.productImage, 'PRODUCT')})`,
                                         backgroundSize: 'cover',
                                         backgroundPosition: 'center',
                                         width: '46px',

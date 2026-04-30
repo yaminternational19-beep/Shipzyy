@@ -1,6 +1,7 @@
 import React from 'react';
 import { Eye, User, CheckSquare, Square } from 'lucide-react';
 import ActionButton from '../../../components/common/ActionButton/ActionButton';
+import { getSafeImage } from '../../../utils/imageUtils';
 // Removed invalid formatDate import
 
 const CustomerList = ({ customers, onAction, selectedRows, onSelectRow, onSelectAll }) => {
@@ -67,7 +68,7 @@ const CustomerList = ({ customers, onAction, selectedRows, onSelectRow, onSelect
                             <td style={{ paddingLeft: '16px' }}>
                                 {c.profile_image ? (
                                     <div style={{
-                                        backgroundImage: `url(${c.profile_image})`,
+                                        backgroundImage: `url(${getSafeImage(c.profile_image, 'USER')})`,
                                         backgroundSize: 'cover',
                                         backgroundPosition: 'center',
                                         width: '42px', height: '42px', borderRadius: '50%'

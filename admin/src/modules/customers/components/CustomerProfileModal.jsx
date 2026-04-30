@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, Mail, Phone, MapPin, Calendar, ShoppingBag, Star, UserX, CheckCircle, Ban, Hash } from 'lucide-react';
+import { getSafeImage } from '../../../utils/imageUtils';
 
 const CustomerProfileModal = ({ customer, onClose, onTerminate, onBlock, onActivate }) => {
     if (!customer) return null;
@@ -16,11 +17,16 @@ const CustomerProfileModal = ({ customer, onClose, onTerminate, onBlock, onActiv
             <div className="customer-view-modal">
                 <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                        <div className="profile-large-avatar">
-                            {customer.name ? 
-                                customer.name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase() : 
-                                '?'
-                            }
+                        <div className="profile-large-avatar" style={{ borderRadius: '50%', overflow: 'hidden' }}>
+                            <img 
+                                src={getSafeImage(customer.profile_image, 'USER')} 
+                                alt={customer.name} 
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.src = '/user-avatar.png';
+                                }}
+                            />
                         </div>
                         <div>
                             <h2 style={{ margin: 0, fontSize: '1.5rem', color: 'var(--text-primary)', fontWeight: 700 }}>{customer.name || 'Anonymous Customer'}</h2>

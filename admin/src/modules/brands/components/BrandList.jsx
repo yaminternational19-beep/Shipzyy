@@ -6,6 +6,7 @@ import {
 import ActionButtons from '../../../components/common/ActionButtons';
 import ExportActions from '../../../components/common/ExportActions';
 import { exportBrandsToPDF, exportBrandsToExcel } from '../services/export.service';
+import { getSafeImage } from '../../../utils/imageUtils';
 
 const BrandList = ({
     brands = [],
@@ -271,10 +272,7 @@ const BrandList = ({
                                 {/* Logo */}
                                 <td>
                                     <div className="vendor-logo-box">
-                                        {item.logo
-                                            ? <img src={item.logo} alt="" className="vendor-logo-img" />
-                                            : '🏷️'
-                                        }
+                                        <img src={getSafeImage(item.logo, 'BRAND')} alt="" className="vendor-logo-img" />
                                     </div>
                                 </td>
 

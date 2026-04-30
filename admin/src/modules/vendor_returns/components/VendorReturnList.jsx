@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Loader2, Filter, Eye, CheckCircle, PackageCheck, CreditCard, Square, CheckSquare, XCircle } from 'lucide-react';
+import ActionButton from '../../../components/common/ActionButton/ActionButton';
 import ExportActions from '../../../components/common/ExportActions';
+import { getSafeImage } from '../../../utils/imageUtils';
 import { exportReturnsToPDF, exportReturnsToExcel } from '../services/return_export.service';
 import { getVendorReturnsApi } from '../../../api/vendor_returns.api';
 
@@ -184,7 +186,7 @@ const VendorReturnList = ({ onFetchSuccess, onUpdateStatus, showToast }) => {
                                         </td>
                                         <td style={{ padding: '16px 12px', textAlign: 'center' }}>
                                             <img 
-                                                src={ret.featured_image || 'https://via.placeholder.com/40'} 
+                                                src={getSafeImage(ret.featured_image, 'PRODUCT')} 
                                                 alt={ret.product_name} 
                                                 style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover', background: '#f1f5f9' }} 
                                             />
@@ -229,7 +231,7 @@ const VendorReturnList = ({ onFetchSuccess, onUpdateStatus, showToast }) => {
                                                     return imageArray && imageArray.length > 0 ? imageArray.map((img, idx) => (
                                                         <img 
                                                             key={idx} 
-                                                            src={img} 
+                                                            src={getSafeImage(img, 'PRODUCT')} 
                                                             alt={`Return proof ${idx + 1}`} 
                                                             style={{ width: '28px', height: '28px', borderRadius: '4px', objectFit: 'cover', cursor: 'pointer', border: '1px solid #e2e8f0' }}
                                                             onClick={() => window.open(img, '_blank')}

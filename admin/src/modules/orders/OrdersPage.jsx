@@ -6,6 +6,7 @@ import OrderList from './components/OrderList';
 import Toast from '../../components/common/Toast/Toast';
 import { getAdminOrdersApi, getAdminOrderByIdApi } from '../../api/admin_orders.api';
 import { getVendorsApi } from '../../api/vendor.api';
+import { getSafeImage } from '../../utils/imageUtils';
 import './Orders.css';
 
 const OrdersPage = () => {
@@ -303,7 +304,7 @@ const OrdersPage = () => {
                                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                                                     {item.productImage ? (
                                                                         <img
-                                                                            src={item.productImage}
+                                                                            src={getSafeImage(item.productImage, 'PRODUCT')}
                                                                             alt={item.productName}
                                                                             style={{ width: '36px', height: '36px', borderRadius: '8px', objectFit: 'cover', border: '1px solid #e2e8f0' }}
                                                                         />

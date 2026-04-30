@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { X, Tag, Archive, DollarSign, FileText, CheckCircle2, Briefcase, Package, User, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { getProductByIdApi } from '../../../api/admin_products.api';
+import { getSafeImage } from '../../../utils/imageUtils';
 import './ProductView.css';
 
 const ProductView = ({ productId, onClose }) => {
@@ -148,7 +149,7 @@ const ProductView = ({ productId, onClose }) => {
                             {product.images && product.images.length > 0 ? (
                                 product.images.map((img) => (
                                     <div key={img.id} className="view-image-card">
-                                        <img src={img.image_url} alt="Product" />
+                                        <img src={getSafeImage(img.image_url, 'PRODUCT')} alt="Product" />
                                         {img.is_primary === 1 && <span className="primary-badge">PRIMARY</span>}
                                     </div>
                                 ))

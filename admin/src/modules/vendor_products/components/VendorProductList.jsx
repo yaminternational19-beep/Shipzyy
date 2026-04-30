@@ -1,6 +1,7 @@
 import React from 'react';
 import { Eye, Edit3, Power, CheckSquare, Square, AlertCircle, Plus, Trash2 } from 'lucide-react';
 import ActionButton from '../../../components/common/ActionButton/ActionButton';
+import { getSafeImage } from '../../../utils/imageUtils';
 
 const VendorProductList = ({
     products,
@@ -123,7 +124,7 @@ const VendorProductList = ({
                                             width: '44px',
                                             height: '44px',
                                             borderRadius: '10px',
-                                            backgroundImage: `url(${product.image})`,
+                                            backgroundImage: `url(${getSafeImage(product.image, 'PRODUCT')})`,
                                             backgroundSize: 'cover',
                                             backgroundPosition: 'center',
                                             border: '1px solid #e2e8f0'

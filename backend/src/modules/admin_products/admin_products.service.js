@@ -96,7 +96,7 @@ const getProducts = async (queryParams) => {
     pv.mrp,
     pv.sale_price,
     pv.stock,
-    COALESCE(NULLIF(pi.image_url, ''), 'https://shipzzy-files-094794931012-ap-south-1-an.s3.ap-south-1.amazonaws.com/placeholders/no-image.png') AS primaryImage
+    pi.image_url AS primaryImage
 
 FROM products p
 

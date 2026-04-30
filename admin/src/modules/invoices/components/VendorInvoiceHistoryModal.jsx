@@ -4,6 +4,7 @@ import VendorInvoiceList from './VendorInvoiceList';
 import InvoiceStats from './InvoiceStats';
 import { getVendorInvoiceHistoryApi, downloadVendorInvoiceApi } from '../../../api/admin_invoices.api';
 import { exportVendorHistoryToExcel, exportVendorHistoryToPDF } from '../services/invoiceExport.service';
+import { getSafeImage } from '../../../utils/imageUtils';
 
 const VendorInvoiceHistoryModal = ({ vendorId, onClose, showToast }) => {
     const [invoices, setInvoices] = useState([]);
@@ -120,8 +121,8 @@ const VendorInvoiceHistoryModal = ({ vendorId, onClose, showToast }) => {
             <div className="customer-view-modal" style={{ width: '95%', maxWidth: '1400px', height: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
                 <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                        <div style={{ width: '50px', height: '50px', borderRadius: '12px', overflow: 'hidden', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <img src={`https://ui-avatars.com/api/?name=${vendorId}&background=random`} alt="Profile" style={{ width: '100%', height: '100%' }} />
+                        <div style={{ width: '50px', height: '50px', borderRadius: '12px', overflow: 'hidden', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #e2e8f0' }}>
+                            <img src={getSafeImage(null, 'USER')} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         </div>
                         <div>
                             <h2 style={{ margin: 0, fontSize: '1.5rem', color: 'var(--text-primary)', fontWeight: 700 }}>Vendor Invoice History</h2>

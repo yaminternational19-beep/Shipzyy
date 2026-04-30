@@ -377,7 +377,7 @@ const getAllProducts = async (queryParams) => {
           sku: v.sku || '',
           variant_name: v.variant_name || 'Standard'
       }; 
-      p.primary_image = imagesMap[p.id]?.[0] || 'https://shipzzy-files-094794931012-ap-south-1-an.s3.ap-south-1.amazonaws.com/placeholders/no-image.png';
+      p.primary_image = imagesMap[p.id]?.[0] || null;
       p.all_images = (imagesMap[p.id] || []).map(url => ({ image_url: url }));
 
       // Flat keys for extra compatibility

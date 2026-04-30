@@ -7,6 +7,7 @@ import Toast from '../../components/common/Toast/Toast';
 import ExportActions from '../../components/common/ExportActions';
 import { exportCustomersToPDF, exportCustomersToExcel } from './services/export.service';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { getSafeImage } from '../../utils/imageUtils';
 
 const VendorCustomersPage = () => {
     // State
@@ -218,13 +219,9 @@ const VendorCustomersPage = () => {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                                 {/* Header / Profile */}
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                                    {selectedCustomer.profile_image ? (
-                                        <img src={selectedCustomer.profile_image} alt="Profile" style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover' }} />
-                                    ) : (
-                                        <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'var(--primary-light)', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 700 }}>
-                                            {selectedCustomer.name?.charAt(0) || 'C'}
-                                        </div>
-                                    )}
+                                    <div style={{ width: '80px', height: '80px', borderRadius: '50%', overflow: 'hidden', border: '2px solid #e2e8f0' }}>
+                                        <img src={getSafeImage(selectedCustomer.profile_image, 'USER')} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    </div>
                                     <div>
                                         <h3 style={{ margin: 0, fontSize: '1.4rem', color: '#0f172a' }}>{selectedCustomer.name}</h3>
                                         <span className={`status-badge ${selectedCustomer.status === 'active' ? 'active' : 'inactive'}`} style={{ marginTop: '10px', display: 'inline-block' }}>

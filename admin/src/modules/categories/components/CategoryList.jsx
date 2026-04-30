@@ -6,6 +6,7 @@ import {
 import ActionButtons from '../../../components/common/ActionButtons';
 import ExportActions from '../../../components/common/ExportActions';
 import { exportCategoriesToPDF, exportCategoriesToExcel } from '../services/export.service';
+import { getSafeImage } from '../../../utils/imageUtils';
 
 const CategoryList = ({
     categories = [],
@@ -144,12 +145,12 @@ const CategoryList = ({
                                 </td>
                                 <td>
                                     <div className="vendor-cat-icon-box">
-                                        {cat.icon ? <img src={cat.icon} alt="" className="vendor-cat-icon-img" /> : '📁'}
+                                        <img src={getSafeImage(cat.icon, 'CATEGORY')} alt="" className="vendor-cat-icon-img" />
                                     </div>
                                 </td>
                                 <td>
                                     <div className="vendor-cat-icon-box">
-                                        {cat.banner_image ? <img src={cat.banner_image} alt="" className="vendor-cat-icon-img" /> : '📁'}
+                                        <img src={getSafeImage(cat.banner_image, 'BANNER')} alt="" className="vendor-cat-icon-img" />
                                     </div>
                                 </td>
                                 <td><span className="cat-id-badge">{cat.category_code || cat.id}</span></td>

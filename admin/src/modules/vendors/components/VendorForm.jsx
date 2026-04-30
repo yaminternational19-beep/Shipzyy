@@ -5,6 +5,7 @@ import {
     Mail, Lock, Globe, Building2, FileCheck, Hash,
     Eye, EyeOff, Trash2, Award
 } from 'lucide-react';
+import { getSafeImage } from '../../../utils/imageUtils';
 import { Country, State } from 'country-state-city';
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
@@ -202,7 +203,7 @@ const VendorForm = ({ onCancel, onSave, initialData }) => {
                         <div style={{ display: 'flex', gap: '32px', alignItems: 'flex-start', marginBottom: '24px' }}>
                             <div className="profile-photo-upload" style={{ margin: 0, minWidth: '100px' }}>
                                 {formData.profilePhoto ? (
-                                    <img src={formData.profilePhoto} alt="Profile" className="preview-photo" />
+                                    <img src={getSafeImage(formData.profilePhoto, 'USER')} alt="Profile" className="preview-photo" />
                                 ) : (
                                     <div className="photo-placeholder"><User size={40} /></div>
                                 )}

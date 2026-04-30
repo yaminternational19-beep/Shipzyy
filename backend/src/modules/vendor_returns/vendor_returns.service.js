@@ -13,8 +13,7 @@ export const getVendorReturns = async (vendorId, filters = {}) => {
            oi.id as item_id, oi.quantity, oi.price, oi.item_status,
            o.order_number, o.created_at as order_date,
            p.name as product_name, p.slug as product_slug, 
-           (SELECT COALESCE(NULLIF(image_url, ''), 'https://shipzzy-files-094794931012-ap-south-1-an.s3.ap-south-1.amazonaws.com/placeholders/no-image.png') 
-            FROM product_images WHERE product_id = p.id ORDER BY is_primary DESC LIMIT 1) as featured_image,
+           (SELECT image_url FROM product_images WHERE product_id = p.id ORDER BY is_primary DESC LIMIT 1) as featured_image,
            COALESCE(NULLIF(c.name, ''), 'Shipzyy User') as customer_name, 
            COALESCE(NULLIF(c.email, ''), 'noemail') as customer_email, 
            c.full_phone as customer_phone

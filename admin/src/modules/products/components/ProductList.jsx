@@ -1,6 +1,7 @@
 import React from 'react';
 import { CheckCircle, XCircle, CheckSquare, Square, Eye } from 'lucide-react';
 import ActionButton from '../../../components/common/ActionButton/ActionButton';
+import { getSafeImage } from '../../../utils/imageUtils';
 
 const ProductList = ({ products, totalFilteredCount = 0, onAction, selectedRows, onSelectRow, onSelectAll }) => {
     const allSelected = totalFilteredCount > 0 && selectedRows.length === totalFilteredCount;
@@ -94,7 +95,7 @@ const ProductList = ({ products, totalFilteredCount = 0, onAction, selectedRows,
                             {/* Image */}
                             <td style={{ textAlign: 'center' }}>
                                 <div className="product-img-preview" style={{
-                                    backgroundImage: `url(${product.image})`,
+                                    backgroundImage: `url(${getSafeImage(product.image, 'PRODUCT')})`,
                                     backgroundSize: 'cover',
                                     backgroundPosition: 'center',
                                     width: '46px',

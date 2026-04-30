@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, Tag, Archive, DollarSign, FileText, CheckCircle2, Briefcase, Package } from 'lucide-react';
 import productFields from '../config/fields';
+import { getSafeImage } from '../../../utils/imageUtils';
 import '../product.css';
 
 const ProductView = ({ product, onClose }) => {
@@ -69,7 +70,7 @@ const ProductView = ({ product, onClose }) => {
                             {product.images && product.images.length > 0 ? (
                                 product.images.map((img, idx) => (
                                     <div key={idx} className="view-image-card">
-                                        <img src={img.preview || img} alt={`Product ${idx}`} />
+                                        <img src={getSafeImage(img.preview || img, 'PRODUCT')} alt={`Product ${idx}`} />
                                     </div>
                                 ))
                             ) : (
