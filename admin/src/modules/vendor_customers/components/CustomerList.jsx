@@ -66,22 +66,13 @@ const CustomerList = ({ customers, onAction, selectedRows, onSelectRow, onSelect
                                 </div>
                             </td>
                             <td style={{ paddingLeft: '16px' }}>
-                                {c.profile_image ? (
-                                    <div style={{
-                                        backgroundImage: `url(${getSafeImage(c.profile_image, 'USER')})`,
-                                        backgroundSize: 'cover',
-                                        backgroundPosition: 'center',
-                                        width: '42px', height: '42px', borderRadius: '50%'
-                                    }} />
-                                ) : (
-                                    <div style={{
-                                        width: '42px', height: '42px', borderRadius: '50%',
-                                        background: 'var(--primary-light)', display: 'flex',
-                                        alignItems: 'center', justifyContent: 'center'
-                                    }}>
-                                        <User size={20} color="var(--primary-color)" />
-                                    </div>
-                                )}
+                                <div style={{ width: '42px', height: '42px', borderRadius: '50%', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                                    <img 
+                                        src={getSafeImage(c.profile_image, 'USER')} 
+                                        alt={c.name} 
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                    />
+                                </div>
                             </td>
                             <td>
                                 <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>

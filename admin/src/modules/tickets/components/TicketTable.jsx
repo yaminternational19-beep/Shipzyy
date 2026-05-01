@@ -3,6 +3,7 @@ import { Search, Filter, MessageSquare, X, ChevronLeft, ChevronRight, Square, Ch
 import ExportActions from '../../../components/common/ExportActions';
 import { getTicketsApi, replyToTicketApi } from '../../../api/admin_tickets.api';
 import * as exportService from '../services/export.service';
+import { getSafeImage } from '../../../utils/imageUtils';
 
 const TicketTable = ({ type = 'all', title, onShowToast }) => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -234,7 +235,7 @@ const TicketTable = ({ type = 'all', title, onShowToast }) => {
                                 </div>
                             </th>
                             <th>Ticket ID</th>
-                            <th>User Name / ID</th>
+                            <th style={{ textAlign: 'center' }}>User Info</th>
                             <th>User Type</th>
                             <th>User Contact</th>
                             <th>Recipient Name</th>
@@ -264,8 +265,19 @@ const TicketTable = ({ type = 'all', title, onShowToast }) => {
                                     </td>
                                     <td><span style={{ fontWeight: 700, color: '#1e293b' }}>{ticket.id}</span></td>
                                     <td>
-                                        <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9rem' }}>{ticket.userName}</div>
-                                        <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600, marginTop: '2px' }}>{ticket.userId}</div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <div style={{ width: '40px', height: '40px', borderRadius: '50%', overflow: 'hidden', border: '1px solid #e2e8f0', flexShrink: 0 }}>
+                                                <img 
+                                                    src={getSafeImage(ticket.userImage, ticket.userType === 'VENDOR' ? 'BRAND' : 'USER')} 
+                                                    alt={ticket.userName} 
+                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                />
+                                            </div>
+                                            <div>
+                                                <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9rem' }}>{ticket.userName}</div>
+                                                <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600, marginTop: '2px' }}>{ticket.userId}</div>
+                                            </div>
+                                        </div>
                                     </td>
                                     <td>
                                         <span style={{
@@ -382,15 +394,43 @@ const TicketTable = ({ type = 'all', title, onShowToast }) => {
                         </div>
                         <div className="modal-body" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
                             <div style={{ marginBottom: '20px', padding: '16px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                                    <div>
-                                        <strong style={{ fontSize: '15px', display: 'block' }}>{replyModal.ticket.userName}</strong>
-                                        <span style={{ fontSize: '12px', color: '#64748b' }}>{replyModal.ticket.userId} | {replyModal.ticket.userPhone}</span>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                        <div style={{ width: '44px', height: '44px', borderRadius: '50%', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                                            <img 
+                                                src={getSafeImage(replyModal.ticket.userImage, replyModal.ticket.userType === 'VENDOR' ? 'BRAND' : 'USER')} 
+                                                alt={replyModal.ticket.userName} 
+                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <strong style={{ fontSize: '15px', display: 'block' }}>{replyModal.ticket.userName}</strong>
+                                            <span style={{ fontSize: '12px', color: '#64748b' }}>{replyModal.ticket.userId} | {replyModal.ticket.userPhone}</span>
+                                        </div>
                                     </div>
                                     <span style={{ fontSize: '13px', color: '#64748b' }}>{replyModal.ticket.created_at?.date} {replyModal.ticket.created_at?.time}</span>
                                 </div>
                                 <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', color: '#0f172a' }}>{replyModal.ticket.subject}</h4>
-                                <p style={{ margin: 0, fontSize: '14px', color: '#334155', lineHeight: '1.5' }}>{replyModal.ticket.description}</p>
+                                <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#334155', lineHeight: '1.5' }}>{replyModal.ticket.description}</p>
+                                
+                                <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '12px', marginTop: '12px' }}>
+                                    <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', display: 'block', marginBottom: '8px' }}>Recipient Details</span>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                        <div>
+                                            <span style={{ fontSize: '12px', color: '#64748b', display: 'block' }}>Department / Name</span>
+                                            <span style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b' }}>{replyModal.ticket.recipientName}</span>
+                                        </div>
+                                        <div>
+                                            <span style={{ fontSize: '12px', color: '#64748b', display: 'block' }}>Working Hours</span>
+                                            <span style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b' }}>{replyModal.ticket.recipientWorkingHours}</span>
+                                        </div>
+                                        <div>
+                                            <span style={{ fontSize: '12px', color: '#64748b', display: 'block' }}>Contact Information</span>
+                                            <span style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b' }}>{replyModal.ticket.recipientPhone}</span>
+                                            <span style={{ fontSize: '12px', color: '#64748b', display: 'block' }}>{replyModal.ticket.recipientEmail}</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             {replyModal.ticket.replies.length > 0 && (

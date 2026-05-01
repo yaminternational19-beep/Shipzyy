@@ -269,13 +269,13 @@ const ReviewsPage = () => {
                                     </td>
                                     <td style={{ padding: '16px 12px', textAlign: 'center' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
-                                            {review.profile_image ? (
-                                                <img src={getSafeImage(review.profile_image, 'USER')} alt="" style={{ width: '38px', height: '38px', borderRadius: '50%', objectFit: 'cover' }} />
-                                            ) : (
-                                                <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: '#f1f5f9', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#64748b' }}>
-                                                    {review.customer_name?.charAt(0) || '?'}
-                                                </div>
-                                            )}
+                                            <div style={{ width: '38px', height: '38px', borderRadius: '50%', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                                                <img 
+                                                    src={getSafeImage(review.profile_image, 'USER')} 
+                                                    alt={review.customer_name} 
+                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                                />
+                                            </div>
                                             <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
                                                 <span style={{ fontWeight: 600, color: '#1e293b' }}>{review.customer_name}</span>
                                                 <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{review.customer_country_code || "+91"} {review.customer_phone}</span>

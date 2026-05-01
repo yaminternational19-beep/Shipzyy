@@ -17,10 +17,11 @@ import {
     CheckCircle,
     AlertCircle,
     Download,
-    Check,
+    Check,    
     Eye,
     EyeOff
 } from "lucide-react";
+import { getSafeImage } from "../utils/imageUtils";
 import "../styles/Profile.css";
 import Toast from "../components/common/Toast/Toast";
 import ExportActions from "../components/common/ExportActions";
@@ -105,7 +106,7 @@ const ProfilePage = () => {
                         <div className="profile-avatar-container">
                             <div className="profile-avatar-glow">
                                 <img
-                                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=Sara`}
+                                    src={getSafeImage(userData.profile_image, 'USER')}
                                     alt="User Profile"
                                     className="profile-avatar-img"
                                 />

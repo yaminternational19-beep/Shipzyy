@@ -165,12 +165,12 @@ const listReviews = async (queryParams, vendorId = null) => {
         `SELECT 
             r.*, 
             COALESCE(NULLIF(c.name, ''), 'Shipzyy User') as customer_name, 
-            COALESCE(NULLIF(c.profile_image, ''), 'https://shipzzy-files-094794931012-ap-south-1-an.s3.ap-south-1.amazonaws.com/placeholders/user-avatar.png') as profile_image, 
+            NULLIF(c.profile_image, '') as profile_image, 
             c.mobile as customer_phone, c.country_code as customer_country_code,
             p.name as product_name, p.slug as product_slug,
             v.business_name as vendor_name, v.email as vendor_email, v.country_code as vendor_country_code, v.mobile as vendor_phone,
             o.order_number,
-            COALESCE(NULLIF(pi.image_url, ''), 'https://shipzzy-files-094794931012-ap-south-1-an.s3.ap-south-1.amazonaws.com/placeholders/no-image.png') as product_image
+            COALESCE(NULLIF(pi.image_url, ''), '') as product_image
          FROM customer_reviews r
          JOIN customers c ON r.customer_id = c.id
          JOIN products p ON r.product_id = p.id

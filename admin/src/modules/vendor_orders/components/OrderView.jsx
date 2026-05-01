@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, ShoppingBag, User, MapPin, CreditCard, Package, ClipboardList } from 'lucide-react';
 import '../../vendor_products/product.css';
+import { getSafeImage } from '../../../utils/imageUtils';
 
 const OrderView = ({ order, onClose }) => {
     if (!order) return null;
@@ -78,9 +79,7 @@ const OrderView = ({ order, onClose }) => {
                                         <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', minWidth: '120px', opacity: isCancelled ? 0.7 : 1 }}>
                                             <div className="view-image-card" style={{ minWidth: '110px', height: '110px', position: 'relative' }}>
                                                 <img
-                                                    src={item.image || `https://api.dicebear.com/7.x/shapes/svg?seed=${item.name}`}
-                                                    alt={item.name}
-                                                    onError={(e) => { e.target.src = `https://api.dicebear.com/7.x/shapes/svg?seed=${item.name}`; }}
+                                                    src={getSafeImage(item.image, 'PRODUCT')}
                                                     style={{ filter: isCancelled ? 'grayscale(100%)' : 'none' }}
                                                 />
                                                 {isCancelled && (

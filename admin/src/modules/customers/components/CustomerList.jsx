@@ -169,22 +169,13 @@ const CustomerList = ({
                                     </td>
                                     <td style={{ textAlign: 'center' }}>
                                         <div className="cust-profile-cell" style={{ display: 'flex', justifyContent: 'center' }}>
-                                            {customer.profile_image ? (
-                                                <div style={{ width: '36px', height: '36px', borderRadius: '50%', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-                                                    <img 
-                                                        src={getSafeImage(customer.profile_image, 'USER')} 
-                                                        alt={customer.name} 
-                                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                                    />
-                                                    <div className="profile-initials" style={{ width: '100%', height: '100%', display: 'none', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9', color: '#475569', fontWeight: 600, fontSize: '0.8rem' }}>
-                                                        {customer.name ? customer.name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase() : '?'}
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="profile-initials" style={{ width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9', color: '#475569', fontWeight: 600, fontSize: '0.8rem', border: '1px solid #e2e8f0' }}>
-                                                    {customer.name ? customer.name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase() : '?'}
-                                                </div>
-                                            )}
+                                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                                                <img 
+                                                    src={getSafeImage(customer.profile_image, 'USER')} 
+                                                    alt={customer.name} 
+                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                />
+                                            </div>
                                         </div>
                                     </td>
                                     <td style={{ textAlign: 'center' }}><span className="cust-id-badge">CUST-{customer.id}</span></td>

@@ -287,12 +287,12 @@ const RefundsTable = ({ refunds, title, onShowToast }) => {
                                     </td>
                                     <td>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                            <div style={{ 
-                                                width: '32px', height: '32px', borderRadius: '8px', 
-                                                background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                fontSize: '12px', fontWeight: 700, color: '#475569'
-                                            }}>
-                                                {refund.userName.charAt(0)}
+                                            <div style={{ width: '32px', height: '32px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                                                <img 
+                                                    src={getSafeImage(refund.userProfile, 'USER')} 
+                                                    alt={refund.userName} 
+                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                />
                                             </div>
                                             <div>
                                                 <div style={{ fontWeight: 700, color: '#1e293b', fontSize: '0.85rem' }}>{refund.userName}</div>

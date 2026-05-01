@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Eye, UserCheck, AlertCircle, FileText, Search, Filter, CheckSquare, Square, ChevronLeft, ChevronRight, Loader2, Calendar, X, Package, CreditCard } from 'lucide-react';
+import { getSafeImage } from '../../../utils/imageUtils';
 import ExportActions from '../../../components/common/ExportActions';
 import { exportOrdersToPDF, exportOrdersToExcel } from '../services/order_export.service';
 import * as ordersService from '../services/orders.service';
@@ -283,7 +284,7 @@ const VendorOrderList = ({ onAssignRider, onUpdateStatus, onUpdatePaymentStatus,
                                 </td>
                                 <td style={{ padding: '16px 12px', textAlign: 'center' }}>
                                     <img
-                                        src={order.productImage || order.items[0]?.image}
+                                        src={getSafeImage(order.productImage || order.items[0]?.image, 'PRODUCT')}
                                         alt="Product"
                                         style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover', background: '#f1f5f9' }}
                                     />

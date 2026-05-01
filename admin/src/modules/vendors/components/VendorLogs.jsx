@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, History, Search, ArrowRight, Loader2, Calendar } from 'lucide-react';
 import ExportActions from '../../../components/common/ExportActions';
+import { getSafeImage } from '../../../utils/imageUtils';
 
 // DUMMY DATA FOR DEMONSTRATION
 const DUMMY_VENDOR_LOGS = [
@@ -178,7 +179,7 @@ const VendorLogs = ({ showToast }) => {
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                         <div className="profile-avatar" style={{ width: '28px', height: '28px', border: '1px solid #e2e8f0', borderRadius: '50%', overflow: 'hidden' }}>
                                             <img
-                                                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${log.user_id}`}
+                                                src={getSafeImage(log.profile_photo, 'USER')}
                                                 alt={log.user}
                                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                             />

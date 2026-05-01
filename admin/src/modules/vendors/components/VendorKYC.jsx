@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { getVendorsApi, updateVendorKycStatusApi } from '../../../api/vendor.api';
 import { useCallback, useEffect } from 'react';
+import { getSafeImage } from '../../../utils/imageUtils';
 
 const VendorKYC = ({ showToast }) => {
     const [kycRequests, setKycRequests] = useState([]);
@@ -171,7 +172,7 @@ const VendorKYC = ({ showToast }) => {
                                         {/* Avatar */}
                                         <div style={{ width: '38px', height: '38px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0, border: '1.5px solid #e2e8f0' }}>
                                             <img
-                                                src={request.profile_photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${request.business_name}`}
+                                                src={getSafeImage(request.profile_photo, 'USER')}
                                                 alt={request.business_name}
                                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                             />
@@ -211,7 +212,7 @@ const VendorKYC = ({ showToast }) => {
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                                     <div style={{ width: '52px', height: '52px', borderRadius: '14px', overflow: 'hidden', border: '2px solid #e2e8f0', flexShrink: 0 }}>
                                         <img
-                                            src={selectedRequest.profile_photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${selectedRequest.business_name}`}
+                                            src={getSafeImage(selectedRequest.profile_photo, 'USER')}
                                             alt={selectedRequest.business_name}
                                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                         />

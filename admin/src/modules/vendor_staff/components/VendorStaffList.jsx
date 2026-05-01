@@ -215,10 +215,6 @@ const VendorStaffList = ({ onEdit, onEditPermissions, onDeactivate, onDelete, on
                                             src={getSafeImage(user.profilePhoto || user.photo, 'USER')}
                                             alt={user.name}
                                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                            onError={(e) => {
-                                                e.target.onerror = null;
-                                                e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${user.name || user.id}`;
-                                            }}
                                         />
                                     </div>
                                 </td>

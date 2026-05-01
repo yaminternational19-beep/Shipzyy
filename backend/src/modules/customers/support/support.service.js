@@ -75,7 +75,7 @@ const getContentByKey = async (pageKey) => {
 
 const createTicket = async (customerId, ticketData) => {
     // 1. Validate the Support Contact ID if provided
-    const contactId = ticketData.support_contact_id || null;
+    const contactId = ticketData.support_contact_id || ticketData.contact_id || ticketData.supportContactId || null;
     if (contactId) {
         const [contact] = await db.query(
             "SELECT id FROM help_support_contacts WHERE id = ? AND role = 'customer'",
@@ -113,7 +113,7 @@ const createTicket = async (customerId, ticketData) => {
         [
             support_ticket_id,
             customerId,
-            ticketData.support_contact_id || null,
+            contactId,
             ticketData.subject,
             ticketData.message,
             customerId,

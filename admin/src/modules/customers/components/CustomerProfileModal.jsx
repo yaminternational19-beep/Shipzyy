@@ -22,10 +22,6 @@ const CustomerProfileModal = ({ customer, onClose, onTerminate, onBlock, onActiv
                                 src={getSafeImage(customer.profile_image, 'USER')} 
                                 alt={customer.name} 
                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                onError={(e) => {
-                                    e.target.onerror = null;
-                                    e.target.src = '/user-avatar.png';
-                                }}
                             />
                         </div>
                         <div>

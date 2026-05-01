@@ -6,7 +6,7 @@ import { getPagination, getPaginationMeta } from "../../utils/pagination.js";
  */
 const getTickets = async (queryParams) => {
     const { page, limit, skip } = getPagination(queryParams);
-    const { type, status, search, from_date, to_date } = queryParams;
+    const { type, status, search, from_date, to_date, ids } = queryParams;
 
     let whereVendor = [];
     let whereCustomer = [];
@@ -27,6 +27,11 @@ const getTickets = async (queryParams) => {
         whereVendor.push("DATE(vst.created_at) BETWEEN ? AND ?");
         valuesVendor.push(from_date, to_date);
     }
+    if (ids) {
+        const idList = ids.split(',');
+        whereVendor.push(`vst.support_ticket_id IN (${idList.map(() => '?').join(',')})`);
+        valuesVendor.push(...idList);
+    }
 
     // Filters for Customer Tickets
     if (status) {
@@ -42,6 +47,11 @@ const getTickets = async (queryParams) => {
         whereCustomer.push("DATE(cst.created_at) BETWEEN ? AND ?");
         valuesCustomer.push(from_date, to_date);
     }
+    if (ids) {
+        const idList = ids.split(',');
+        whereCustomer.push(`cst.support_ticket_id IN (${idList.map(() => '?').join(',')})`);
+        valuesCustomer.push(...idList);
+    }
 
     const whereVendorClause = whereVendor.length ? `WHERE ${whereVendor.join(" AND ")}` : "";
     const whereCustomerClause = whereCustomer.length ? `WHERE ${whereCustomer.join(" AND ")}` : "";
@@ -49,13 +59,16 @@ const getTickets = async (queryParams) => {
     const vendorSelect = `
         SELECT 
             vst.id, vst.support_ticket_id, vst.subject, vst.message, vst.admin_reply, vst.status, vst.created_at,
+            vst.support_contact_id,
             'VENDOR' as userType, v.id as userId, 
             COALESCE(NULLIF(v.owner_name, ''), 'Shipzyy User') as userName, 
             COALESCE(NULLIF(v.email, ''), 'noemail') as userEmail, 
             COALESCE(NULLIF(CONCAT(v.country_code, ' ', v.mobile), ' '), 'No Phone') as userPhone,
-            hsc.name as recipientName, 
+            NULLIF(v.profile_photo, '') as userImage,
+            COALESCE(NULLIF(hsc.name, ''), 'Vendor Support') as recipientName, 
             COALESCE(NULLIF(hsc.email, ''), 'noemail') as recipientEmail, 
-            COALESCE(NULLIF(CONCAT(hsc.country_code, ' ', hsc.phone_number), ' '), 'No Phone') as recipientPhone
+            COALESCE(NULLIF(CONCAT_WS(' ', NULLIF(hsc.country_code, ''), NULLIF(hsc.phone_number, '')), ''), 'No Phone') as recipientPhone,
+            COALESCE(NULLIF(hsc.working_hours, ''), 'Not Specified') as recipientWorkingHours
         FROM vendor_support_tickets vst
         LEFT JOIN vendors v ON vst.vendor_id = v.id
         LEFT JOIN help_support_contacts hsc ON vst.support_contact_id = hsc.id
@@ -65,13 +78,16 @@ const getTickets = async (queryParams) => {
     const customerSelect = `
         SELECT 
             cst.id, cst.support_ticket_id, cst.subject, cst.message, cst.admin_reply, cst.status, cst.created_at,
+            cst.support_contact_id,
             'CUSTOMER' as userType, c.id as userId, 
             COALESCE(NULLIF(c.name, ''), 'Shipzyy User') as userName, 
             COALESCE(NULLIF(c.email, ''), 'noemail') as userEmail, 
             COALESCE(NULLIF(CONCAT(c.country_code, ' ', c.mobile), ' '), 'No Phone') as userPhone,
-            hsc.name as recipientName, 
+            NULLIF(c.profile_image, '') as userImage,
+            COALESCE(NULLIF(hsc.name, ''), 'Customer Support') as recipientName, 
             COALESCE(NULLIF(hsc.email, ''), 'noemail') as recipientEmail, 
-            COALESCE(NULLIF(CONCAT(hsc.country_code, ' ', hsc.phone_number), ' '), 'No Phone') as recipientPhone
+            COALESCE(NULLIF(CONCAT_WS(' ', NULLIF(hsc.country_code, ''), NULLIF(hsc.phone_number, '')), ''), 'No Phone') as recipientPhone,
+            COALESCE(NULLIF(hsc.working_hours, ''), 'Not Specified') as recipientWorkingHours
         FROM customer_support_tickets cst
         LEFT JOIN customers c ON cst.customer_id = c.id
         LEFT JOIN help_support_contacts hsc ON cst.support_contact_id = hsc.id

@@ -153,7 +153,7 @@ const getOrders = async (queryParams) => {
                     SELECT image_url FROM product_images pi2
                     WHERE pi2.product_id = p.id AND pi2.is_primary = 1
                     LIMIT 1
-                ), ''), 'https://shipzzy-files-094794931012-ap-south-1-an.s3.ap-south-1.amazonaws.com/placeholders/no-image.png') AS image_url,
+                ), ''), '') AS image_url,
                 ROW_NUMBER() OVER (
                     PARTITION BY oi.order_id ORDER BY oi.id ASC
                 )                                   AS rn
@@ -288,7 +288,7 @@ const getOrderById = async (orderId) => {
                 SELECT image_url FROM product_images
                 WHERE product_id = p.id AND is_primary = 1
                 LIMIT 1
-            ), ''), 'https://shipzzy-files-094794931012-ap-south-1-an.s3.ap-south-1.amazonaws.com/placeholders/no-image.png') AS productImage
+            ), ''), '') AS productImage
          FROM order_items oi
          JOIN  products p   ON p.id  = oi.product_id
          JOIN  vendors  v   ON v.id  = oi.vendor_id

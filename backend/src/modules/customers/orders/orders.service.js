@@ -710,7 +710,7 @@ export const getOrderDetails = async (customerId, orderId, itemId = null) => {
       p.return_allowed as is_return_allowed, p.return_days,
       v.business_name AS vendor_name,
       pv.mrp, pv.discount_percentage,
-      (SELECT COALESCE(NULLIF(image_url, ''), 'https://shipzzy-files-094794931012-ap-south-1-an.s3.ap-south-1.amazonaws.com/placeholders/no-image.png') 
+      (SELECT COALESCE(NULLIF(image_url, ''), '') 
        FROM product_images WHERE product_id = p.id ORDER BY is_primary DESC LIMIT 1) as product_image,
       IF(cw.id IS NOT NULL, 1, 0) AS is_liked,
       IF(cc.id IS NOT NULL, 1, 0) AS is_in_cart,

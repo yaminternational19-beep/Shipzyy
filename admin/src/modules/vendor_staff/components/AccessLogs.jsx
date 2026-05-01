@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Search, ArrowRight, Loader2, Calendar, LogIn, ShieldAlert } from 'lucide-react';
 import ExportActions from '../../../components/common/ExportActions';
+import { getSafeImage } from '../../../utils/imageUtils';
 
 // DUMMY ACCESS LOG DATA
 const DUMMY_ACCESS_LOGS = [
@@ -157,7 +158,7 @@ const AccessLogs = ({ onShowToast }) => {
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                         <div style={{ width: '28px', height: '28px', borderRadius: '50%', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
                                             <img
-                                                src={`https://api.dicebear.com/7.x/initials/svg?seed=${log.user}`}
+                                                src={getSafeImage(log.profilePhoto, 'USER')}
                                                 alt={log.user}
                                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                             />

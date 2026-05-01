@@ -18,7 +18,7 @@ const getCustomerById = async (id) => {
         COALESCE(NULLIF(name, ''), 'Shipzyy User') as name,
         COALESCE(NULLIF(email, ''), 'noemail') as email,
         gender,
-        COALESCE(NULLIF(profile_image, ''), 'https://shipzzy-files-094794931012-ap-south-1-an.s3.ap-south-1.amazonaws.com/placeholders/user-avatar.png') as profile_image,
+        NULLIF(profile_image, '') as profile_image,
         referral_code,
         referrer_id,
         status,
