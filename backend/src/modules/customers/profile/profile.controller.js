@@ -50,4 +50,11 @@ const deleteAddress = asyncHandler(async (req, res) => {
   return ApiResponse.success(res, "Address deleted successfully", { addresses });
 });
 
-export default { getProfile, updateProfile, addAddress, updateAddress, deleteAddress };
+const deleteAccount = asyncHandler(async (req, res) => {
+  const customerId = req.user.id;
+  const { reason } = req.body;
+  await profileService.deleteAccount(customerId, reason);
+  return ApiResponse.success(res, "Account deleted successfully");
+});
+
+export default { getProfile, updateProfile, addAddress, updateAddress, deleteAddress, deleteAccount };

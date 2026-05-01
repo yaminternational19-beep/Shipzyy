@@ -20,17 +20,17 @@ const formatCustomerDates = (customer) => {
 
 const getCustomerByPhone = async (country_code, mobile) => {
   const full_phone = `${country_code}${mobile}`;
-  const [rows] = await db.query("SELECT * FROM customers WHERE full_phone = ? AND is_deleted = FALSE LIMIT 1", [full_phone]);
+  const [rows] = await db.query("SELECT * FROM customers WHERE full_phone = ? LIMIT 1", [full_phone]);
   return formatCustomerDates(rows[0]);
 };
 
 const getCustomerById = async (id) => {
-  const [rows] = await db.query("SELECT * FROM customers WHERE id = ? AND is_deleted = FALSE LIMIT 1", [id]);
+  const [rows] = await db.query("SELECT * FROM customers WHERE id = ? LIMIT 1", [id]);
   return formatCustomerDates(rows[0]);
 };
 
 const getCustomerByEmail = async (email) => {
-  const [rows] = await db.query("SELECT * FROM customers WHERE email = ? AND is_deleted = FALSE LIMIT 1", [email]);
+  const [rows] = await db.query("SELECT * FROM customers WHERE email = ? LIMIT 1", [email]);
   return formatCustomerDates(rows[0]);
 };
 
@@ -57,7 +57,7 @@ const requestOtp = async ({
   const existing = await getCustomerByPhone(country_code, mobile);
 
   // If customer exists → check status
-  if (existing) {
+  if (existing && !existing.is_deleted) {
     if (existing.status === "suspended") {
       throw new ApiError(403, "Your account has been suspended. Please contact support.");
     }
@@ -146,6 +146,13 @@ const completeOtpAuth = async (decoded, rawToken, ipAddress, userAgent) => {
     }
     if (!customer) customer = await createCustomer(decoded);
   }
+  if (customer && customer.is_deleted) {
+    // Reactivate account
+    await db.query("UPDATE customers SET is_deleted = FALSE, status = 'active' WHERE id = ?", [customer.id]);
+    customer.is_deleted = false;
+    customer.status = "active";
+  }
+
   if (!customer) throw new ApiError(404, "Customer not found");
   if (customer.status !== "active") throw new ApiError(403, `Account ${customer.status}.`);
   await updateLoginDetails(customer.id, "otp");
@@ -221,12 +228,19 @@ const findOrCreateSocialCustomer = async (socialData, ipAddress, userAgent) => {
   const { provider, provider_id, email, name, profile_image, device_id, player_id, device_type, app_version } = socialData;
   let customer;
   const col = provider === "google" ? "google_id" : "apple_id";
-  const [rows] = await db.query(`SELECT * FROM customers WHERE ${col} = ? AND is_deleted = FALSE LIMIT 1`, [provider_id]);
+  const [rows] = await db.query(`SELECT * FROM customers WHERE ${col} = ? LIMIT 1`, [provider_id]);
   customer = rows[0];
   if (!customer && email) {
-    const [emailRows] = await db.query("SELECT * FROM customers WHERE email = ? AND is_deleted = FALSE LIMIT 1", [email]);
+    const [emailRows] = await db.query("SELECT * FROM customers WHERE email = ? LIMIT 1", [email]);
     customer = emailRows[0];
     if (customer && !customer[col]) await db.query(`UPDATE customers SET ${col} = ? WHERE id = ?`, [provider_id, customer.id]);
+  }
+
+  if (customer && customer.is_deleted) {
+    // Reactivate account
+    await db.query("UPDATE customers SET is_deleted = FALSE, status = 'active' WHERE id = ?", [customer.id]);
+    customer.is_deleted = false;
+    customer.status = "active";
   }
   if (!customer) {
     const referralCode = await generateUniqueReferralCode();

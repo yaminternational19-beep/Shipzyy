@@ -21,6 +21,7 @@ const TABLES = [
                 default_address_id BIGINT NULL,
                 status ENUM('active', 'suspended', 'terminated') DEFAULT 'active',
                 is_deleted BOOLEAN DEFAULT FALSE,
+                delete_reason TEXT NULL,
                 last_login_at DATETIME NULL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

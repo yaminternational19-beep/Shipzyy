@@ -110,6 +110,7 @@ import paymentGatewayRoutes from '../../modules/customers/payment_gateway/paymen
 import orderRoutes from '../../modules/customers/orders/orders.routes.js';
 import customerSupportRoutes from '../../modules/customers/support/support.routes.js';
 import customerReviewRoutes from '../../modules/customers/reviews/reviews.routes.js';
+import customerSearchRoutes from '../../modules/customers/search/search.routes.js';
 
 router.use("/customers", customerAuthRoutes);
 router.use("/customers", customerProfileRoutes);
@@ -120,6 +121,7 @@ router.use("/customers", paymentGatewayRoutes);
 router.use("/customers", orderRoutes);
 router.use("/customers", customerSupportRoutes);
 router.use("/customers", customerReviewRoutes);
+router.use("/customers", customerSearchRoutes);
 
 
 // ==========================================

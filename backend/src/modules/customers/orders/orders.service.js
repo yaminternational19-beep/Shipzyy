@@ -741,6 +741,20 @@ export const getOrderDetails = async (customerId, orderId, itemId = null) => {
   }
 
   const [items] = await db.query(itemsQuery, itemsParams);
+  
+  // Fetch status logs to get dates for tracking
+  const [statusLogs] = await db.query(
+    `SELECT status, created_at FROM order_status_logs WHERE order_id = ? ORDER BY created_at ASC`,
+    [orderId]
+  );
+  
+  const logMap = {};
+  statusLogs.forEach(log => {
+    // We want the FIRST time a status was reached for history
+    if (!logMap[log.status]) {
+      logMap[log.status] = formatDate(log.created_at);
+    }
+  });
 
   const itemStatuses = items.map(i => i.item_status);
   const uniqueStatuses = [...new Set(itemStatuses)];
@@ -768,7 +782,7 @@ export const getOrderDetails = async (customerId, orderId, itemId = null) => {
   }
 
   // Status mapping for tracking
-  const getTrackingArray = (currentStatus) => {
+  const getTrackingArray = (currentStatus, itemStatusUpdatedAt) => {
     const baseSequence = ['Pending', 'Confirmed', 'Shipped', 'Out for Delivery', 'Delivered'];
     const returnSequence = ['Return Requested', 'Return Approved', 'Return Picked Up', 'Returned'];
     
@@ -785,10 +799,24 @@ export const getOrderDetails = async (customerId, orderId, itemId = null) => {
         currentIndex = sequence.indexOf('Returned'); // Mark all return steps as done
     }
     
-    const tracking = sequence.map((label, index) => ({
-      label,
-      is_completed: currentStatus === 'Cancelled' ? false : (currentIndex !== -1 && index <= currentIndex)
-    }));
+    const tracking = sequence.map((label, index) => {
+      const is_completed = currentStatus === 'Cancelled' ? false : (currentIndex !== -1 && index <= currentIndex);
+      let date = null;
+      if (is_completed) {
+        if (label === 'Pending') {
+          date = formatDate(order.created_at);
+        } else if (label === currentStatus) {
+          date = formatDate(itemStatusUpdatedAt);
+        } else {
+          date = logMap[label] || null;
+        }
+      }
+      return {
+        label,
+        is_completed,
+        date
+      };
+    });
 
     // Special case for Delivered: if we are in return phase, Delivered must be true
     if (isReturning || currentStatus === 'Returned') {
@@ -800,7 +828,8 @@ export const getOrderDetails = async (customerId, orderId, itemId = null) => {
     if (currentStatus === 'Cancelled') {
         tracking.push({
             label: 'Cancelled',
-            is_completed: true
+            is_completed: true,
+            date: currentStatus === 'Cancelled' ? formatDate(itemStatusUpdatedAt) : (logMap['Cancelled'] || null)
         });
     }
 
@@ -808,7 +837,8 @@ export const getOrderDetails = async (customerId, orderId, itemId = null) => {
     if (currentStatus === 'Return Rejected') {
         tracking.push({
             label: 'Return Rejected',
-            is_completed: true
+            is_completed: true,
+            date: currentStatus === 'Return Rejected' ? formatDate(itemStatusUpdatedAt) : (logMap['Return Rejected'] || null)
         });
     }
 
@@ -829,7 +859,7 @@ export const getOrderDetails = async (customerId, orderId, itemId = null) => {
       return_days: item.return_days || 0,
       status_updated_at: formatDate(item.status_updated_at),
       review_images: item.review_images ? (typeof item.review_images === 'string' ? JSON.parse(item.review_images) : item.review_images) : [],
-      tracking_status: getTrackingArray(item.item_status)
+      tracking_status: getTrackingArray(item.item_status, item.status_updated_at)
     }))
   };
 };

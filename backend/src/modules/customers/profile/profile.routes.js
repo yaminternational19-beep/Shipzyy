@@ -12,5 +12,6 @@ router.put("/profile", customerAuthMiddleware, upload.single("profile_image"), v
 router.post("/profile/address", customerAuthMiddleware, validate(addAddressSchema), profileController.addAddress);
 router.put("/profile/address/:id", customerAuthMiddleware, validate(updateAddressSchema), profileController.updateAddress);
 router.delete("/profile/address/:id", customerAuthMiddleware, profileController.deleteAddress);
+router.delete("/delete", customerAuthMiddleware, profileController.deleteAccount);
 
 export default router;

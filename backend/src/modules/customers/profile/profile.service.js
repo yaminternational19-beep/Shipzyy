@@ -423,4 +423,27 @@ const formatDate = (date) => {
   });
 };
 
-export default { getCustomerById, calculateProfileCompletion, updateProfile, getAddresses, addAddress, updateAddress, deleteAddress };
+const deleteAccount = async (customerId, reason) => {
+  const [customer] = await db.query(
+    "SELECT id FROM customers WHERE id = ? AND is_deleted = FALSE",
+    [customerId]
+  );
+
+  if (!customer.length) {
+    throw new ApiError(404, "Customer not found");
+  }
+
+  // Soft delete the customer
+  await db.query(
+    "UPDATE customers SET is_deleted = TRUE, status = 'terminated', delete_reason = ?, updated_at = NOW() WHERE id = ?",
+    [reason || null, customerId]
+  );
+
+  // Invalidate caches
+  await removeFromCache(`customer:profile:${customerId}`);
+  await removeFromCache(`customer:addresses:${customerId}`);
+  
+  return true;
+};
+
+export default { getCustomerById, calculateProfileCompletion, updateProfile, getAddresses, addAddress, updateAddress, deleteAddress, deleteAccount };
