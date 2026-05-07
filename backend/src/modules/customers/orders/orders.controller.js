@@ -38,6 +38,24 @@ export const placeOrder = asyncHandler(async (req, res) => {
   return ApiResponse.success(res, "Order placed successfully", result);
 });
 
+export const verifyPayment = asyncHandler(async (req, res) => {
+  const customerId = req.user?.id;
+
+  if (!customerId) {
+    throw new ApiError(401, "Authentication required", "AUTH_REQUIRED");
+  }
+
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+
+  if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+    throw new ApiError(400, "Missing required payment details", "MISSING_PAYMENT_DETAILS");
+  }
+
+  const result = await ordersService.verifyPayment(customerId, req.body);
+
+  return ApiResponse.success(res, "Payment verified successfully", result);
+});
+
 export const getOrderHistory = asyncHandler(async (req, res) => {
   const customerId = req.user?.id;
   const result = await ordersService.getOrderHistory(customerId, req.query);

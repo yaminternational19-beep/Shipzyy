@@ -11,7 +11,7 @@ const ProductView = ({ product, onClose }) => {
         { key: 'basicInfo', label: 'Basic Information', icon: <Briefcase size={20} /> },
         { key: 'pricing', label: 'Pricing & Discount', icon: <DollarSign size={20} /> },
         { key: 'inventory', label: 'Inventory Details', icon: <Archive size={20} /> },
-        { key: 'specifications', label: 'Specifications', icon: <Tag size={20} /> },
+        // { key: 'specifications', label: 'Specifications', icon: <Tag size={20} /> },
         { key: 'manufacturing', label: 'Manufacturing', icon: <FileText size={20} /> },
         { key: 'returnPolicy', label: 'Return Policy', icon: <CheckCircle2 size={20} /> }
     ];

@@ -41,7 +41,7 @@ const StatCard = ({ title, value, subText, icon: Icon, color, loading, sparkline
     );
 };
 
-const VendorOwnerDashboard = forwardRef((props, ref) => {
+const VendorOwnerDashboard = forwardRef(({ vendorId = null } = {}, ref) => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState('7days'); // 7days, weekly, monthly, yearly, custom
@@ -81,7 +81,7 @@ const VendorOwnerDashboard = forwardRef((props, ref) => {
                 startDate: customRange.start,
                 endDate: customRange.end
             };
-            const res = await getVendorDashboardData(null, params);
+            const res = await getVendorDashboardData(vendorId, params);
             if (res.success) {
                 setStats(res.data.stats || {});
                 setRevenueAnalytics(res.data.revenueAnalytics || []);

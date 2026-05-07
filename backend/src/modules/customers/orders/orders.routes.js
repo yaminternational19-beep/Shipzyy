@@ -18,6 +18,13 @@ router.post(
   ordersController.placeOrder
 );
 
+// Verify Payment API
+router.post(
+  "/verify-payment",
+  customerAuthMiddleware,
+  ordersController.verifyPayment
+);
+
 // Order History List
 router.get("/orders-list", customerAuthMiddleware, ordersController.getOrderHistory);
 

@@ -5,6 +5,8 @@ import { getPagination, getPaginationMeta } from "../../../utils/pagination.js";
 import { createInvoicesForOrder } from "../../invoices/invoices.service.js";
 import { removeFromCache, removeByPattern } from "../../../utils/cache.js";
 import s3Service from "../../../services/s3Service.js";
+import razorpay, { RAZORPAY_KEY_ID } from "../../../config/razorpay.js";
+import crypto from "crypto";
 
 const formatDate = (date) => {
   if (!date) return null;
@@ -370,6 +372,194 @@ export const getCheckoutSummary = async (customerId, options = {}) => {
   return response;
 };
 
+// export const placeOrder = async (customerId, payload) => {
+//   const { address_id, coupon_code, payment_method } = payload;
+
+//   const connection = await db.getConnection();
+//   try {
+//     await connection.beginTransaction();
+
+//     // 1. Check if there's an existing PENDING order for this customer
+//     const [existingOrders] = await connection.query(
+//       `SELECT id, order_number, coupon_code, total_amount, address_id, payment_method 
+//        FROM orders 
+//        WHERE customer_id = ? AND order_status = 'Pending' AND payment_status = 'Pending'
+//        ORDER BY created_at DESC LIMIT 1`,
+//       [customerId]
+//     );
+
+//     let existingOrder = existingOrders[0] || null;
+
+//     // 2. Re-calculate everything securely using our robust checkout summary logic
+//     // Pass existingOrder.id to allow re-using the same coupon if it's the same flow
+//     const summary = await getCheckoutSummary(customerId, {
+//       address_id,
+//       coupon_code,
+//       excludeOrderId: existingOrder?.id
+//     });
+
+//     const { subtotal, discount, delivery_charges, total } = summary.order_summary;
+
+//     // 3. Get active cart items directly from DB (bypassing cache)
+//     const [cartItems] = await connection.query(
+//       `SELECT product_id, vendor_id, quantity, offer_price 
+//        FROM customers_cart 
+//        WHERE customer_id = ? AND is_available = 1`,
+//       [customerId]
+//     );
+
+//     if (cartItems.length === 0) {
+//       throw new ApiError(400, "No available products in cart to order");
+//     }
+
+//     let orderId;
+//     let orderNumber;
+//     let order_status;
+//     let message = "Order placed successfully";
+
+//     if (existingOrder) {
+//       // 4. SMART LOGIC: Check if it's an exact duplicate
+//       const [existingItems] = await connection.query(
+//         `SELECT product_id, quantity FROM order_items WHERE order_id = ?`,
+//         [existingOrder.id]
+//       );
+
+//       // Compare cartItems with existingItems
+//       const isIdentical =
+//         cartItems.length === existingItems.length &&
+//         cartItems.every(ci => existingItems.some(ei => ei.product_id === ci.product_id && ei.quantity === ci.quantity)) &&
+//         existingOrder.address_id === parseInt(address_id) &&
+//         existingOrder.payment_method === payment_method &&
+//         (existingOrder.coupon_code || null) === (coupon_code?.toUpperCase() || null);
+
+//       if (isIdentical) {
+//         await connection.rollback();
+//         return {
+//           order_id: existingOrder.id,
+//           order_number: existingOrder.order_number,
+//           payable_amount: existingOrder.total_amount,
+//           status: "Pending",
+//           message: "Order has already been placed. You can proceed to payment."
+//         };
+//       }
+
+//       // 5. UPDATE MODE: If something changed, update the existing order
+//       orderId = existingOrder.id;
+//       orderNumber = existingOrder.order_number;
+//       message = "Order updated successfully";
+
+//       const statusToSet = payment_method === 'COD' ? 'Confirmed' : 'Pending';
+
+//       await connection.query(
+//         `UPDATE orders SET 
+//           address_id = ?, subtotal = ?, discount = ?, delivery_charges = ?, 
+//           total_amount = ?, coupon_code = ?, payment_method = ?, 
+//           order_status = ?, updated_at = NOW()
+//          WHERE id = ?`,
+//         [address_id, subtotal, discount, delivery_charges, total, coupon_code?.toUpperCase() || null, payment_method, statusToSet, orderId]
+//       );
+//       order_status = statusToSet;
+
+//       // Delete old items to re-insert fresh ones
+//       await connection.query(`DELETE FROM order_items WHERE order_id = ?`, [orderId]);
+
+//     } else {
+//       // 6. CREATE MODE: Standard flow
+//       orderNumber = `ORD-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+//       const [orderRes] = await connection.query(
+//         `INSERT INTO orders (
+//           order_number, customer_id, address_id, 
+//           subtotal, discount, delivery_charges, total_amount, 
+//           coupon_code, payment_method, payment_status, order_status
+//         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+//         [
+//           orderNumber,
+//           customerId,
+//           address_id,
+//           subtotal,
+//           discount,
+//           delivery_charges,
+//           total,
+//           coupon_code?.toUpperCase() || null,
+//           payment_method,
+//           'Pending',
+//           payment_method === 'COD' ? 'Confirmed' : 'Pending'
+//         ]
+//       );
+//       orderId = orderRes.insertId;
+//       order_status = payment_method === 'COD' ? 'Confirmed' : 'Pending';
+//     }
+
+//     // 7. Insert/Re-insert Order Items
+//     for (const item of cartItems) {
+//       await connection.query(
+//         `INSERT INTO order_items (
+//           order_id, product_id, vendor_id, quantity, price, item_status
+//         ) VALUES (?, ?, ?, ?, ?, ?)`,
+//         [orderId, item.product_id, item.vendor_id, item.quantity, item.offer_price, order_status]
+//       );
+//     }
+
+//     // 8. Stock Management: Reduce stock and increment sold_count
+//     for (const item of cartItems) {
+//       // Find the variant for this product and reduce its stock
+//       const [stockUpdate] = await connection.query(
+//         `UPDATE product_variants 
+//              SET stock = GREATEST(0, stock - ?), updated_at = NOW()
+//              WHERE product_id = ? AND stock >= ?
+//              LIMIT 1`,
+//         [item.quantity, item.product_id, item.quantity]
+//       );
+
+//       if (stockUpdate.affectedRows === 0) {
+//         // If stock was enough during cart check but not now (race condition)
+//         throw new ApiError(400, `Sorry, one or more items just went out of stock.`);
+//       }
+
+//       // Increment product's global sold_count
+//       await connection.query(
+//         `UPDATE products SET sold_count = sold_count + ?, updated_at = NOW() WHERE id = ?`,
+//         [item.quantity, item.product_id]
+//       );
+//     }
+
+//     // 9. If Coupon changed/used, update logic (Note: we don't increment used_count here if same order update)
+//     // For simplicity, we assume usage count is based on 'Placed/Completed' orders.
+//     // If you want strict usage count on placement:
+//     if (coupon_code && summary.coupon_applied) {
+//       // Only increment if the existing order didn't already use this coupon
+//       if (!existingOrder || existingOrder.coupon_code !== coupon_code.toUpperCase()) {
+//         await connection.query(
+//           `UPDATE coupons SET used_count = used_count + 1 WHERE code = ?`,
+//           [coupon_code.toUpperCase()]
+//         );
+//       }
+//     }
+
+//     // 9. Clear cart
+//     await connection.query(`DELETE FROM customers_cart WHERE customer_id = ?`, [customerId]);
+//     await connection.commit();
+//     await removeFromCache(`customer:cart:v2:${customerId}`);
+
+//     return {
+//       order_id: orderId,
+//       order_number: orderNumber,
+//       payable_amount: total,
+//       payment_method,
+//       status: order_status,
+//       message: message
+//     };
+
+//   } catch (error) {
+//     await connection.rollback();
+//     throw error;
+//   } finally {
+//     connection.release();
+//   }
+// };
+
+
 export const placeOrder = async (customerId, payload) => {
   const { address_id, coupon_code, payment_method } = payload;
 
@@ -540,13 +730,48 @@ export const placeOrder = async (customerId, payload) => {
     await connection.commit();
     await removeFromCache(`customer:cart:v2:${customerId}`);
 
+    let razorpay_order_id = null;
+    let razorpay_key_id = null;
+
+    if (payment_method === 'Online') {
+      try {
+        const rpOrder = await razorpay.orders.create({
+          amount: Math.round(total * 100), // amount in paise
+          currency: "INR",
+          receipt: orderId.toString()
+        });
+        razorpay_order_id = rpOrder.id;
+        razorpay_key_id = RAZORPAY_KEY_ID;
+
+        const [existingPayment] = await db.query(`SELECT id FROM payments WHERE order_id = ?`, [orderId]);
+        
+        if (existingPayment.length > 0) {
+          await db.query(
+            `UPDATE payments SET gateway_order_id = ?, amount = ? WHERE order_id = ?`,
+            [razorpay_order_id, total, orderId]
+          );
+        } else {
+          await db.query(
+            `INSERT INTO payments (order_id, customer_id, gateway, gateway_order_id, amount, status) 
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [orderId, customerId, 'Razorpay', razorpay_order_id, total, 'Pending']
+          );
+        }
+      } catch (err) {
+        console.error("Razorpay Error:", err);
+        throw new ApiError(500, "Could not initialize payment gateway");
+      }
+    }
+
     return {
       order_id: orderId,
       order_number: orderNumber,
       payable_amount: total,
       payment_method,
       status: order_status,
-      message: message
+      message: message,
+      razorpay_order_id,
+      razorpay_key_id
     };
 
   } catch (error) {
@@ -556,7 +781,6 @@ export const placeOrder = async (customerId, payload) => {
     connection.release();
   }
 };
-
 
 /**
  * Get full order history for a customer
@@ -656,6 +880,80 @@ export const getOrderHistory = async (customerId, queryParams = {}) => {
     orders: formattedOrders,
     pagination: getPaginationMeta(page, limit, totalRecords)
   };
+};
+
+
+/**
+ * Verify Razorpay Payment Signature
+ */
+export const verifyPayment = async (customerId, payload) => {
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = payload;
+
+  const key_secret = process.env.RAZORPAY_KEY_SECRET || 'dummy_key_secret';
+
+  // 1. Verify Signature
+  const generated_signature = crypto
+    .createHmac("sha256", key_secret)
+    .update(razorpay_order_id + "|" + razorpay_payment_id)
+    .digest("hex");
+
+  if (generated_signature !== razorpay_signature) {
+    throw new ApiError(400, "Invalid payment signature", "INVALID_SIGNATURE");
+  }
+
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    // 2. Fetch Payment Record
+    const [payments] = await connection.query(
+      `SELECT id, order_id, status FROM payments WHERE gateway_order_id = ? AND customer_id = ?`,
+      [razorpay_order_id, customerId]
+    );
+
+    if (payments.length === 0) {
+      throw new ApiError(404, "Payment record not found");
+    }
+
+    const payment = payments[0];
+    const orderId = payment.order_id;
+
+    if (payment.status === 'Success') {
+      await connection.rollback();
+      return { message: "Payment already verified", order_id: orderId };
+    }
+
+    // 3. Update Payment Record
+    await connection.query(
+      `UPDATE payments SET status = 'Success', transaction_id = ?, updated_at = NOW() WHERE id = ?`,
+      [razorpay_payment_id, payment.id]
+    );
+
+    // 4. Update Order Record
+    await connection.query(
+      `UPDATE orders SET payment_status = 'Paid', order_status = 'Confirmed', updated_at = NOW() WHERE id = ?`,
+      [orderId]
+    );
+
+    // 5. Update Order Items Record
+    await connection.query(
+      `UPDATE order_items SET payment_status = 'Paid', item_status = 'Confirmed', status_updated_at = NOW() WHERE order_id = ?`,
+      [orderId]
+    );
+
+    await connection.commit();
+
+    return {
+      message: "Payment verified successfully",
+      order_id: orderId
+    };
+
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
 };
 
 

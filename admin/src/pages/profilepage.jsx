@@ -194,8 +194,8 @@ const ProfilePage = () => {
                     </div>
 
                     {/* Address Section */}
-                    <div className="section-header" style={{ marginTop: '40px' }}>Address Details</div>
-                    <div className="profile-form-row">
+                    {/* <div className="section-header" style={{ marginTop: '40px' }}>Address Details</div> */}
+                    {/* <div className="profile-form-row">
                         <div className="profile-input-group">
                             <label>Location / City</label>
                             <input
@@ -215,7 +215,7 @@ const ProfilePage = () => {
                                 onChange={(e) => setUserData({ ...userData, postalCode: e.target.value })}
                             />
                         </div>
-                    </div>
+                    </div> */}
 
                     {/* Change Password Section */}
                     <div className="section-header" style={{ marginTop: '40px' }}>Security Settings</div>

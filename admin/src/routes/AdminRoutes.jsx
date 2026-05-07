@@ -19,7 +19,7 @@ import { SettingsPage } from '../modules/settings';
 import BannersPage from '../modules/banners/BannersPage';
 import { CouponsPage } from '../modules/coupons';
 import { DeliveryChargesPage } from '../modules/delivery_charges';
-import VendorOwnerDashboard from '../modules/dashboard/dashboards/VendorOwnerDashboard';
+import AdminVendorDashboard from '../modules/dashboard/dashboards/AdminVendorDashboard';
 import ReviewsPage from '../modules/reviews/ReviewsPage';
 import ComingSoon from '../pages/ComingSoon';
 import VendorInvoices from '../modules/invoices/VendorInvoices';
@@ -292,7 +292,7 @@ export const AdminRoutes = [
         path="/vendors/:id"
         element={
             <ProtectedRoute allowedRoles={["SUPER_ADMIN", "SUB_ADMIN"]}>
-                <VendorOwnerDashboard />
+                <AdminVendorDashboard />
             </ProtectedRoute>
         }
     />,

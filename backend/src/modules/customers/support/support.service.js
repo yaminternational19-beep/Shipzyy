@@ -30,7 +30,7 @@ const formatToPlain = (html) => {
 };
 
 const getContent = async () => {
-    const baseUrl = process.env.BASE_URL || "http://localhost:9000/api/v1";
+    const baseUrl = process.env.BASE_URL || "https://shipzyy.com/api/v1";
     const [rows] = await db.query('SELECT page_key, title, content, type FROM manage_content');
     
     const formattedRecords = rows.map(item => {
