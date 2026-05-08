@@ -41,19 +41,19 @@ export const login = asyncHandler(async (req, res) => {
   }
 
   // After password verified
-// if (user.role === "VENDOR_OWNER") {
-//     if (vendor.kyc_status === "Pending") {
-//       throw new ApiError(403, "Your KYC is under review. Please wait for admin approval.");
-//     }
+  // if (user.role === "VENDOR_OWNER") {
+  //     if (vendor.kyc_status === "Pending") {
+  //       throw new ApiError(403, "Your KYC is under review. Please wait for admin approval.");
+  //     }
 
-//     if (vendor.kyc_status === "Rejected") {
-//       throw new ApiError(403, "Your KYC was rejected. Contact admin.");
-//     }
+  //     if (vendor.kyc_status === "Rejected") {
+  //       throw new ApiError(403, "Your KYC was rejected. Contact admin.");
+  //     }
 
-//     if (vendor.kyc_status !== "Approved") {
-//       throw new ApiError(403, "Your account is not approved.");
-//     }
-//   }
+  //     if (vendor.kyc_status !== "Approved") {
+  //       throw new ApiError(403, "Your account is not approved.");
+  //     }
+  //   }
 
   // generate OTP
   const otp = authService.generateOtp();
@@ -336,4 +336,58 @@ export const logout = asyncHandler(async (req, res) => {
   return ApiResponse.success(res, "Logged out successfully");
 });
 
-export default { login, verifyLoginOtp, refreshToken, forgotPassword, verifyResetOtp, resetPassword, resendOtp, logout };
+/* ===============================
+   GET PROFILE
+================================= */
+export const getProfile = asyncHandler(async (req, res) => {
+  const { id, role } = req.user; // Assuming req.user is populated by auth middleware
+
+  if (!id || !role) {
+    throw new ApiError(401, "Unauthorized access");
+  }
+
+  const profile = await authService.getProfileById(id, role);
+
+  if (!profile) {
+    throw new ApiError(404, "Profile not found");
+  }
+
+  // Get permissions if available
+  let permissions = [];
+  if (role === "SUB_ADMIN" || role === "VENDOR_STAFF") {
+    const userWithPerms = await authService.getUserById(id, role);
+    if (userWithPerms && userWithPerms.permissions) {
+      permissions = userWithPerms.permissions;
+    }
+  } else if (role === "SUPER_ADMIN") {
+    permissions = ['dashboard', 'subadmins', 'vendors', 'customers', 'delivery', 'settings', 'orders', 'products'];
+  }
+
+  return ApiResponse.success(res, "Profile retrieved successfully", {
+    ...profile,
+    fullName: profile.name,
+    emergencyContact: profile.emergencyMobile,
+    permissions
+  });
+});
+
+/* ===============================
+   UPDATE PROFILE
+================================= */
+export const updateProfile = asyncHandler(async (req, res) => {
+  const { id, role } = req.user;
+
+  if (!id || !role) {
+    throw new ApiError(401, "Unauthorized access");
+  }
+
+  const result = await authService.updateProfileById(id, role, req.body);
+
+  if (!result) {
+    throw new ApiError(400, "Failed to update profile");
+  }
+
+  return ApiResponse.success(res, "Profile updated successfully");
+});
+
+export default { login, verifyLoginOtp, refreshToken, forgotPassword, verifyResetOtp, resetPassword, resendOtp, logout, getProfile, updateProfile };

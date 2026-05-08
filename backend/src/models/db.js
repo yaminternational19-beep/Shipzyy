@@ -9,6 +9,11 @@ const TABLES = [
                 name VARCHAR(100),
                 email VARCHAR(150) UNIQUE NOT NULL,
                 password VARCHAR(255) NOT NULL,
+                country_code VARCHAR(10) DEFAULT '+91',
+                mobile VARCHAR(20),
+                emergency_country_code VARCHAR(10) DEFAULT '+91',
+                emergency_mobile VARCHAR(20),
+                profile_photo VARCHAR(255),
                 status ENUM('Active','Inactive') DEFAULT 'Active',
                 system_role VARCHAR(50) DEFAULT 'SUPER_ADMIN',
                 INDEX idx_email (email),
@@ -39,7 +44,7 @@ const TABLES = [
         `
     },
     {
-        name:"refresh_tokens",
+        name: "refresh_tokens",
         query: `
             CREATE TABLE IF NOT EXISTS refresh_tokens (
                 id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -56,7 +61,7 @@ const TABLES = [
         `
     },
     {
-        name:"sub_admins",
+        name: "sub_admins",
         query: `
             CREATE TABLE IF NOT EXISTS sub_admins (
                 id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -84,7 +89,7 @@ const TABLES = [
                 INDEX idx_role (role),
                 INDEX idx_created_at (created_at)
             );
-        `           
+        `
     },
     {
         name: "categories",
@@ -153,7 +158,7 @@ const TABLES = [
     },
     {
         name: "tiers",
-        query:`
+        query: `
             CREATE TABLE IF NOT EXISTS tiers (
                 id BIGINT AUTO_INCREMENT PRIMARY KEY,
                 tier_key VARCHAR(50),             
@@ -180,7 +185,7 @@ const TABLES = [
     },
     {
         name: "vendors",
-        query:`
+        query: `
             CREATE TABLE IF NOT EXISTS vendors (
                 id BIGINT AUTO_INCREMENT PRIMARY KEY,
                 vendor_code VARCHAR(20) UNIQUE,
@@ -256,10 +261,10 @@ const TABLES = [
                 INDEX idx_vendor_id (vendor_id),
                 INDEX idx_file_type (file_type)
             );
-        `   
+        `
     },
     {
-        name:"vendor_staff",
+        name: "vendor_staff",
         query: `
             CREATE TABLE IF NOT EXISTS vendor_staff (
                 id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -297,11 +302,11 @@ const TABLES = [
                 FOREIGN KEY (vendor_id) REFERENCES vendors(id)
                 ON DELETE CASCADE
             );
-        `           
+        `
     },
     {
-        name:"products",
-        query:`
+        name: "products",
+        query: `
         CREATE TABLE IF NOT EXISTS products (
                 id BIGINT AUTO_INCREMENT PRIMARY KEY,
 
@@ -452,7 +457,7 @@ const TABLES = [
                 INDEX idx_banner_name (banner_name),
                 INDEX idx_created_at (created_at)
             );
-        `   
+        `
     },
     {
         name: "coupons",
@@ -501,26 +506,38 @@ const TABLES = [
 ];
 
 const initDatabase = async () => {
-  try {
-    for (const table of TABLES) {
-      const [rows] = await db.query(
-        `SHOW TABLES LIKE '${table.name}'`
-      );
+    try {
+        for (const table of TABLES) {
+            const [rows] = await db.query(
+                `SHOW TABLES LIKE '${table.name}'`
+            );
 
-      if (rows.length === 0) {
-        await db.query(table.query);
-        console.log(`Created table: ${table.name}`);
-      } else {
-        console.log(`Table already exists: ${table.name}`);
-      }
+            if (rows.length === 0) {
+                await db.query(table.query);
+                console.log(`Created table: ${table.name}`);
+            } else {
+                console.log(`Table already exists: ${table.name}`);
+                // Add missing columns to super_admins
+                if (table.name === 'super_admins') {
+                    try {
+                        await db.query(`ALTER TABLE super_admins ADD COLUMN country_code VARCHAR(10) DEFAULT '+91', ADD COLUMN mobile VARCHAR(20), ADD COLUMN emergency_country_code VARCHAR(10) DEFAULT '+91', ADD COLUMN emergency_mobile VARCHAR(20), ADD COLUMN profile_photo VARCHAR(255)`);
+                        console.log('Added missing profile columns to super_admins');
+                    } catch (err) {
+                        // Ignore if columns already exist
+                        if (err.code !== 'ER_DUP_FIELDNAME') {
+                            console.error('Error adding columns:', err.message);
+                        }
+                    }
+                }
+            }
+        }
+
+        console.log("Database initialization complete");
+        process.exit(0);
+    } catch (error) {
+        console.error("Initialization failed:", error.message);
+        process.exit(1);
     }
-
-    console.log("Database initialization complete");
-    process.exit(0);
-  } catch (error) {
-    console.error("Initialization failed:", error.message);
-    process.exit(1);
-  }
 };
 
 initDatabase();

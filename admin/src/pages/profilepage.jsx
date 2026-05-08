@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
     User,
     Heart,
@@ -25,63 +25,112 @@ import { getSafeImage } from "../utils/imageUtils";
 import "../styles/Profile.css";
 import Toast from "../components/common/Toast/Toast";
 import ExportActions from "../components/common/ExportActions";
+import { getProfileApi, updateProfileApi } from "../api/auth.api";
+import PhoneInput from 'react-phone-input-2';
+import 'react-phone-input-2/lib/style.css';
+import { menuItems as adminModules } from "../utils/roles";
+import { menuItems as vendorModules } from "../utils/vendorroles";
 
 const ProfilePage = () => {
-    // Permission Modules Template
-    const modules = [
-        { id: 'dashboard', name: 'Dashboard', desc: 'Overview, analytics and reports' },
-        { id: 'subadmins', name: 'Sub-Admin Management', desc: 'Manage system administrator accounts' },
-        { id: 'vendors', name: 'Vendor Management', desc: 'Handle applications, KYC and tiering' },
-        { id: 'customers', name: 'Customer Management', desc: 'Client accounts and support tickets' },
-        { id: 'delivery', name: 'Delivery Tracking', desc: 'Live tracking and rider management' },
-        { id: 'settings', name: 'System Settings', desc: 'Core platform configurations' },
-        { id: 'orders', name: 'Order Management', desc: 'Track and manage customer orders' },
-        { id: 'products', name: 'Product Inventory', desc: 'Manage catalogue and item stock' }
-    ];
-
-    // Data based on SubAdmin structure & Image placeholders
     const [userData, setUserData] = useState({
-        fullName: 'Sara Tancredi',
-        email: 'SaraTancredi@gmail.com',
-        countryCode: '+1',
-        mobile: '9123728167',
+        fullName: '',
+        email: '',
+        countryCode: '+91',
+        mobile: '',
         emergencyCountryCode: '+91',
-        emergencyContact: '9123728167',
-        location: 'New York, USA',
-        postalCode: '23728167',
+        emergencyContact: '',
+        location: '',
+        postalCode: '',
         status: 'Active',
-        role: 'SUPER_ADMIN',
+        role: '',
         newPassword: '',
         confirmPassword: '',
-        permissions: ['dashboard', 'subadmins', 'vendors', 'orders', 'products']
+        permissions: [],
+        profile_image: ''
     });
+
+    const [isLoading, setIsLoading] = useState(true);
+    const modules = useMemo(() => {
+        let config = [];
+        if (userData.role === 'SUPER_ADMIN' || userData.role === 'SUB_ADMIN') {
+            config = adminModules;
+        } else if (userData.role === 'VENDOR_OWNER' || userData.role === 'VENDOR_STAFF') {
+            config = vendorModules;
+        }
+
+        const mapped = config.map(item => ({
+            id: item.key.toLowerCase(),
+            name: item.name,
+            desc: item.description || `Access to ${item.name} module`
+        }));
+        
+        // Filter out duplicates based on ID
+        return Array.from(new Map(mapped.map(m => [m.id, m])).values());
+    }, [userData.role]);
+
+    // Helper to check if a module is active
+    const isModuleActive = (moduleId) => {
+        if (userData.role === 'SUPER_ADMIN' || userData.role === 'VENDOR_OWNER') return true;
+        return (userData.permissions || []).map(p => p.toLowerCase()).includes(moduleId.toLowerCase());
+    };
 
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+    useEffect(() => {
+        fetchProfile();
+    }, []);
+
+    const fetchProfile = async () => {
+        try {
+            const res = await getProfileApi();
+            if (res.data && res.data.data) {
+                const profile = res.data.data;
+                setUserData(prev => ({
+                    ...prev,
+                    ...profile,
+                    newPassword: '',
+                    confirmPassword: ''
+                }));
+            }
+        } catch (err) {
+            showToast("Failed to load profile", "error");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const showToast = (message, type = 'success') => {
         setToast({ show: true, message, type });
     };
 
-    const handleSave = () => {
-        // Password Change Logic
+    const handleSave = async () => {
         if (userData.newPassword || userData.confirmPassword) {
-            // 1. Check if new password and confirm match
             if (userData.newPassword !== userData.confirmPassword) {
                 showToast("New password and confirm password do not match!", "error");
                 return;
             }
-
-            // 2. Check password strength
             if (userData.newPassword.length < 6) {
                 showToast("New password must be at least 6 characters long", "warning");
                 return;
             }
+        }
 
-            showToast("Password updated and profile saved!", "success");
-        } else {
+        try {
+            await updateProfileApi({
+                fullName: userData.fullName,
+                email: userData.email,
+                countryCode: userData.countryCode,
+                mobile: userData.mobile,
+                emergencyCountryCode: userData.emergencyCountryCode,
+                emergencyContact: userData.emergencyContact,
+                newPassword: userData.newPassword
+            });
             showToast("Profile details updated successfully!", "success");
+            setUserData(prev => ({ ...prev, newPassword: '', confirmPassword: '' }));
+        } catch (err) {
+            showToast(err.response?.data?.message || "Failed to update profile", "error");
         }
     };
 
@@ -159,36 +208,55 @@ const ProfilePage = () => {
                         </div>
                         <div className="profile-input-group">
                             <label>Contact Number</label>
-                            <div className="mobile-input-split">
-                                <select
-                                    className="profile-modern-select"
-                                    value={userData.countryCode}
-                                    onChange={(e) => setUserData({ ...userData, countryCode: e.target.value })}
-                                >
-                                    <option value="+1">+1 (USA)</option>
-                                    <option value="+44">+44 (UK)</option>
-                                    <option value="+91">+91 (IND)</option>
-                                </select>
-                                <input
-                                    type="text"
-                                    className="profile-modern-input"
-                                    style={{ flex: 1 }}
-                                    value={userData.mobile}
-                                    onChange={(e) => setUserData({ ...userData, mobile: e.target.value })}
-                                />
-                            </div>
+                            <PhoneInput
+                                country={'in'}
+                                value={(userData.countryCode || '') + (userData.mobile || '')}
+                                onChange={(value, data) => {
+                                    const dialCode = `+${data.dialCode}`;
+                                    const mobileNumber = value.startsWith(data.dialCode)
+                                        ? value.slice(data.dialCode.length)
+                                        : value;
+                                    setUserData({
+                                        ...userData,
+                                        countryCode: dialCode,
+                                        mobile: mobileNumber
+                                    });
+                                }}
+                                enableSearch={true}
+                                containerClass="mobile-phone-input"
+                                inputClass="profile-modern-input"
+                                buttonClass="country-dropdown-btn"
+                                dropdownClass="country-dropdown-list"
+                                placeholder="Primary Phone"
+                                inputStyle={{ width: '100%', paddingLeft: '48px' }}
+                            />
                         </div>
                     </div>
 
                     <div className="profile-form-row">
                         <div className="profile-input-group">
                             <label>Emergency Contact</label>
-                            <input
-                                type="text"
-                                className="profile-modern-input"
-                                placeholder="Emergency number"
-                                value={userData.emergencyContact}
-                                onChange={(e) => setUserData({ ...userData, emergencyContact: e.target.value })}
+                            <PhoneInput
+                                country={'in'}
+                                value={(userData.emergencyCountryCode || '') + (userData.emergencyContact || '')}
+                                onChange={(value, data) => {
+                                    const dialCode = `+${data.dialCode}`;
+                                    const mobileNumber = value.startsWith(data.dialCode)
+                                        ? value.slice(data.dialCode.length)
+                                        : value;
+                                    setUserData({
+                                        ...userData,
+                                        emergencyCountryCode: dialCode,
+                                        emergencyContact: mobileNumber
+                                    });
+                                }}
+                                enableSearch={true}
+                                containerClass="mobile-phone-input"
+                                inputClass="profile-modern-input"
+                                buttonClass="country-dropdown-btn"
+                                dropdownClass="country-dropdown-list"
+                                placeholder="Emergency Contact"
+                                inputStyle={{ width: '100%', paddingLeft: '48px' }}
                             />
                         </div>
                     </div>
@@ -283,10 +351,10 @@ const ProfilePage = () => {
                                     gap: '12px',
                                     padding: '16px',
                                     borderRadius: '12px',
-                                    background: userData.permissions.includes(module.id) ? '#f5f3ff' : '#f8fafc',
-                                    border: userData.permissions.includes(module.id) ? '1px solid #c7d2fe' : '1px solid #e2e8f0',
+                                    background: isModuleActive(module.id) ? '#f5f3ff' : '#f8fafc',
+                                    border: isModuleActive(module.id) ? '1px solid #c7d2fe' : '1px solid #e2e8f0',
                                     transition: 'all 0.2s ease',
-                                    opacity: userData.permissions.includes(module.id) ? 1 : 0.6
+                                    opacity: isModuleActive(module.id) ? 1 : 0.6
                                 }}
                             >
                                 <div style={{
@@ -296,17 +364,17 @@ const ProfilePage = () => {
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    background: userData.permissions.includes(module.id) ? '#4f46e5' : '#cbd5e1',
+                                    background: isModuleActive(module.id) ? '#4f46e5' : '#cbd5e1',
                                     color: 'white',
                                     flexShrink: 0
                                 }}>
-                                    {userData.permissions.includes(module.id) ? <Check size={12} strokeWidth={4} /> : null}
+                                    {isModuleActive(module.id) ? <Check size={12} strokeWidth={4} /> : null}
                                 </div>
                                 <div style={{ flex: 1 }}>
                                     <div style={{
                                         fontWeight: 700,
                                         fontSize: '0.9rem',
-                                        color: userData.permissions.includes(module.id) ? '#1e1b4b' : '#64748b'
+                                        color: isModuleActive(module.id) ? '#1e1b4b' : '#64748b'
                                     }}>
                                         {module.name}
                                     </div>

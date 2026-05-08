@@ -13,4 +13,10 @@ router.post("/verify-reset-otp", validate(verifyResetOtpSchema), authController.
 router.post("/reset-password", validate(resetPasswordSchema), authController.resetPassword);
 router.post("/resend-otp", validate(resendOtpSchema), authController.resendOtp);
 router.post("/logout", validate(refreshSchema), authController.logout);
+
+// Needs auth middleware for profile routes
+import authMiddleware from '../../middlewares/auth.middleware.js';
+router.get("/profile", authMiddleware, authController.getProfile);
+router.put("/profile", authMiddleware, authController.updateProfile);
+
 export default router;

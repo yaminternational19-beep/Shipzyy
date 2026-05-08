@@ -350,6 +350,68 @@ const resetPassword = async (userId, role, newPassword) => {
 };
 
 /* ===============================
+   PROFILE ACTIONS
+================================= */
+const getProfileById = async (id, role) => {
+  let table = '';
+  let nameField = 'name';
+  if (role === "SUPER_ADMIN") table = "super_admins";
+  else if (role === "SUB_ADMIN") table = "sub_admins";
+  else if (role === "VENDOR_OWNER") { table = "vendors"; nameField = 'owner_name as name'; }
+  else if (role === "VENDOR_STAFF") table = "vendor_staff";
+  else return null;
+
+  const [rows] = await db.query(
+    `SELECT id, email, ${nameField}, 
+      country_code as countryCode, mobile, emergency_country_code as emergencyCountryCode, emergency_mobile as emergencyMobile, 
+      profile_photo as profile_image, status, system_role as role 
+     FROM ${table} WHERE id=?`,
+    [id]
+  );
+  return rows[0];
+};
+
+const updateProfileById = async (id, role, data) => {
+  let table = '';
+  let nameField = 'name';
+  if (role === "SUPER_ADMIN") table = "super_admins";
+  else if (role === "SUB_ADMIN") table = "sub_admins";
+  else if (role === "VENDOR_OWNER") { table = "vendors"; nameField = 'owner_name'; }
+  else if (role === "VENDOR_STAFF") table = "vendor_staff";
+  else return false;
+
+  const { fullName, email, countryCode, mobile, emergencyCountryCode, emergencyContact, newPassword } = data;
+
+  let updates = [];
+  let params = [];
+
+  if (email !== undefined) { updates.push('email = ?'); params.push(email); }
+  if (fullName !== undefined) { updates.push(`${nameField} = ?`); params.push(fullName); }
+  if (countryCode !== undefined) { updates.push('country_code = ?'); params.push(countryCode); }
+  if (mobile !== undefined) { updates.push('mobile = ?'); params.push(mobile); }
+  if (emergencyCountryCode !== undefined) { updates.push('emergency_country_code = ?'); params.push(emergencyCountryCode); }
+  if (emergencyContact !== undefined) { updates.push('emergency_mobile = ?'); params.push(emergencyContact); }
+
+  if (newPassword) {
+    const hash = await bcrypt.hash(newPassword, 10);
+    updates.push('password = ?'); params.push(hash);
+  }
+
+  if (updates.length === 0) return true;
+
+  const query = `UPDATE ${table} SET ${updates.join(', ')} WHERE id = ?`;
+  params.push(id);
+
+  try {
+    const [result] = await db.query(query, params);
+    return result.affectedRows > 0;
+  } catch (err) {
+    console.error("Profile update error:", err.message);
+    return false;
+  }
+};
+
+/* ===============================
    EXPORTS
 ================================= */
 
@@ -369,6 +431,9 @@ export default {
   generateResetToken,
   generateAccessToken,
   generateRefreshToken,
+
+  getProfileById,
+  updateProfileById,
 
   verifyLoginToken,
 

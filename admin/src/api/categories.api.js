@@ -18,3 +18,4 @@ export const toggleCategoryStatusApi = (id, status) =>
 
 export const deleteCategoryApi = (id) =>
     api.delete(`/categories/${id}`);
+

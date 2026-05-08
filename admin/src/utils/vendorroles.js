@@ -7,14 +7,17 @@ import {
     CreditCard,
     Receipt,
     Users,
-    Smartphone
+    Smartphone,
+    MessageSquare
 } from 'lucide-react';
 
 export const menuItems = [
     { name: "Dashboard", key: "DASHBOARD", icon: LayoutDashboard, path: "/", description: "Overview, analytics and reports" },
 
     { name: "Products", key: "VENDOR_PRODUCTS", icon: Package, path: "/vendor-products", group: "PRODUCT MANAGEMENT", description: "Manage products" },
+    { name: "Product Reviews", key: "VENDOR_REVIEWS", icon: MessageSquare, path: "/vendor-reviews", group: "PRODUCT MANAGEMENT", description: "View feedback" },
     { name: "Orders", key: "VENDOR_ORDERS", icon: ShoppingBag, path: "/vendor-orders", group: "PRODUCT MANAGEMENT", description: "Track and manage orders" },
+    { name: "Returns", key: "VENDOR_RETURNS", icon: Package, path: "/vendor-returns", group: "PRODUCT MANAGEMENT", description: "Manage returned products" },
 
     { name: "Customers", key: "CUSTOMERS", icon: Users, path: "/vendor-customers", group: "CUSTOMERS", description: "Manage customer accounts" },
     

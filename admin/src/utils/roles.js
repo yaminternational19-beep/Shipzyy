@@ -21,7 +21,8 @@ import {
     BellRing,
     HelpCircle,
     UserCheck,
-    Image as ImageIcon
+    Image as ImageIcon,
+    MessageSquare
 } from 'lucide-react';
 
 export const menuItems = [
@@ -39,6 +40,7 @@ export const menuItems = [
 
 
     { name: "Products", key: "PRODUCTS", icon: Package, path: "/products", group: "PRODUCT MANAGEMENT", description: "Manage catalogue and item stock" },
+    { name: "Reviews", key: "REVIEWS", icon: MessageSquare, path: "/reviews", group: "PRODUCT MANAGEMENT", description: "Manage customer reviews and feedback" },
     { name: "Orders", key: "ORDERS", icon: ShoppingBag, path: "/orders", group: "PRODUCT MANAGEMENT", description: "Track and manage customer orders" },
     { name: "Reports", key: "REPORTS", icon: BarChart3, path: "/reports", group: "PRODUCT MANAGEMENT", description: "View system reports" },
 
@@ -54,7 +56,8 @@ export const menuItems = [
     { name: "Refunds", key: "REFUNDS", icon: Undo2, path: "/refunds", group: "SUPPORT", description: "Manage customer refunds" },
 
     { name: "Payouts", key: "PAYOUTS", icon: CreditCard, path: "/payouts", group: "FINANCE", description: "Manage vendor payouts" },
-    { name: "Invoices", key: "INVOICES", icon: Receipt, path: "/invoices", group: "FINANCE", description: "Manage system invoices" },
+    { name: "Vendor Invoices", key: "VENDOR_INVOICES", icon: Receipt, path: "/invoices/vendor", group: "FINANCE", description: "Manage vendor invoices" },
+    { name: "Customer Invoices", key: "CUSTOMER_INVOICES", icon: Receipt, path: "/invoices/customer", group: "FINANCE", description: "Manage customer invoices" },
 
     { name: "Manage Content", key: "MANAGE_CONTENT", icon: FileText, path: "/settings/manage-content", group: "SETTINGS" },
     { name: "Announcements", key: "ANNOUNCEMENTS", icon: BellRing, path: "/settings/announcements", group: "SETTINGS" },

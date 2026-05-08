@@ -28,4 +28,10 @@ export const resendOtpApi = (data) =>
 export const logoutApi = (data) =>
     api.post("/auth/logout", data);
 
+export const getProfileApi = () =>
+    api.get("/auth/profile");
+
+export const updateProfileApi = (data) =>
+    api.put("/auth/profile", data);
+
 
