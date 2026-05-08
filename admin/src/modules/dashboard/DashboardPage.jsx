@@ -5,6 +5,7 @@ import Toast from '../../components/common/Toast/Toast';
 
 // Role-based dashboards
 import SuperAdminDashboard from './dashboards/SuperAdminDashboard';
+import SubAdminDashboard from './dashboards/SubAdminDashboard';
 import AdminDashboard from './dashboards/AdminDashboard';
 import VendorOwnerDashboard from './dashboards/VendorOwnerDashboard';
 import CommonDashboard from './dashboards/CommonDashboard';
@@ -39,8 +40,9 @@ const DashboardPage = () => {
 
         switch (userRole) {
             case 'SUPER_ADMIN':
-            case 'SUB_ADMIN':
                 return <SuperAdminDashboard ref={dashboardRef} />;
+            case 'SUB_ADMIN':
+                return <SubAdminDashboard />;
             case 'ADMIN':
                 return <AdminDashboard />;
             case 'SUPPORT_AGENT':
