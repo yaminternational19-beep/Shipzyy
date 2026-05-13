@@ -1,13 +1,29 @@
 :root {
+    --profile-primary: #6366f1;
+    --profile-primary-light: #818cf8;
+    --profile-primary-dark: #4f46e5;
     --profile-orange: #ff5a1f;
     --profile-orange-hover: #e64a10;
-    --profile-bg: var(--bg-app);
-    --profile-sidebar-bg: var(--bg-sidebar);
-    --profile-input-bg: var(--bg-card);
-    --profile-text-main: var(--text-primary);
-    --profile-text-muted: var(--text-secondary);
-    --profile-border: var(--border-color);
-    --profile-shadow: var(--shadow-sm);
+    --profile-bg: #f8fafc;
+    --profile-sidebar-bg: #ffffff;
+    --profile-card-bg: #ffffff;
+    --profile-input-bg: #ffffff;
+    --profile-text-main: #0f172a;
+    --profile-text-muted: #64748b;
+    --profile-border: #e2e8f0;
+    --profile-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --profile-glass: rgba(255, 255, 255, 0.7);
+}
+
+[data-theme='dark'] {
+    --profile-bg: #0f172a;
+    --profile-sidebar-bg: #1e293b;
+    --profile-card-bg: #1e293b;
+    --profile-input-bg: #334155;
+    --profile-text-main: #f1f5f9;
+    --profile-text-muted: #94a3b8;
+    --profile-border: #334155;
+    --profile-glass: rgba(30, 41, 59, 0.7);
 }
 
 .profile-page-wrapper {
@@ -107,16 +123,20 @@
 }
 
 .profile-avatar-glow {
-    width: 120px;
-    height: 120px;
+    width: 140px;
+    height: 140px;
     border-radius: 50%;
-    background: #ffeb3b;
-    /* Yellow background like image */
+    background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899);
     display: flex;
     justify-content: center;
     align-items: center;
     padding: 4px;
-    box-shadow: 0 10px 20px rgba(255, 235, 59, 0.2);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    transition: transform 0.3s ease;
+}
+
+.profile-avatar-glow:hover {
+    transform: scale(1.02);
 }
 
 .profile-avatar-img {
@@ -124,7 +144,7 @@
     height: 100%;
     border-radius: 50%;
     object-fit: cover;
-    border: 3px solid #fff;
+    border: 4px solid var(--profile-card-bg);
 }
 
 .profile-avatar-edit {
@@ -171,6 +191,12 @@
 /* Form Styling */
 .profile-form-container {
     margin-top: var(--spacing-2xl);
+    background: var(--profile-card-bg);
+    padding: var(--spacing-2xl);
+    border-radius: var(--border-radius-xl);
+    border: 1px solid var(--profile-border);
+    box-shadow: var(--profile-shadow);
+    backdrop-filter: blur(8px);
 }
 
 .profile-form-row {
@@ -197,17 +223,18 @@
     background: var(--profile-input-bg);
     border: 1px solid var(--profile-border);
     padding: 14px 20px;
-    border-radius: var(--border-radius-md);
+    border-radius: 12px;
     font-size: var(--font-size-base);
     color: var(--profile-text-main);
-    transition: all var(--transition-normal);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.01);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
 .profile-modern-input:focus {
     outline: none;
-    border-color: #e0e0e0;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.03);
+    border-color: var(--profile-primary);
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+    background: var(--profile-card-bg);
 }
 
 .password-toggle-btn {
@@ -303,6 +330,51 @@
 
 .profile-main-content {
     animation: fadeInSlide 0.6s ease-out;
+}
+
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.status-approved {
+    background: rgba(99, 102, 241, 0.1);
+    color: #6366f1;
+    border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.status-live {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.status-blocked {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.permission-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.permission-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+    background: white !important;
+    border-color: var(--profile-primary) !important;
+}
+
+[data-theme='dark'] .permission-card:hover {
+    background: var(--profile-input-bg) !important;
 }
 
 @media (max-width: 900px) {

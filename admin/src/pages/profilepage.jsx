@@ -17,7 +17,7 @@ import {
     CheckCircle,
     AlertCircle,
     Download,
-    Check,    
+    Check,
     Eye,
     EyeOff
 } from "lucide-react";
@@ -30,6 +30,7 @@ import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
 import { menuItems as adminModules } from "../utils/roles";
 import { menuItems as vendorModules } from "../utils/vendorroles";
+import { exportProfileToPDF, exportProfileToExcel } from "./profile.service";
 
 const ProfilePage = () => {
     const [userData, setUserData] = useState({
@@ -63,7 +64,7 @@ const ProfilePage = () => {
             name: item.name,
             desc: item.description || `Access to ${item.name} module`
         }));
-        
+
         // Filter out duplicates based on ID
         return Array.from(new Map(mapped.map(m => [m.id, m])).values());
     }, [userData.role]);
@@ -138,6 +139,14 @@ const ProfilePage = () => {
         showToast(message, type);
     };
 
+    const handleDownload = (type) => {
+        if (type === 'pdf') {
+            exportProfileToPDF(userData, modules);
+        } else if (type === 'excel') {
+            exportProfileToExcel(userData, modules);
+        }
+    };
+
     return (
         <div className="profile-page-wrapper">
             {toast.show && (
@@ -175,7 +184,11 @@ const ProfilePage = () => {
                     </div>
 
                     <div className="profile-page-actions">
-                        <ExportActions selectedCount={1} onExport={handleExportProfile} />
+                        <ExportActions
+                            selectedCount={1}
+                            onExport={handleExportProfile}
+                            onDownload={handleDownload}
+                        />
                     </div>
                 </div>
 
@@ -261,30 +274,6 @@ const ProfilePage = () => {
                         </div>
                     </div>
 
-                    {/* Address Section */}
-                    {/* <div className="section-header" style={{ marginTop: '40px' }}>Address Details</div> */}
-                    {/* <div className="profile-form-row">
-                        <div className="profile-input-group">
-                            <label>Location / City</label>
-                            <input
-                                type="text"
-                                className="profile-modern-input"
-                                value={userData.location}
-                                placeholder="e.g. New York, USA"
-                                onChange={(e) => setUserData({ ...userData, location: e.target.value })}
-                            />
-                        </div>
-                        <div className="profile-input-group">
-                            <label>Postal Code</label>
-                            <input
-                                type="text"
-                                className="profile-modern-input"
-                                value={userData.postalCode}
-                                onChange={(e) => setUserData({ ...userData, postalCode: e.target.value })}
-                            />
-                        </div>
-                    </div> */}
-
                     {/* Change Password Section */}
                     <div className="section-header" style={{ marginTop: '40px' }}>Security Settings</div>
 
@@ -345,6 +334,7 @@ const ProfilePage = () => {
                         {modules.map(module => (
                             <div
                                 key={module.id}
+                                className="permission-card"
                                 style={{
                                     display: 'flex',
                                     alignItems: 'center',
@@ -353,7 +343,6 @@ const ProfilePage = () => {
                                     borderRadius: '12px',
                                     background: isModuleActive(module.id) ? '#f5f3ff' : '#f8fafc',
                                     border: isModuleActive(module.id) ? '1px solid #c7d2fe' : '1px solid #e2e8f0',
-                                    transition: 'all 0.2s ease',
                                     opacity: isModuleActive(module.id) ? 1 : 0.6
                                 }}
                             >
@@ -384,9 +373,11 @@ const ProfilePage = () => {
                         ))}
                     </div>
 
-                    <button className="profile-save-btn" onClick={handleSave} style={{ marginTop: '48px' }}>
-                        Save Profile Changes
-                    </button>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '48px' }}>
+                        <button className="profile-save-btn" onClick={handleSave} style={{ margin: 0 }}>
+                            Save Profile Changes
+                        </button>
+                    </div>
                 </div>
             </main>
         </div>
