@@ -10,23 +10,20 @@ function Category({ data = [], onSelect, activeCategoryId }) {
   if (validCategories.length === 0) return null;
 
   return (
-    <section className="w-full py-10 lg:py-14">
-      {/* Header Section */}
-      <div className="flex justify-between items-end mb-8 px-2">
+    <section className="w-full py-8 lg:py-12">
+      <div className="flex justify-between items-end mb-8 px-4 sm:px-6">
         <div>
-          <h2 className="text-2xl sm:text-4xl font-black text-[var(--secondary)] tracking-tight underline decoration-[var(--success)] underline-offset-8">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[var(--secondary)] tracking-tight underline decoration-[var(--success)] decoration-4 underline-offset-8">
             Categories
           </h2>
-          <p className="text-[13px] sm:text-md text-[var(--success)] font-bold uppercase tracking-[4px] mt-2">
+          <p className="text-[12px] sm:text-[13px] text-[var(--success)] font-bold uppercase tracking-widest mt-3">
             Premium Selection
           </p>
         </div>
-      
       </div>
 
-      {/* Scrollable Container */}
       <div
-        className="flex gap-6 sm:gap-8 lg:gap-10 overflow-x-auto pb-8 scrollbar-hide snap-x"
+        className="flex gap-6 sm:gap-8 lg:gap-10 overflow-x-auto pb-8 scrollbar-hide snap-x px-4 sm:px-6"
         ref={scrollRef}
       >
         {validCategories.map((item) => {
@@ -35,12 +32,11 @@ function Category({ data = [], onSelect, activeCategoryId }) {
           return (
             <div
               key={item.id}
-              className="flex flex-col items-center gap-4 cursor-pointer group min-w-[135px] sm:min-w-[160px] lg:min-w-[180px] snap-center"
+              className="flex flex-col items-center gap-4 cursor-pointer group min-w-[100px] sm:min-w-[130px] lg:min-w-[160px] snap-center"
               onClick={() => onSelect && onSelect(item)}
             >
-              {/* Circle UI */}
               <div 
-                className={`relative w-32 h-32 sm:w-36 sm:h-36 lg:w-44 lg:h-44 rounded-full overflow-hidden border-[5px] transition-all duration-500 shadow-[var(--shadow-md)] bg-[var(--card-bg)] ${
+                className={`relative w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 rounded-full overflow-hidden border-[4px] transition-all duration-500 shadow-[var(--shadow-md)] bg-[var(--card-bg)] ${
                   isActive 
                     ? "border-[var(--success)] scale-105" 
                     : "border-[var(--glass-border)] group-hover:border-[var(--success)]" 
@@ -60,11 +56,10 @@ function Category({ data = [], onSelect, activeCategoryId }) {
                 }`}></div>
               </div>
 
-              {/* Label */}
               <span 
-                className={`text-[13px] lg:text-[14px] font-black uppercase tracking-widest text-center transition-all duration-300 ${
+                className={`text-[11px] sm:text-[12px] lg:text-[13px] font-black uppercase tracking-widest text-center transition-all duration-300 ${
                   isActive 
-                    ? "text-[var(--success)] scale-110" 
+                    ? "text-[var(--success)] scale-105" 
                     : "text-[var(--secondary)] group-hover:text-[var(--success)]" 
                 }`}
               >

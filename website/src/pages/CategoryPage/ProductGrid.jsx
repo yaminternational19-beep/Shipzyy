@@ -1,14 +1,26 @@
 import React, { useMemo } from "react";
-import { motion,AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import Card from "../../components/Product/Productcard/Productcard";
 
-const ProductGrid = ({ products, activeSub, clearFilters, sortOrder, setSortOrder }) => {
+const ProductGrid = ({ products, activeCategory, activeSub, clearFilters, sortOrder, setSortOrder }) => {
 
   const processedItems = useMemo(() => {
     const uniqueMap = new Map();
+    
     products.forEach(item => {
-      if (item.id) uniqueMap.set(item.id, item);
+      const activeCatClean = activeCategory ? activeCategory.trim().toLowerCase() : "";
+      const itemCatClean = item.category ? item.category.trim().toLowerCase() : "";
+      const isCategoryMatch = !activeCategory || itemCatClean === activeCatClean;
+
+      const activeSubClean = activeSub ? activeSub.trim().toLowerCase() : "";
+      const itemSubClean = item.subCategory ? item.subCategory.trim().toLowerCase() : "";
+      const isSubMatch = !activeSub || activeSub === "All" || itemSubClean === activeSubClean;
+
+      if (item.id && isCategoryMatch && isSubMatch) {
+        uniqueMap.set(item.id, item);
+      }
     });
+
     let uniqueList = Array.from(uniqueMap.values());
 
     if (sortOrder === "price-low") {
@@ -21,11 +33,10 @@ const ProductGrid = ({ products, activeSub, clearFilters, sortOrder, setSortOrde
       );
     }
     return uniqueList;
-  }, [products, sortOrder]);
+  }, [products, sortOrder, activeCategory, activeSub]); 
 
   return (
     <main className="w-full">
-      {/* Header Section */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 pb-6 border-b border-white/10">
         <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tighter italic uppercase">
           {activeSub === "All" ? "All Products" : activeSub}
@@ -47,7 +58,6 @@ const ProductGrid = ({ products, activeSub, clearFilters, sortOrder, setSortOrde
         </div>
       </div>
 
-      {/* 2. Animated Grid Section */}
       {processedItems.length > 0 ? (
         <motion.div 
           layout 

@@ -84,7 +84,6 @@ function VendorRegister() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-50 to-indigo-50">
-      {/* 🔥 WIDTH AUR PADDING ADJUSTED YAHAN HAI */}
       <div className="w-full max-w-[650px] md:max-w-[700px] bg-cardBg rounded-2xl shadow-float border border-borderMain p-6 md:p-8 animate-fade-in relative">
         
         {/* Header */}
@@ -128,7 +127,7 @@ function VendorRegister() {
           })}
         </div>
 
-        {/* Dynamic Form Content (Slightly reduced min-height) */}
+        {/* Dynamic Form Content */}
         <div className="min-h-[220px] mb-5">
           {renderStepContent()}
         </div>

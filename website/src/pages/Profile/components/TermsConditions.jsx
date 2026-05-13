@@ -1,47 +1,51 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { getContentDetails } from "../../../utils/contentApi";
 
 function TermsConditions() {
+  const [content, setContent] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchContent = async () => {
+      try {
+        const res = await getContentDetails();
+        if (res && res.success && res.data && res.data.records) {
+          const record = res.data.records.find(item => item.page_key === "termsConditions");
+          setContent(record?.content || null);
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchContent();
+  }, []);
+
   return (
-    <div className="static-page">
-      <h2 className="section-title">Terms & Conditions</h2>
-      <p className="section-subtitle">Last Updated: February 2026</p>
+    <div className="p-6 md:p-8 bg-[var(--card-bg)] rounded-[var(--radius-xl)] border border-[var(--border)] shadow-[var(--shadow-sm)] w-full h-[414px] flex flex-col overflow-hidden">
+      <div className="mb-6 pb-4 border-b border-[var(--border)] relative shrink-0">
+        <h2 className="text-2xl font-black bg-[image:var(--brand-gradient)] bg-clip-text text-transparent inline-block">
+          Terms & Conditions
+        </h2>
+        <div className="absolute bottom-[-1px] left-0 w-16 h-[3px] bg-[image:var(--brand-gradient)] rounded-full"></div>
+      </div>
       
-      <div className="static-content">
-        <h4>1. Acceptance of Terms</h4>
-        <p>
-          By accessing and using the Shipzyy platform, you accept and agree to be bound by 
-          the terms and provisions of this agreement. If you do not agree to abide by these 
-          terms, please do not use our service.
-        </p>
-        
-        <h4>2. User Accounts</h4>
-        <p>
-          To use certain features of the platform, you must register for an account. You are 
-          responsible for maintaining the confidentiality of your account information, including 
-          your password, and for all activity that occurs under your account.
-        </p>
-        
-        <h4>3. Products and Pricing</h4>
-        <p>
-          All product prices are subject to change without prior notice. While we strive to 
-          provide accurate pricing and product descriptions, typographical errors may occur. 
-          Shipzyy reserves the right to cancel any orders placed for products listed at an 
-          incorrect price.
-        </p>
-
-        <h4>4. Delivery & Fulfillment</h4>
-        <p>
-          Delivery times are estimates and may vary due to traffic, weather, or other unforeseen 
-          circumstances. We are not liable for any delays. However, our support team will keep 
-          you updated in case of significant disruptions.
-        </p>
-
-        <h4>5. Returns and Refunds</h4>
-        <p>
-          If you are unsatisfied with the quality of a product, you may request a return or 
-          refund within 24 hours of delivery. The item must be unused and in its original 
-          packaging. Refunds will be processed to the original payment method or your Shipzyy wallet.
-        </p>
+      <div className="flex-1 overflow-y-auto pr-2 scrollbar-hide">
+        {loading ? (
+          <div className="h-full flex justify-center items-center">
+            <div className="w-8 h-8 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        ) : content ? (
+          <div className="text-[14px] text-[var(--text-light)] leading-relaxed prose prose-slate max-w-none prose-headings:text-[var(--primary)] prose-a:text-[var(--primary)]" dangerouslySetInnerHTML={{ __html: content }} />
+        ) : (
+          <div className="text-[14px] text-[var(--text-light)] leading-relaxed bg-[var(--bg-soft)] p-5 rounded-2xl border border-[var(--border)]">
+            <h4 className="text-lg font-black text-[var(--primary)] mb-2 flex items-center gap-2">
+              📜 Platform Rules
+            </h4>
+            <p>By using Shipzyy, you agree to our terms of service.</p>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,19 +1,54 @@
-// Example: PrivacyPolicy.jsx
+import React, { useState, useEffect } from "react";
+import { getContentDetails } from "../../../utils/contentApi";
+
 function PrivacyPolicy() {
+  const [content, setContent] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchContent = async () => {
+      try {
+        const res = await getContentDetails();
+        if (res && res.success && res.data && res.data.records) {
+          const record = res.data.records.find(item => item.page_key === "privacyPolicy");
+          setContent(record?.content || null);
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchContent();
+  }, []);
+
   return (
-    <div className="static-page">
-      <h2 className="section-title">Privacy Policy</h2>
-      <div className="static-content">
-        <h4>1. Information We Collect</h4>
-        <p>We collect information to provide better services to our users. This includes your name, delivery address, and contact details when you register or place an order.</p>
-        
-        <h4>2. How We Use Information</h4>
-        <p>Your information is used strictly to process orders, improve delivery times, and enhance your shopping experience on our platform.</p>
-        
-        <h4>3. Data Security</h4>
-        <p>We implement robust security measures to protect your personal data from unauthorized access or disclosure.We implement robust security measures to protect your personal data from unauthorized access or disclosure.We implement robust security measures to protect your personal data from unauthorized access or disclosure.We implement robust security measures to protect your personal data from unauthorized access or disclosure.</p>
+    <div className="p-6 md:p-8 bg-[var(--card-bg)] rounded-[var(--radius-xl)] border border-[var(--border)] shadow-[var(--shadow-sm)] w-full h-[414px] flex flex-col overflow-hidden">
+      <div className="mb-6 pb-4 border-b border-[var(--border)] relative shrink-0">
+        <h2 className="text-2xl font-black bg-[image:var(--brand-gradient)] bg-clip-text text-transparent inline-block">
+          Privacy Policy
+        </h2>
+        <div className="absolute bottom-[-1px] left-0 w-16 h-[3px] bg-[image:var(--brand-gradient)] rounded-full"></div>
+      </div>
+      
+      <div className="flex-1 overflow-y-auto pr-2 scrollbar-hide">
+        {loading ? (
+          <div className="h-full flex justify-center items-center">
+            <div className="w-8 h-8 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        ) : content ? (
+          <div className="text-[14px] text-[var(--text-light)] leading-relaxed prose prose-slate max-w-none prose-headings:text-[var(--primary)] prose-a:text-[var(--primary)]" dangerouslySetInnerHTML={{ __html: content }} />
+        ) : (
+          <div className="text-[14px] text-[var(--text-light)] leading-relaxed bg-[var(--bg-soft)] p-5 rounded-2xl border border-[var(--border)]">
+            <h4 className="text-lg font-black text-[var(--primary)] mb-2 flex items-center gap-2">
+              🔒 Information Security
+            </h4>
+            <p>Your privacy is our priority. We collect data only to serve you better.</p>
+          </div>
+        )}
       </div>
     </div>
   );
 }
+
 export default PrivacyPolicy;

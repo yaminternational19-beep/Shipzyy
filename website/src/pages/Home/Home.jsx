@@ -49,7 +49,7 @@ function Home() {
         if (pageNo === 1 && categories.length > 0) setSelectedCategory(categories[0]);
       }
     } catch (error) {
-      console.error("Failed to fetch data:", error);
+      console.error(error);
     } finally {
       setLoading(false);
       setLoadMoreLoading(false);
@@ -58,7 +58,7 @@ function Home() {
 
   useEffect(() => {
     fetchHomeData(1);
-  }, [user]);
+  }, []); 
 
   useEffect(() => {
     if (apiData.banners.length === 0) return;
@@ -96,7 +96,12 @@ function Home() {
     }
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-[var(--success)] bg-[var(--bg)] font-bold animate-pulse tracking-widest text-xl">LOADING SHIPZZY...</div>;
+  if (loading) return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--bg)] gap-4">
+      <div className="w-12 h-12 border-4 border-[var(--success)] border-t-transparent rounded-full animate-spin"></div>
+      <div className="text-[var(--success)] font-bold animate-pulse tracking-widest text-xl">LOADING SHIPZZY...</div>
+    </div>
+  );
 
   return (
     <div className="w-full min-h-screen pb-16 bg-transparent overflow-x-hidden">
@@ -112,7 +117,7 @@ function Home() {
         </div>
       </section>
 
-      <div className="max-w-[1400px] xl:max-w-[1600px] mx-auto px-5">
+      <div className="max-w-[1400px] xl:max-w-[1600px] mx-auto px-4 sm:px-6">
         
         <Category 
           data={apiData.categories} 
@@ -124,10 +129,10 @@ function Home() {
           <div id="subcategory-section" className="animate-fade-in py-10">
             <div className="flex justify-between items-end mb-8 px-2">
               <div>
-                <h2 className="text-2xl sm:text-4xl font-black text-[var(--secondary)] tracking-tight underline decoration-[var(--success)] underline-offset-8">
+                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[var(--secondary)] tracking-tight underline decoration-[var(--success)] decoration-4 underline-offset-8">
                   {selectedCategory.name}
                 </h2>
-                <p className="text-[13px] sm:text-md text-[var(--success)] font-bold uppercase tracking-[4px] mt-2">
+                <p className="text-[12px] sm:text-[13px] text-[var(--success)] font-bold uppercase tracking-widest mt-3">
                   Discover
                 </p>
               </div>
@@ -151,7 +156,7 @@ function Home() {
                 <div 
                   key={sub.id} 
                   onClick={() => handleSubSelect(sub.name)} 
-                  className="group min-w-[180px] sm:min-w-[220px] aspect-[3/4] relative rounded-[32px] overflow-hidden cursor-pointer snap-start border border-[var(--border)] hover:border-[var(--success)] transition-all duration-500 shadow-[var(--shadow-md)] bg-[var(--card-bg)]"
+                  className="group min-w-[160px] sm:min-w-[200px] lg:min-w-[220px] aspect-[3/4] relative rounded-2xl sm:rounded-[32px] overflow-hidden cursor-pointer snap-start border border-[var(--border)] hover:border-[var(--success)] transition-all duration-500 shadow-[var(--shadow-md)] bg-[var(--card-bg)]"
                 >
                   <img src={sub.image} alt={sub.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                   <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/80"></div>
@@ -169,13 +174,13 @@ function Home() {
           </div>
         )}
 
-        <section className="my-20">
+        <section className="my-16 sm:my-20">
           <div className="flex justify-between items-end mb-10 px-2">
             <div>
-              <h2 className="text-2xl sm:text-4xl font-black text-[var(--secondary)] tracking-tight underline decoration-[var(--success)] underline-offset-8">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[var(--secondary)] tracking-tight underline decoration-[var(--success)] decoration-4 underline-offset-8">
                 Best Sellers
               </h2>
-              <p className="text-[13px] sm:text-md text-[var(--success)] font-bold uppercase tracking-[4px] mt-2">
+              <p className="text-[12px] sm:text-[13px] text-[var(--success)] font-bold uppercase tracking-widest mt-3">
                 Top Picks
               </p>
             </div>
@@ -186,18 +191,18 @@ function Home() {
               <button 
                 onClick={handleLoadMore}
                 disabled={loadMoreLoading}
-                className="px-10 py-4 bg-[var(--bg-soft)] border border-[var(--success)] text-[var(--success)] font-black rounded-full hover:bg-[var(--success)] hover:text-[var(--secondary)] transition-all duration-300 disabled:opacity-50 flex items-center gap-3 shadow-[var(--shadow-sm)]"
+                className="px-8 sm:px-10 py-3 sm:py-4 bg-[var(--bg-soft)] border border-[var(--success)] text-[var(--success)] font-black rounded-full hover:bg-[var(--success)] hover:text-[var(--secondary)] transition-all duration-300 disabled:opacity-50 flex items-center gap-3 shadow-[var(--shadow-sm)] text-[12px] sm:text-[14px]"
               >
                 {loadMoreLoading ? "LOADING..." : "VIEW MORE PRODUCTS"}
-                {!loadMoreLoading && <span className="text-xl">↓</span>}
+                {!loadMoreLoading && <span className="text-lg sm:text-xl">↓</span>}
               </button>
             </div>
           )}
         </section>
 
-        <div className="w-full my-24 flex justify-center px-2">
+        <div className="w-full my-16 sm:my-24 flex justify-center px-2">
           <a href="https://play.google.com/store/apps" target="_blank" rel="noreferrer" className="w-full max-w-[1200px]">
-            <img src={app} alt="Download App" className="w-full rounded-[40px] shadow-[var(--shadow-float)] object-cover" />
+            <img src={app} alt="Download App" className="w-full rounded-2xl sm:rounded-[40px] shadow-[var(--shadow-md)] object-cover" />
           </a>
         </div>
       </div>

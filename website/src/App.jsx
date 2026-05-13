@@ -16,16 +16,19 @@ import Notfound from "./pages/Not-found/Not-found";
 
 import WishlistPage from "./pages/wishlist/WishlistPage";
 import CartPage from "./pages/cart/CartPage";
-import CheckoutPage from "./pages/cart/CheckoutPage";
-import OrderHistory from "./pages/cart/OrderHistory";
+import CheckoutPage from "./pages/orders/CheckoutPage";
+import OrderHistory from "./pages/orders/OrderHistory";
 import Profile from "./pages/Profile/Profile";
 import { useState,useEffect } from "react";
 import { CartProvider } from "./pages/cart/CartContext";
 import { WishlistProvider } from "./pages/wishlist/WishlistContext";
-import { OrdersProvider } from "./pages/cart/OrdersContext";
+import { OrdersProvider } from "./pages/orders/OrdersContext";
 import { AuthProvider } from "./context/AuthContext";
 import ScrollToTop from "./components/common/ScrollToTop";
-import OrderSuccess from "./pages/cart/OrderSuccess";
+import OrderSuccess from "./pages/orders/OrderSuccess";
+import OrderDetails from './pages/orders/OrderDetails'
+import SearchPage from "./components/common/HeaderSearch/SearchPage";
+import LegalPage from "./pages/Help/LegalPage";
 
 function App() {
  const [isOffline, setIsOffline] = useState(!navigator.onLine);
@@ -114,15 +117,19 @@ function App() {
                   <Route path="/cart" element={<CartPage />} />
                   <Route path="/checkout" element={<CheckoutPage />} />
                   <Route path="/orders" element={<OrderHistory />} />
+                  <Route path="/orders/:id" element={<OrderDetails />} />
                   <Route path="/wishlist" element={<WishlistPage />} />
+                  <Route path="/info/:type" element={<LegalPage />} />
                   <Route path="/help" element={<Help />} />
 
-                  {/* 🔥 Vendor moved here */}
+                  {/*Vendor moved here */}
                   <Route path="/vendor-register" element={<VendorRegister />} />
 
                 </Route>
 
                 <Route path="*" element={<Notfound />} />
+                                  <Route path="/search" element={<SearchPage/>} />
+
                 <Route path="/order-success" element={
                   <OrderSuccess/>
                 }/>

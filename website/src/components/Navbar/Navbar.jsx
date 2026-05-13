@@ -8,10 +8,12 @@ import CallOutlinedIcon from "@mui/icons-material/CallOutlined";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import PersonOutlineRoundedIcon from "@mui/icons-material/PersonOutlineRounded";
 import PersonRoundedIcon from "@mui/icons-material/PersonRounded"; 
+import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
+import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
+
 import { useWishlist } from "../../pages/wishlist/WishlistContext";
 import { useCart } from "../../pages/cart/CartContext";
 import { useAuth } from "../../context/AuthContext";
-import { useOrders } from "../../pages/cart/OrdersContext";
 import logo from "../../assets/logonew.jpeg";
 import HeaderSearch from "../common/HeaderSearch/HeaderSearch";
 
@@ -20,9 +22,9 @@ function Navbar() {
   const isLoggedIn = !!user;
   const { getCartCount } = useCart();
   const { wishlist } = useWishlist();
-  const { orders } = useOrders();
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -36,11 +38,19 @@ function Navbar() {
   }, []);
 
   const displayCartCount = isLoggedIn ? getCartCount() : 0;
+  const profileImage = user?.profile_image || user?.avatar;
 
   const navLinkClasses = ({ isActive }) =>
     `flex items-center gap-2 px-5 py-2.5 rounded-[var(--radius-pill)] transition-all duration-300 font-extrabold text-base ${
       isActive 
       ? "bg-[var(--primary)] text-[var(--secondary)] shadow-[var(--shadow-sm)] scale-105" 
+      : "text-[var(--text-muted)] hover:bg-[var(--bg-soft)] hover:text-[var(--primary)]"
+    }`;
+
+  const mobileNavLinkClasses = ({ isActive }) =>
+    `flex items-center gap-3 px-5 py-3 rounded-[var(--radius-lg)] transition-all duration-300 font-extrabold text-base w-full ${
+      isActive 
+      ? "bg-[var(--primary)] text-[var(--secondary)] shadow-[var(--shadow-sm)]" 
       : "text-[var(--text-muted)] hover:bg-[var(--bg-soft)] hover:text-[var(--primary)]"
     }`;
 
@@ -62,28 +72,23 @@ function Navbar() {
               <span>Home</span>
             </NavLink>
 
-            {isLoggedIn && (
-              <>
-                <NavLink to="/wishlist" className={navLinkClasses}>
-                  <div className="relative flex items-center">
-                    <FavoriteBorderIcon fontSize="small" />
-                    {wishlist?.length > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-[var(--danger)] w-2 h-2 rounded-full border border-[var(--card-bg)] animate-pulse"></span>
-                    )}
-                  </div>
-                  <span>Wishlist</span>
-                </NavLink>
+            <NavLink to="/wishlist" className={navLinkClasses}>
+              <div className="relative flex items-center">
+                <FavoriteBorderIcon fontSize="small" />
+                {wishlist?.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-[var(--danger)] w-2 h-2 rounded-full border border-[var(--card-bg)] animate-pulse"></span>
+                )}
+              </div>
+              <span>Wishlist</span>
+            </NavLink>
 
-                <NavLink to="/orders" className={navLinkClasses}>
-                  <div className="relative flex items-center">
-                    <ShoppingBagOutlinedIcon fontSize="small" />
-                    {orders?.length > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-[var(--primary-hover)] w-2 h-2 rounded-full border border-[var(--card-bg)]"></span>
-                    )}
-                  </div>
-                  <span>Orders</span>
-                </NavLink>
-              </>
+            {isLoggedIn && (
+              <NavLink to="/orders" className={navLinkClasses}>
+                <div className="relative flex items-center">
+                  <ShoppingBagOutlinedIcon fontSize="small" />
+                </div>
+                <span>Orders</span>
+              </NavLink>
             )}
 
             <NavLink to="/cart" className={navLinkClasses}>
@@ -98,37 +103,60 @@ function Navbar() {
               <span>Cart</span>
             </NavLink>
 
-            <NavLink to="/help" className={navLinkClasses}>
-              <CallOutlinedIcon fontSize="small" />
-              <span>Help</span>
-            </NavLink>
+            {isLoggedIn && (
+              <NavLink to="/help" className={navLinkClasses}>
+                <CallOutlinedIcon fontSize="small" />
+                <span>Help</span>
+              </NavLink>
+            )}
           </nav>
 
           <div className="flex items-center gap-3">
+            
+            <button 
+              className="lg:hidden p-2 text-[var(--text-main)] hover:bg-[var(--bg-soft)] rounded-[var(--radius-md)] transition-all"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              {isMobileMenuOpen ? <CloseOutlinedIcon /> : <MenuOutlinedIcon />}
+            </button>
+
             <div className="relative" ref={dropdownRef}>
               {!isLoggedIn ? (
-                <Link to="/login" className="bg-[var(--primary)] text-[var(--secondary)] font-black px-8 py-3 rounded-[var(--radius-lg)] hover:bg-[var(--primary-hover)] transition-all shadow-[var(--shadow-md)] text-sm">
+                <Link to="/login" className="bg-[var(--primary)] text-[var(--secondary)] font-black px-6 md:px-8 py-2.5 md:py-3 rounded-[var(--radius-lg)] hover:bg-[var(--primary-hover)] transition-all shadow-[var(--shadow-md)] text-sm">
                   Login
                 </Link>
               ) : (
                 <div 
-                  className="w-12 h-12 rounded-[var(--radius-md)] bg-[var(--primary)] border border-[var(--glass-border)] cursor-pointer hover:scale-105 transition-all flex items-center justify-center shadow-[var(--shadow-md)]"
+                  className="w-10 h-10 md:w-12 md:h-12 rounded-[var(--radius-md)] bg-[var(--primary)] border border-[var(--glass-border)] cursor-pointer hover:scale-105 transition-all flex items-center justify-center shadow-[var(--shadow-md)] overflow-hidden"
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 >
-                  <PersonRoundedIcon className="text-[var(--secondary)] scale-110" />
+                  {profileImage ? (
+                    <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    <PersonRoundedIcon className="text-[var(--secondary)] scale-110" />
+                  )}
                 </div>
               )}
 
               {isDropdownOpen && (
-                <div className="absolute right-0 mt-5 w-72 bg-[var(--glass-dropdown)] border border-[var(--border)] rounded-[var(--radius-xl)] shadow-[var(--shadow-float)] p-2 animate-in fade-in zoom-in duration-200 z-[1100]">
+                <div className="absolute right-0 mt-5 w-72 bg-[var(--bg)] border border-[var(--border)] rounded-[var(--radius-xl)] shadow-[var(--shadow-float)] p-2 animate-in fade-in zoom-in duration-200 z-[1100]">
                   <div className="flex items-center gap-4 px-4 py-5 mb-2 bg-[var(--bg-soft)] rounded-[var(--radius-lg)]">
-                    <div className="w-12 h-12 rounded-full bg-[var(--primary)] flex items-center justify-center text-[var(--secondary)] shadow-[var(--shadow-sm)]">
-                      <PersonRoundedIcon fontSize="medium" />
+                    <div className="w-12 h-12 rounded-full bg-[var(--primary)] flex items-center justify-center text-[var(--secondary)] shadow-[var(--shadow-sm)] overflow-hidden">
+                     {profileImage ? (
+                        <img 
+                          src={`${profileImage}?t=${new Date().getTime()}`} 
+                          alt="Profile" 
+                          className="w-full h-full object-cover" 
+                          onError={(e) => { e.target.src = "https://via.placeholder.com/150"; }} 
+                        />
+                      ) : (
+                        <PersonRoundedIcon className="text-[var(--secondary)] scale-110" />
+                      )}
                     </div>
                     <div className="flex-1 overflow-hidden">
                       <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest leading-none mb-1">Account</p>
                       <p className="text-[var(--text-main)] font-black text-base truncate">
-                        {user?.phone || user?.name || "User"}
+                        {user?.name || user?.phone || "User"}
                       </p>
                     </div>
                   </div>
@@ -162,6 +190,51 @@ function Navbar() {
           </div>
         </div>
       </div>
+
+      {isMobileMenuOpen && (
+        <div className="lg:hidden absolute top-20 left-0 w-full bg-[var(--bg)] border-b border-[var(--border)] shadow-[var(--shadow-md)] px-4 py-4 z-[1050] flex flex-col gap-2">
+          <NavLink to="/" onClick={() => setIsMobileMenuOpen(false)} className={mobileNavLinkClasses}>
+            <HomeOutlinedIcon fontSize="small" />
+            <span>Home</span>
+          </NavLink>
+          
+          <NavLink to="/wishlist" onClick={() => setIsMobileMenuOpen(false)} className={mobileNavLinkClasses}>
+            <div className="relative flex items-center">
+              <FavoriteBorderIcon fontSize="small" />
+              {wishlist?.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-[var(--danger)] w-2 h-2 rounded-full animate-pulse"></span>
+              )}
+            </div>
+            <span>Wishlist</span>
+          </NavLink>
+
+          {isLoggedIn && (
+            <NavLink to="/orders" onClick={() => setIsMobileMenuOpen(false)} className={mobileNavLinkClasses}>
+              <ShoppingBagOutlinedIcon fontSize="small" />
+              <span>Orders</span>
+            </NavLink>
+          )}
+
+          <NavLink to="/cart" onClick={() => setIsMobileMenuOpen(false)} className={mobileNavLinkClasses}>
+            <div className="relative flex items-center">
+              <ShoppingCartOutlinedIcon fontSize="small" />
+              {displayCartCount > 0 && (
+                <span className="absolute -top-2 -right-3 bg-[var(--primary)] text-[var(--secondary)] text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-black">
+                  {displayCartCount}
+                </span>
+              )}
+            </div>
+            <span>Cart</span>
+          </NavLink>
+
+          {isLoggedIn && (
+            <NavLink to="/help" onClick={() => setIsMobileMenuOpen(false)} className={mobileNavLinkClasses}>
+              <CallOutlinedIcon fontSize="small" />
+              <span>Help</span>
+            </NavLink>
+          )}
+        </div>
+      )}
 
       <div className="bg-[var(--bg-soft)] py-3 border-t border-[var(--border)]">
         <div className="mx-auto max-w-[1600px] px-4 md:px-8">

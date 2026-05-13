@@ -10,11 +10,7 @@ const CategoryRow = ({ categories, activeCategory, onSelectCategory }) => {
 
   return (
     <div className="w-full mb-10 overflow-hidden px-4">
-      
-      {/*  Title & Back Button Section */}
       <div className="mb-10 flex flex-col sm:flex-row justify-between items-center sm:items-end gap-6 sm:gap-0">
-        
-        {/* Left Side: Title */}
         <div className="text-center sm:text-left">
           <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tighter italic uppercase">
             Shop by <span className="text-cyan-500">Category</span>
@@ -27,17 +23,15 @@ const CategoryRow = ({ categories, activeCategory, onSelectCategory }) => {
           </div>
         </div>
 
-        {/* Right Side: Back to Home Button */}
         <button 
           onClick={() => navigate("/")} 
           className="group flex items-center gap-2 bg-white hover:bg-cyan-500 border border-white/10 hover:border-cyan-500 text-black-400 hover:text-black px-6 py-3 rounded-full font-black uppercase tracking-widest text-[12px] sm:text-md transition-all duration-300 shadow-xl shrink-0"
         >
           <span className="text-lg leading-none mb-0.5 group-hover:-translate-x-1 transition-transform">←</span>
-         Back To Home
+          Back To Home
         </button>
       </div>
 
-      {/* Categories Scroll Row */}
       <div 
         className="flex gap-8 sm:gap-14 overflow-x-auto pb-8 snap-x scrollbar-hide"
         style={{ 

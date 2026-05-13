@@ -61,8 +61,11 @@ function LoginRegister() {
     setError(message);
   };
 
-const handleRequestOtp = async (e) => {
+  const handleRequestOtp = async (e) => {
     if (e) e.preventDefault(); 
+    
+    if (loading) return; 
+
     if (!formData.mobile || formData.mobile.length < 10) return triggerError("mobile", "Enter a valid mobile number");
     if (isRegister && !formData.name.trim()) return triggerError("name", "Enter your full name");
 
@@ -96,6 +99,7 @@ const handleRequestOtp = async (e) => {
       setLoading(false);
     }
   };
+
   const handleVendorChange = (e) => {
     setVendorData({ ...vendorData, [e.target.name]: e.target.value });
   };
@@ -115,12 +119,6 @@ const handleRequestOtp = async (e) => {
     }, 1000);
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleRequestOtp(e);
-    }
-  };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-5 bg-gradient-to-br from-slate-50 to-indigo-50">
@@ -157,14 +155,13 @@ const handleRequestOtp = async (e) => {
               )}
 
               {role === "user" || !isRegister ? (
-                <form onSubmit={handleRequestOtp} onKeyDown={handleKeyDown}>
+                <form onSubmit={handleRequestOtp}>
                   {isRegister && <InputComponent icon={PersonIcon} label="Full Name" name="name" value={formData.name} onChange={handleInputChange} error={fieldErrors.name} />}
 
                   <div className="flex flex-col gap-1 mb-3 relative z-50">
                     <label className="text-xs font-semibold text-[var(--text-light)] pl-1">Mobile Number</label>
                     <PhoneInput
                       country="in" value={formData.mobile} onChange={handleMobileChange}
-                      onKeyDown={handleKeyDown}
                       inputClass={`!w-full !h-12 !pl-[55px] !rounded-[var(--radius-md)] !border-2 !bg-[var(--bg-soft)] !text-sm transition-all focus:!border-[var(--primary)] focus:!bg-[var(--bg)] focus:!ring-2 focus:!ring-teal-50 ${fieldErrors.mobile ? "!border-[var(--danger)] !bg-red-50" : "!border-transparent hover:!border-[var(--border)]"}`}
                       buttonClass="!border-none !bg-transparent !border-r !border-[var(--border)] !rounded-l-md"
                     />
@@ -179,7 +176,6 @@ const handleRequestOtp = async (e) => {
                 </form>
               ) : (
                 <div className="mt-2">
-                  {/* Vendor Steps Logic... (Keeping your existing steps) */}
                   <div className="flex justify-between mb-6 border-b-2 border-[var(--bg-soft)] pb-3">
                     {["Basic Info", "Location", "Documents", "Bank Details"].map((stepName, idx) => (
                       <span key={idx} className={`text-[10px] font-black transition-colors uppercase tracking-tight ${currentStep >= idx + 1 ? "text-[var(--primary)]" : "text-[var(--text-muted)]"}`}>

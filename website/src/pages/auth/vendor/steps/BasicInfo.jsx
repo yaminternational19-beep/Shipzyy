@@ -26,7 +26,7 @@ function BasicInfo({ vendorData, handleChange }) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1">
-      {/* Full Width Business Name */}
+      {/* Business Name */}
       <div className="md:col-span-2">
         <InputComponent 
           icon={StorefrontIcon} 

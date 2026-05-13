@@ -29,7 +29,7 @@ function BusinessIds({ vendorData, handleChange }) {
           Upload Trade License (PDF/Image)
         </label>
         
-        {/* Clickable Drag & Drop Style Box */}
+        {/* Clickable Drag & Drop Box */}
         <div 
           className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-borderMain rounded-xl bg-bgSoft cursor-pointer transition-all hover:border-primary hover:bg-slate-50 group"
           onClick={() => fileRef.current.click()}

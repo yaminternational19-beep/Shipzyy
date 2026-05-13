@@ -1,139 +1,458 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
-import mockData from "../../../data/mockData.json";
-
-// Icons
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import BusinessOutlinedIcon from "@mui/icons-material/BusinessOutlined";
 import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import AddIcon from "@mui/icons-material/Add";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import { getProfileDetails } from "../../../utils/profileApi";
+import { addAddress, updateAddress, deleteAddress } from "../../../utils/addressApi";
 
 function ManageAddress() {
-  // Load initial addresses from JSON
-  const [addresses, setAddresses] = useState(mockData.locations);
+  const [addresses, setAddresses] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editId, setEditId] = useState(null);
 
-  // Form State
-  const [formData, setFormData] = useState({
-    label: "",
-    address: "",
-    zip: "",
-  });
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const initialForm = {
+    address_name: "Home",
+    address_type: "myself",
+    contact_person_name: "",
+    contact_phone: "",
+    address_line_1: "",
+    address_line_2: "",
+    landmark: "",
+    city: "",
+    state: "",
+    pincode: "",
+    is_default: true,
+    country: "India",
+    latitude: 0,
+    longitude: 0,
   };
 
-  const getIcon = (label) => {
-    const lower = label.toLowerCase();
-    if (lower.includes("home")) return <HomeOutlinedIcon />;
-    if (lower.includes("office") || lower.includes("work")) return <BusinessOutlinedIcon />;
-    return <LocationOnOutlinedIcon />;
-  };
+  const [formData, setFormData] = useState(initialForm);
 
-  const handleDelete = (id) => {
-    setAddresses(addresses.filter((addr) => addr.id !== id));
-    toast.info("Address deleted successfully", { position: "top-center" });
-  };
+  useEffect(() => {
+    fetchAddresses();
+  }, []);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!formData.label || !formData.address || !formData.zip) {
-      return toast.error("Please fill all required fields", { position: "top-center" });
+  useEffect(() => {
+    if (showForm && !editId) {
+      setFormData(initialForm);
     }
+  }, [showForm, editId]);
 
-    const newAddress = {
-      id: Date.now(), // Generate a unique ID
-      label: formData.label,
-      address: formData.address,
-      zip: formData.zip,
-      icon: "custom",
-    };
+  const fetchAddresses = async () => {
+    try {
+      setIsLoading(true);
 
-    setAddresses([...addresses, newAddress]); // Add to list
-    setFormData({ label: "", address: "", zip: "" }); // Reset form
-    setShowForm(false); // Go back to list view
-    toast.success("New address added successfully!", { position: "top-center" });
+      const res = await getProfileDetails();
+
+      if (res?.success) {
+        setAddresses(res.data.addresses || []);
+      }
+    } catch (error) {
+      toast.error("Failed to load addresses");
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure?")) return;
+
+    try {
+      const res = await deleteAddress(id);
+
+      if (res.success) {
+        toast.success("Deleted");
+        fetchAddresses();
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Unable to delete");
+    }
+  };
+
+  const handleChange = async (e) => {
+    const { name, value } = e.target;
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    if (name === "pincode" && value.length === 6) {
+      try {
+        const response = await fetch(
+          `https://api.postalpincode.in/pincode/${value}`
+        );
+
+        const data = await response.json();
+
+        if (
+          data[0]?.Status === "Success" &&
+          data[0]?.PostOffice?.length > 0
+        ) {
+          const postOffice = data[0].PostOffice[0];
+
+          setFormData((prev) => ({
+            ...prev,
+            pincode: value,
+            city: postOffice.District,
+            state: postOffice.State,
+          }));
+        }
+      } catch (error) {}
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      setIsSubmitting(true);
+
+      const payload = {
+        ...formData,
+        latitude: Number(formData.latitude) || 23.1765,
+        longitude: Number(formData.longitude) || 75.8362,
+      };
+
+      const res = editId
+        ? await updateAddress(editId, payload)
+        : await addAddress(payload);
+
+      if (res.success) {
+        toast.success(editId ? "Updated" : "Saved");
+        setShowForm(false);
+        setEditId(null);
+        setFormData(initialForm);
+        fetchAddresses();
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Validation Error");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="h-[414px] flex items-center justify-center w-full bg-[var(--card-bg)] rounded-[var(--radius-xl)] border border-[var(--border)] text-sm font-bold text-[var(--primary)]">
+        Loading...
+      </div>
+    );
+  }
 
   return (
-    <div className="manage-address-section">
-      <div className="section-header-action">
-        <h2 className="section-title" style={{ marginBottom: 0 }}>Saved Addresses</h2>
+    <div className="h-[414px] w-full p-4 bg-[var(--card-bg)] rounded-[var(--radius-xl)] border border-[var(--border)] shadow-sm flex flex-col overflow-hidden">
+      <div className="flex items-center justify-between mb-3 pb-2 border-b border-[var(--border)] shrink-0">
+        <h2 className="text-lg font-black text-[var(--text-main)]">
+          My Addresses
+        </h2>
 
-        {/* Toggle Button for Add Address */}
         {!showForm && (
           <button
-            type="button"
-            className="edit-icon-btn"
-            onClick={() => setShowForm(true)}
+            onClick={() => {
+              setEditId(null);
+              setShowForm(true);
+            }}
+            className="px-4 h-9 bg-[var(--primary)] text-white font-black text-[10px] uppercase tracking-widest rounded-full"
           >
-            <AddIcon fontSize="small" /> Add New
+            + Add New
           </button>
         )}
       </div>
 
-      {/* VIEW 1: ADD NEW ADDRESS FORM */}
-      {showForm ? (
-        <form onSubmit={handleSubmit} className="add-address-form form-slide-in">
-          <p className="section-subtitle">Enter details for your new delivery location.</p>
-
-          <div className="grid-2">
-            <div className="form-group">
-              <input name="label" value={formData.label} onChange={handleChange} placeholder=" " required />
-              <label>Address Label (e.g. Home, Office) *</label>
+      <div className="flex-1 overflow-y-auto pr-1 no-scrollbar">
+        {showForm ? (
+          <form onSubmit={handleSubmit} className="space-y-2 pb-1">
+            <div className="grid grid-cols-3 gap-2 bg-slate-100 p-1 rounded-xl">
+              {["Home", "Office", "Other"].map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      address_name: t,
+                    }))
+                  }
+                  className={`h-8 rounded-lg text-[10px] font-black uppercase transition-all border ${
+                    formData.address_name === t
+                      ? "bg-[var(--primary)] text-white border-[var(--primary)] shadow-md"
+                      : "bg-white text-slate-400 border-slate-200"
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
             </div>
-            <div className="form-group">
-              <input type="text" name="zip" value={formData.zip} onChange={handleChange} placeholder=" " maxLength="6" required />
-              <label>Pincode / Zip Code *</label>
-            </div>
-          </div>
 
-          <div className="form-group">
-            <input name="address" value={formData.address} onChange={handleChange} placeholder=" " required />
-            <label>Complete Address *</label>
-          </div>
+            <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
+              <div className="flex gap-2 mb-3">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      address_type: "myself",
+                    }))
+                  }
+                  className={`flex-1 h-8 rounded-lg text-[10px] font-black transition-all border ${
+                    formData.address_type === "myself"
+                      ? "bg-[var(--primary)] text-white border-[var(--primary)] shadow-md"
+                      : "bg-white text-slate-500 border-slate-200"
+                  }`}
+                >
+                  Myself
+                </button>
 
-          <div className="form-actions">
-            <button type="button" className="cancel-btn" onClick={() => setShowForm(false)}>
-              Cancel
-            </button>
-            <button type="submit" className="primary-btn" style={{ marginTop: 0 }}>
-              Save Address
-            </button>
-          </div>
-        </form>
-      ) : (
-        /* VIEW 2: SAVED ADDRESSES GRID */
-        <div className="address-cards-grid">
-          {addresses.map((loc) => (
-            <div className="profile-address-card" key={loc.id}>
-              <div className="addr-icon">{getIcon(loc.label)}</div>
-              <div className="addr-details">
-                <h4>{loc.label}</h4>
-                <p>{loc.address}</p>
-                <span>Pin: {loc.zip}</span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      address_type: "someone_else",
+                    }))
+                  }
+                  className={`flex-1 h-8 rounded-lg text-[10px] font-black transition-all border ${
+                    formData.address_type === "someone_else"
+                      ? "bg-[var(--primary)] text-white border-[var(--primary)] shadow-md"
+                      : "bg-white text-slate-500 border-slate-200"
+                  }`}
+                >
+                  Someone Else
+                </button>
               </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[8px] font-black text-slate-400 uppercase tracking-wide ml-1 mb-1 block">
+                    {formData.address_type === "someone_else"
+                      ? "Receiver Name"
+                      : "Full Name"}
+                  </label>
+
+                  <input
+                    name="contact_person_name"
+                    value={formData.contact_person_name}
+                    onChange={handleChange}
+                    placeholder={
+                      formData.address_type === "someone_else"
+                        ? "Receiver Name"
+                        : "Full Name"
+                    }
+                    required
+                    className="w-full h-10 px-3 bg-white rounded-xl border border-transparent focus:border-[var(--primary)] outline-none text-[11px] font-semibold"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[8px] font-black text-slate-400 uppercase tracking-wide ml-1 mb-1 block">
+                    Phone
+                  </label>
+
+                  <input
+                    name="contact_phone"
+                    value={formData.contact_phone}
+                    onChange={handleChange}
+                    placeholder="Phone Number"
+                    required
+                    className="w-full h-10 px-3 bg-white rounded-xl border border-transparent focus:border-[var(--primary)] outline-none text-[11px] font-semibold"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[8px] font-black text-slate-400 uppercase tracking-wide ml-1 mb-1 block">
+                Address Line 1
+              </label>
+
+              <input
+                name="address_line_1"
+                value={formData.address_line_1}
+                onChange={handleChange}
+                placeholder="House No, Street"
+                required
+                className="w-full h-10 px-3 bg-slate-50 rounded-xl border border-transparent focus:border-[var(--primary)] outline-none text-[11px] font-semibold"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-[8px] font-black text-slate-400 uppercase tracking-wide ml-1 mb-1 block">
+                  Address Line 2
+                </label>
+
+                <input
+                  name="address_line_2"
+                  value={formData.address_line_2}
+                  onChange={handleChange}
+                  placeholder="Area, Colony"
+                  className="w-full h-10 px-3 bg-slate-50 rounded-xl border border-transparent focus:border-[var(--primary)] outline-none text-[11px] font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="text-[8px] font-black text-slate-400 uppercase tracking-wide ml-1 mb-1 block">
+                  Landmark
+                </label>
+
+                <input
+                  name="landmark"
+                  value={formData.landmark}
+                  onChange={handleChange}
+                  placeholder="Nearby Landmark"
+                  className="w-full h-10 px-3 bg-slate-50 rounded-xl border border-transparent focus:border-[var(--primary)] outline-none text-[11px] font-semibold"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className="text-[8px] font-black text-slate-400 uppercase tracking-wide ml-1 mb-1 block">
+                  City
+                </label>
+
+                <input
+                  name="city"
+                  value={formData.city}
+                  onChange={handleChange}
+                  placeholder="City"
+                  required
+                  className="w-full h-10 px-3 bg-slate-50 rounded-xl border border-transparent focus:border-[var(--primary)] outline-none text-[11px] font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="text-[8px] font-black text-slate-400 uppercase tracking-wide ml-1 mb-1 block">
+                  State
+                </label>
+
+                <input
+                  name="state"
+                  value={formData.state}
+                  onChange={handleChange}
+                  placeholder="State"
+                  required
+                  className="w-full h-10 px-3 bg-slate-50 rounded-xl border border-transparent focus:border-[var(--primary)] outline-none text-[11px] font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="text-[8px] font-black text-slate-400 uppercase tracking-wide ml-1 mb-1 block">
+                  Pincode
+                </label>
+
+                <input
+                  name="pincode"
+                  value={formData.pincode}
+                  onChange={handleChange}
+                  placeholder="Pincode"
+                  maxLength="6"
+                  required
+                  className="w-full h-10 px-3 bg-slate-50 rounded-xl border border-transparent focus:border-[var(--primary)] outline-none text-[11px] font-semibold"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-1">
               <button
-                className="delete-addr-btn"
-                onClick={() => handleDelete(loc.id)}
-                title="Delete Address"
+                type="button"
+                onClick={() => setShowForm(false)}
+                className="flex-1 h-10 rounded-xl border border-slate-200 font-black text-[10px] uppercase text-slate-400"
               >
-                <DeleteOutlineIcon fontSize="small" />
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="flex-1 h-10 rounded-xl bg-[var(--primary)] text-white font-black text-[10px] uppercase"
+              >
+                {isSubmitting ? "Saving..." : "Save"}
               </button>
             </div>
-          ))}
+          </form>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {addresses.map((loc) => (
+              <div
+                key={loc.id}
+                className="p-3 rounded-2xl border bg-slate-50 border-slate-100 hover:border-[var(--primary)] transition-all group relative"
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center shadow-sm bg-white text-[var(--primary)]">
+                    {loc.address_name === "Home" ? (
+                      <HomeOutlinedIcon fontSize="small" />
+                    ) : loc.address_name === "Office" ? (
+                      <BusinessOutlinedIcon fontSize="small" />
+                    ) : (
+                      <LocationOnOutlinedIcon fontSize="small" />
+                    )}
+                  </div>
 
-          {/* Add New Address Card Placeholder */}
-          <div className="profile-address-card add-new-card" onClick={() => setShowForm(true)}>
-            <div className="add-circle">
-              <AddIcon />
-            </div>
-            <h4>Add New Address</h4>
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => {
+                        setEditId(loc.id);
+                        setFormData(loc);
+                        setShowForm(true);
+                      }}
+                      className="p-1.5 text-blue-500"
+                    >
+                      <EditOutlinedIcon sx={{ fontSize: 16 }} />
+                    </button>
+
+                    <button
+                      onClick={() => handleDelete(loc.id)}
+                      className="p-1.5 text-red-500"
+                    >
+                      <DeleteOutlineIcon sx={{ fontSize: 16 }} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                  <span className="px-2 h-6 rounded-full bg-[var(--primary)] text-white text-[9px] font-black uppercase flex items-center">
+                    {loc.address_name}
+                  </span>
+
+                  <span className="px-2 h-6 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] text-[9px] font-black uppercase flex items-center">
+                    {loc.address_type === "someone_else"
+                      ? "Someone Else"
+                      : "Myself"}
+                  </span>
+                </div>
+
+                <p className="text-[10px] font-bold text-[var(--primary)] uppercase">
+                  {loc.contact_person_name}
+                </p>
+
+                <p className="text-[10px] text-slate-500 font-semibold mb-1">
+                  {loc.contact_phone}
+                </p>
+
+                <div className="space-y-0.5 text-[11px] text-slate-500 font-medium">
+                  <p>{loc.address_line_1}</p>
+
+                  {loc.address_line_2 && <p>{loc.address_line_2}</p>}
+
+                  {loc.landmark && <p>{loc.landmark}</p>}
+
+                  <p>
+                    {loc.city}, {loc.state} - {loc.pincode}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

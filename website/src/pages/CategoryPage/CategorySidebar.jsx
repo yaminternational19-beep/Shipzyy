@@ -1,7 +1,6 @@
 import React from "react";
 
 const CategorySidebar = ({ subcategories = [], activeSub, setActiveSub }) => {
-  
   const subData = [
     { name: "All", icon: "" }, 
     ...subcategories

@@ -8,9 +8,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* =========================================================
-   DESIGN TOKENS (LIGHT MODE DEFAULT)
-========================================================= */
+
 
 :root {
 
@@ -32,7 +30,7 @@
   --card-gradient: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
 
   /* --- TEXT COLORS --- */
-  --text-main: #1e293b;      /* Strong readable dark */
+  --text-main: #1e293b;      
   --text-light: #475569;
   --text-muted: #64748b;
 
@@ -67,9 +65,7 @@
 }
 
 
-/* =========================================================
-   DARK THEME
-========================================================= */
+
 
 [data-theme="dark"] {
 
@@ -78,7 +74,7 @@
   --card-bg: #162032;
   --border: #334155;
 
-  --text-main: #ffffff;      /* IMPORTANT */
+  --text-main: #ffffff;    
   --text-light: #cbd5e1;
   --text-muted: #94a3b8;
 
@@ -97,9 +93,7 @@
 }
 
 
-/* =========================================================
-   GLOBAL RESET
-========================================================= */
+
 
 * {
   margin: 0;
@@ -118,9 +112,8 @@ body {
   line-height: 1.6;
 }
 
-/* Make sure headings inherit correct color */
 h1, h2, h3, h4, h5, h6 {
-  color:inherit; /* Dark background ke liye white */
+  color:inherit;
   line-height: 1.2;
   margin-bottom: 0.5em;
 }
@@ -149,9 +142,7 @@ a {
 }
 
 
-/* =========================================
-   GLOBAL RESPONSIVE OVERRIDES
-========================================= */
+
 
 @media (max-width: 1024px) {
   .cart-grid, .checkout-max-width {
@@ -161,7 +152,7 @@ a {
   .cart-summary, .invoice-container {
     position: relative;
     top: 0;
-    order: -1; /* Total summary comes first on mobile */
+    order: -1; 
   }
 }
 
@@ -199,9 +190,7 @@ a {
   }
 }
 
-/* =========================================================
-   GLOBAL UTILITIES
-========================================================= */
+
 
 .text-gradient {
   background: var(--brand-gradient);
